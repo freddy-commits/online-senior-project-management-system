@@ -17,6 +17,15 @@ export default function LandingContent() {
   const y2 = useTransform(scrollYProgress, [0, 1], [0, -150])
   const opacity = useTransform(scrollYProgress, [0, 0.2], [1, 0])
 
+  const startSandbox = (role: string) => {
+    document.cookie = `demo_mode=true; path=/`
+    document.cookie = `demo_role=${role}; path=/`
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('demo_mode', 'true')
+      window.location.href = `/${role}`
+    }
+  }
+
   return (
     <div ref={containerRef} className="relative min-h-screen bg-[#020617] text-white overflow-hidden">
       {/* Animated Background Gradients */}
@@ -44,6 +53,12 @@ export default function LandingContent() {
           </div>
 
           <div className="flex items-center gap-4">
+            <button 
+              onClick={() => startSandbox('student')}
+              className="px-4 py-2 border border-blue-500/30 text-blue-400 text-xs font-bold rounded-full hover:bg-blue-500/10 transition-all cursor-pointer"
+            >
+              Interactive Sandbox
+            </button>
             <Link href="/login" className="px-5 py-2 text-sm font-bold text-slate-300 hover:text-white transition-colors">
               Log In
             </Link>
@@ -75,14 +90,37 @@ export default function LandingContent() {
             A premium management system designed for the next generation of engineers, researchers, and industry leaders.
           </p>
           
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-6">
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-6 mb-12">
             <Link href="/register" className="group relative px-8 py-4 bg-blue-600 rounded-full font-bold text-lg hover:bg-blue-500 transition-all shadow-2xl shadow-blue-500/25 flex items-center gap-2">
               Start Your Project
               <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
             </Link>
-            <button className="px-8 py-4 bg-white/5 rounded-full font-bold text-lg hover:bg-white/10 transition-all border border-white/10">
-              Explore Projects
+            <button 
+              onClick={() => startSandbox('student')}
+              className="px-8 py-4 bg-white/5 rounded-full font-bold text-lg hover:bg-white/10 transition-all border border-white/10"
+            >
+              Explore Sandbox Mode
             </button>
+          </div>
+
+          <div className="max-w-2xl mx-auto bg-white/5 border border-white/10 rounded-3xl p-6 backdrop-blur-xl">
+            <div className="text-xs font-black text-slate-500 uppercase tracking-widest mb-4">One-Click Sandbox Login (No DB Configuration Required)</div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              {[
+                { label: '🎓 Student', role: 'student', color: 'hover:border-blue-500 hover:bg-blue-500/10' },
+                { label: '👨‍🏫 Instructor', role: 'instructor', color: 'hover:border-green-500 hover:bg-green-500/10' },
+                { label: '🏢 Industry Partner', role: 'industry', color: 'hover:border-indigo-500 hover:bg-indigo-500/10' },
+                { label: '🛠️ Administrator', role: 'admin', color: 'hover:border-purple-500 hover:bg-purple-500/10' }
+              ].map((b) => (
+                <button
+                  key={b.role}
+                  onClick={() => startSandbox(b.role)}
+                  className={`py-3 px-2 border border-white/10 rounded-2xl text-xs font-bold text-slate-300 transition-all cursor-pointer ${b.color}`}
+                >
+                  {b.label}
+                </button>
+              ))}
+            </div>
           </div>
         </motion.div>
 

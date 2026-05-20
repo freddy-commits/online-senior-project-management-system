@@ -80,7 +80,7 @@ export default async function IndustryDashboard() {
               Your Partnered Projects
             </h2>
             
-            {projects && projects.length > 0 ? projects.map((project) => (
+            {projects && projects.length > 0 ? projects.map((project: any) => (
               <Link 
                 key={project.id} 
                 href={`/industry/projects/${project.id}`}

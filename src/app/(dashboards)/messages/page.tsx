@@ -57,7 +57,7 @@ export default function MessagesPage() {
       .on(
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'messages' },
-        (payload) => {
+        (payload: any) => {
           const msg = payload.new
           if (
             (msg.sender_id === userProfile.id && msg.receiver_id === selectedContact.id) ||

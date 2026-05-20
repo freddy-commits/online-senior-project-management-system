@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import { createClient } from '@/lib/supabase/client'
+import SandboxToolbar from './SandboxToolbar'
 import { 
   LayoutDashboard, 
   FolderKanban, 
@@ -45,7 +46,7 @@ export default function DashboardLayout({ children, role, userName }: DashboardL
       .on(
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'notifications' },
-        (payload) => {
+        (payload: any) => {
           setNotifications(prev => [payload.new, ...prev])
         }
       )
@@ -233,6 +234,7 @@ export default function DashboardLayout({ children, role, userName }: DashboardL
           {children}
         </div>
       </main>
+      <SandboxToolbar />
     </div>
   )
 }

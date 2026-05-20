@@ -81,7 +81,7 @@ export default async function StudentDashboard() {
             </h2>
             
             {projects && projects.length > 0 ? (
-              projects.map((project) => (
+              projects.map((project: any) => (
                 <Link 
                   key={project.id} 
                   href={`/student/projects/${project.id}`}

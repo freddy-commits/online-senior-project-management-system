@@ -27,6 +27,31 @@ export async function updateSession(request: NextRequest) {
     }
   )
 
+  const hasDemoCookie = request.cookies.has('demo_mode')
+  const isDemo = hasDemoCookie || 
+    !process.env.NEXT_PUBLIC_SUPABASE_URL || 
+    !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+  if (isDemo) {
+    const demoRole = request.cookies.get('demo_role')?.value
+    const path = request.nextUrl.pathname
+    
+    const isPublicPath = 
+      path === '/' || 
+      path.startsWith('/login') || 
+      path.startsWith('/register') || 
+      path.startsWith('/auth') || 
+      path.startsWith('/debug') || 
+      path.startsWith('/api')
+
+    if (!demoRole && !isPublicPath) {
+      const url = request.nextUrl.clone()
+      url.pathname = '/login'
+      return NextResponse.redirect(url)
+    }
+    return supabaseResponse
+  }
+
   // IMPORTANT: Avoid writing any logic between createServerClient and
   // supabase.auth.getUser(). A simple mistake can make it very hard to debug
   // issues with users being logged out.
@@ -40,6 +65,8 @@ export async function updateSession(request: NextRequest) {
     !request.nextUrl.pathname.startsWith('/login') &&
     !request.nextUrl.pathname.startsWith('/register') &&
     !request.nextUrl.pathname.startsWith('/auth') &&
+    !request.nextUrl.pathname.startsWith('/debug') &&
+    !request.nextUrl.pathname.startsWith('/api/debug') &&
     request.nextUrl.pathname !== '/'
   ) {
     // no user, potentially respond by redirecting the user to the login page

@@ -118,7 +118,7 @@ export default function InstructorDashboard() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-white/5">
-                  {projects.length > 0 ? projects.map((project) => (
+                  {projects.length > 0 ? projects.map((project: any) => (
                     <tr key={project.id} className="hover:bg-white/[0.02] transition-colors group">
                       <td className="px-8 py-6">
                         <Link href={`/instructor/projects/${project.id}`} className="block group">

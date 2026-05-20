@@ -13,6 +13,15 @@ export default function RegisterPage() {
   const [loading, setLoading] = useState(false)
   const [selectedRole, setSelectedRole] = useState('student')
 
+  const startSandbox = (role: string) => {
+    document.cookie = `demo_mode=true; path=/`
+    document.cookie = `demo_role=${role}; path=/`
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('demo_mode', 'true')
+      window.location.href = `/${role}`
+    }
+  }
+
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
     setLoading(true)
@@ -172,6 +181,29 @@ export default function RegisterPage() {
               </div>
             </div>
           </form>
+
+          <div className="relative my-8">
+            <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-white/10" /></div>
+            <div className="relative flex justify-center text-xs uppercase"><span className="bg-[#0f172a] px-3 text-slate-500 font-bold tracking-widest">Or Sandbox Access</span></div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3 mb-6">
+            {[
+              { label: '🎓 Student', role: 'student', color: 'hover:border-blue-500 hover:bg-blue-500/10' },
+              { label: '👨‍🏫 Instructor', role: 'instructor', color: 'hover:border-green-500 hover:bg-green-500/10' },
+              { label: '🏢 Industry', role: 'industry', color: 'hover:border-indigo-500 hover:bg-indigo-500/10' },
+              { label: '🛠️ Admin', role: 'admin', color: 'hover:border-purple-500 hover:bg-purple-500/10' }
+            ].map((b) => (
+              <button
+                key={b.role}
+                type="button"
+                onClick={() => startSandbox(b.role)}
+                className={`py-3.5 border border-white/10 rounded-2xl text-xs font-bold text-slate-300 transition-all cursor-pointer ${b.color}`}
+              >
+                {b.label}
+              </button>
+            ))}
+          </div>
 
           <div className="mt-8 text-center">
             <p className="text-slate-400 text-sm">
