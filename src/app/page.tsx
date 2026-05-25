@@ -15,7 +15,15 @@ export default async function LandingPage() {
       .single()
 
     if (profile?.role) {
-      return redirect(`/${profile.role}`)
+      if (profile.role === 'student') {
+        return redirect('/student/dashboard')
+      } else if (profile.role === 'instructor') {
+        return redirect('/instructor/dashboard')
+      } else if (profile.role === 'industry') {
+        return redirect('/partner/dashboard')
+      } else {
+        return redirect(`/${profile.role}`)
+      }
     }
   }
 

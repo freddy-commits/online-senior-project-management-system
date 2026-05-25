@@ -25,16 +25,16 @@ export default function AnnouncementFeed() {
     fetchAnnouncements()
   }, [])
 
-  if (loading) return <div className="h-40 bg-white/5 rounded-3xl animate-pulse" />
+  if (loading) return <div className="h-40 bg-slate-100 rounded-3xl animate-pulse" />
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h2 className="text-xl font-bold flex items-center gap-3">
-          <Megaphone className="w-5 h-5 text-blue-400" />
+        <h2 className="text-xl font-bold flex items-center gap-3 text-slate-900">
+          <Megaphone className="w-5 h-5 text-blue-600" />
           University Announcements
         </h2>
-        <button className="text-xs font-bold text-slate-500 hover:text-white transition-colors">View All</button>
+        <button className="text-xs font-bold text-slate-500 hover:text-slate-900 transition-colors">View All</button>
       </div>
 
       <div className="space-y-4">
@@ -44,15 +44,15 @@ export default function AnnouncementFeed() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: i * 0.1 }}
             key={ann.id} 
-            className="bg-white/5 border border-white/10 rounded-3xl p-6 hover:bg-white/[0.08] transition-all relative group"
+            className="bg-white border border-slate-200 rounded-3xl p-6 hover:shadow-md hover:border-slate-300 transition-all relative group"
           >
             {ann.is_pinned && (
               <div className="absolute top-4 right-4">
-                <Pin className="w-4 h-4 text-blue-400 fill-blue-400" />
+                <Pin className="w-4 h-4 text-blue-600 fill-blue-600" />
               </div>
             )}
-            <h3 className="font-bold text-white mb-2 pr-8">{ann.title}</h3>
-            <p className="text-sm text-slate-400 line-clamp-2 leading-relaxed mb-4">
+            <h3 className="font-bold text-slate-900 mb-2 pr-8">{ann.title}</h3>
+            <p className="text-sm text-slate-600 line-clamp-2 leading-relaxed mb-4">
               {ann.content}
             </p>
             <div className="flex items-center gap-4">
@@ -60,13 +60,13 @@ export default function AnnouncementFeed() {
                 <Clock className="w-3 h-3" />
                 {new Date(ann.created_at).toLocaleDateString()}
               </div>
-              <div className="px-2 py-0.5 bg-blue-500/10 text-blue-400 rounded text-[10px] font-black uppercase tracking-widest">
+              <div className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded text-[10px] font-black uppercase tracking-widest">
                 {ann.target_role}
               </div>
             </div>
           </motion.div>
         )) : (
-          <div className="bg-white/5 border border-dashed border-white/10 rounded-3xl p-12 text-center">
+          <div className="bg-slate-50 border border-dashed border-slate-200 rounded-3xl p-12 text-center">
             <p className="text-slate-500 text-sm">No recent announcements from the department.</p>
           </div>
         )}

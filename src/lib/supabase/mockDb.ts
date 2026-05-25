@@ -49,12 +49,22 @@ export interface MockNotification {
   created_at: string
 }
 
+export interface MockAnnouncement {
+  id: string
+  title: string
+  content: string
+  is_pinned: boolean
+  target_role: 'all' | 'student' | 'instructor' | 'industry'
+  created_at: string
+}
+
 export interface MockDbState {
   profiles: MockProfile[]
   projects: MockProject[]
   deliverables: MockDeliverable[]
   messages: MockMessage[]
   notifications: MockNotification[]
+  announcements: MockAnnouncement[]
 }
 
 const DEFAULT_PROFILES: MockProfile[] = [
@@ -134,12 +144,32 @@ const DEFAULT_NOTIFICATIONS: MockNotification[] = [
   }
 ]
 
+const DEFAULT_ANNOUNCEMENTS: MockAnnouncement[] = [
+  {
+    id: 'ann-1',
+    title: 'Senior Project Guidelines 2026',
+    content: 'The official project guidelines document is now available. All students and supervisors are required to review the grading rubrics and timeline milestones before submitting the first deliverable.',
+    is_pinned: true,
+    target_role: 'all',
+    created_at: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString()
+  },
+  {
+    id: 'ann-2',
+    title: 'Upcoming Midterm Vetting Presentations',
+    content: 'Please schedule your midterm vetting presentations by Friday. Your panels are assigned in the Vetting section.',
+    is_pinned: false,
+    target_role: 'instructor',
+    created_at: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString()
+  }
+]
+
 const INITIAL_STATE: MockDbState = {
   profiles: DEFAULT_PROFILES,
   projects: DEFAULT_PROJECTS,
   deliverables: DEFAULT_DELIVERABLES,
   messages: DEFAULT_MESSAGES,
-  notifications: DEFAULT_NOTIFICATIONS
+  notifications: DEFAULT_NOTIFICATIONS,
+  announcements: DEFAULT_ANNOUNCEMENTS
 }
 
 // Global server-side state for Next.js Server Components
@@ -169,7 +199,26 @@ export function getDbState(): MockDbState {
       }).catch(() => {})
       return INITIAL_STATE
     }
-    return JSON.parse(data)
+    
+    // Auto-migrate: merge missing tables (like announcements) into existing state
+    const parsed = JSON.parse(data)
+    let migrated = false
+    Object.keys(INITIAL_STATE).forEach(key => {
+      if (!(key in parsed)) {
+        parsed[key] = (INITIAL_STATE as any)[key]
+        migrated = true
+      }
+    })
+    
+    if (migrated) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(parsed))
+      fetch('/api/sandbox/sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(parsed)
+      }).catch(() => {})
+    }
+    return parsed
   } catch (e) {
     console.error('Error reading sandbox state from localStorage:', e)
     return INITIAL_STATE

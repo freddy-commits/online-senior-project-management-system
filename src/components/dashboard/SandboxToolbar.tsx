@@ -41,7 +41,15 @@ export default function SandboxToolbar() {
     document.cookie = `demo_mode=true; path=/`
     document.cookie = `demo_role=${role}; path=/`
     localStorage.setItem('demo_mode', 'true')
-    window.location.href = `/${role}`
+    if (role === 'student') {
+      window.location.href = '/student/dashboard'
+    } else if (role === 'instructor') {
+      window.location.href = '/instructor/dashboard'
+    } else if (role === 'industry') {
+      window.location.href = '/partner/dashboard'
+    } else {
+      window.location.href = `/${role}`
+    }
   }
 
   const handleReset = () => {
