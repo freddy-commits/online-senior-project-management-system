@@ -32,7 +32,7 @@ export default async function StudentDashboardPage() {
   // Fetch student's projects (using the new schema)
   const { data: projects } = await supabase
     .from('projects')
-    .select('*')
+    .select('*, instructor:instructor_id(full_name)')
     .eq('student_id', user.id)
 
   const stats = [
@@ -53,12 +53,13 @@ export default async function StudentDashboardPage() {
   return (
     <div className="max-w-6xl mx-auto">
       {/* Header Section */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-10">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-10 relative">
+        <div className="glow-spot-indigo top-[-100px] left-[-50px] opacity-70" />
         <div>
-          <h1 className="text-3xl font-bold text-slate-900 mb-2">Student Workspace</h1>
-          <p className="text-slate-600">Welcome back! Here's what's happening with your projects.</p>
+          <h1 className="text-4xl font-extrabold text-gradient-dark mb-2">Student Workspace</h1>
+          <p className="text-slate-500 font-medium text-sm">Welcome back! Let's build something exceptional today.</p>
         </div>
-        <Link href="/student/projects/new" className="flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-bold shadow-lg shadow-blue-600/20 transition-all active:scale-[0.98]">
+        <Link href="/student/projects/new" className="flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-bold shadow-lg shadow-blue-600/25 transition-all hover:scale-[1.02] active:scale-[0.98]">
           <Plus className="w-5 h-5" />
           New Project
         </Link>
@@ -69,12 +70,12 @@ export default async function StudentDashboardPage() {
         {stats.map((stat, i) => {
           const colors = colorMap[stat.color] || colorMap.blue
           return (
-            <div key={i} className="bg-white border border-slate-200 rounded-3xl p-6 hover:shadow-lg transition-all">
+            <div key={i} className="premium-card rounded-3xl p-6 hover:shadow-xl transition-all">
               <div className={`w-10 h-10 rounded-xl ${colors.bg} flex items-center justify-center mb-4`}>
                 <div className={colors.text}>{stat.icon}</div>
               </div>
-              <div className="text-2xl font-black text-slate-900">{stat.value}</div>
-              <div className="text-sm text-slate-500 font-medium">{stat.label}</div>
+              <div className="text-2xl font-extrabold text-slate-900">{stat.value}</div>
+              <div className="text-xs text-slate-400 font-bold uppercase tracking-wider mt-1">{stat.label}</div>
             </div>
           )
         })}
@@ -94,9 +95,10 @@ export default async function StudentDashboardPage() {
               <Link 
                 key={project.id} 
                 href={`/student/projects/${project.id}`}
-                className="block bg-white border border-slate-200 rounded-[2rem] p-8 hover:border-blue-500/30 hover:shadow-xl transition-all group"
+                className="block premium-card rounded-[2.5rem] p-8 group relative overflow-hidden"
               >
-                <div className="flex items-start justify-between mb-6">
+                <div className="absolute top-0 right-0 w-36 h-36 bg-blue-100/20 blur-[50px] rounded-full pointer-events-none" />
+                <div className="flex items-start justify-between mb-6 relative">
                   <div>
                     <span className="inline-block px-3 py-1 rounded-full bg-blue-50 text-blue-600 border border-blue-100 text-[10px] font-black uppercase tracking-widest mb-3">
                       {project.status}
@@ -126,7 +128,9 @@ export default async function StudentDashboardPage() {
                   </div>
                   <div>
                     <div className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mb-1">Instructor</div>
-                    <div className="text-sm font-bold text-slate-900">Dr. Sarah Johnson</div>
+                    <div className="text-sm font-bold text-slate-900 truncate max-w-[120px]" title={project.instructor?.full_name || 'Awaiting Admin Assignment'}>
+                      {project.instructor?.full_name || 'Awaiting Admin'}
+                    </div>
                   </div>
                   <div>
                     <div className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mb-1">Progress</div>

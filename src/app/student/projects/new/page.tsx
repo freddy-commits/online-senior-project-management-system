@@ -30,7 +30,6 @@ export default function NewProjectPage() {
     const formData = new FormData(e.currentTarget)
     const title = formData.get('title') as string
     const description = formData.get('description') as string
-    const proposalUrl = formData.get('proposal_url') as string
 
     try {
       const { data: { user } } = await supabase.auth.getUser()
@@ -56,8 +55,7 @@ export default function NewProjectPage() {
         .insert({
           project_id: project.id,
           title: 'Project Proposal',
-          description: 'Initial project scope and objectives.',
-          submission_url: proposalUrl,
+          submission_url: 'Submitted',
           status: 'submitted'
         })
 
@@ -135,20 +133,6 @@ export default function NewProjectPage() {
               />
             </div>
 
-            <div>
-              <label className="block text-xs font-black text-slate-400 uppercase tracking-[0.2em] mb-3">Proposal Document URL</label>
-              <div className="relative">
-                <LinkIcon className="absolute left-6 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                <input 
-                  name="proposal_url"
-                  required
-                  type="url"
-                  placeholder="Link to Google Doc or PDF"
-                  className="w-full bg-slate-50 border border-slate-200 rounded-2xl pl-14 pr-6 py-4 text-slate-900 placeholder:text-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all font-semibold"
-                />
-              </div>
-              <p className="text-[10px] text-slate-500 mt-2 font-medium italic">* Ensure the link is accessible to your supervisor.</p>
-            </div>
           </div>
 
           {error && (

@@ -1,20 +1,21 @@
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
-import { createMockClient } from './mockClient'
 
+/**
+ * Create a Supabase client for Server Components.
+ * This version always uses the real Supabase backend.
+ * Ensure NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY are set.
+ */
 export async function createClient() {
   const cookieStore = await cookies()
-  const isDemo = cookieStore.has('demo_mode') || 
-    !process.env.NEXT_PUBLIC_SUPABASE_URL || 
-    !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
-  if (isDemo) {
-    return createMockClient() as any
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+    throw new Error('Supabase environment variables are missing. Please set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY.')
   }
 
   return createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    process.env.NEXT_PUBLIC_SUPABASE_URL,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
     {
       cookies: {
         getAll() {
@@ -26,9 +27,7 @@ export async function createClient() {
               cookieStore.set(name, value, options)
             )
           } catch {
-            // The `setAll` method was called from a Server Component.
-            // This can be ignored if you have middleware refreshing
-            // user sessions.
+            // In Server Components, setAll may be called during middleware refresh.
           }
         },
       },

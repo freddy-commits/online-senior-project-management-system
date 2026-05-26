@@ -36,13 +36,13 @@ export default function AdminProjectManagement() {
       // Fetch all projects with student and instructor names
       const { data: projs } = await supabase
         .from('projects')
-        .select('*, student:student_id(full_name), instructor:instructor_id(full_name)')
+        .select('*, student:student_id(full_name, email), instructor:instructor_id(full_name, email)')
         .order('created_at', { ascending: false })
       
       setProjects(projs || [])
 
       // Fetch all instructors for the assignment dropdown
-      const { data: inst } = await supabase.from('profiles').select('id, full_name').eq('role', 'instructor')
+      const { data: inst } = await supabase.from('profiles').select('id, full_name, email').eq('role', 'instructor')
       setInstructors(inst || [])
       
       setLoading(false)
@@ -60,8 +60,38 @@ export default function AdminProjectManagement() {
     if (error) {
       alert(error.message)
     } else {
+      // Find assigned instructor and project details to send notification email
+      const instr = instructors.find(i => i.id === instructorId)
+      const proj = projects.find(p => p.id === projectId)
+      if (instr && instr.email && proj) {
+        try {
+          const { notifyInstructorAssigned, notifyStudentSupervisorAssigned } = await import('@/lib/email/emailService')
+          
+          // 1. Notify supervisor
+          await notifyInstructorAssigned(
+            instr.email,
+            instr.full_name || 'Advisor',
+            proj.title,
+            proj.student?.full_name || 'Assigned Student'
+          )
+
+          // 2. Notify student
+          const studentEmail = proj.student?.email
+          if (studentEmail) {
+            await notifyStudentSupervisorAssigned(
+              studentEmail,
+              proj.student?.full_name || 'Student',
+              instr.full_name || 'Advisor',
+              proj.title
+            )
+          }
+        } catch (err) {
+          console.error('Failed to notify instructor or student:', err)
+        }
+      }
+
       // Refresh list
-      const { data } = await supabase.from('projects').select('*, student:student_id(full_name), instructor:instructor_id(full_name)')
+      const { data } = await supabase.from('projects').select('*, student:student_id(full_name, email), instructor:instructor_id(full_name, email)')
       setProjects(data || [])
     }
     setProcessing(null)

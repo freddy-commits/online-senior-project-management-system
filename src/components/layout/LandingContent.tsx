@@ -23,7 +23,8 @@ import {
   Building2,
   GraduationCap,
   Menu,
-  X
+  X,
+  Bell
 } from 'lucide-react'
 
 // --- REUSABLE TYPEWRITER TEXT ENGINE ---
@@ -210,7 +211,7 @@ export default function LandingContent() {
   const [contactForm, setContactForm] = useState({ name: '', email: '', message: '' })
   const [contactSent, setContactSent] = useState(false)
 
-  const heroSubtitle = "A premium management system designed for the next generation of engineers, researchers, and industry leaders. Project Hub streamlines your academic requirements, deliverables, and team dynamics in one integrated space."
+  const heroSubtitle = "A premium management system designed for the next generation of engineers, researchers, and industry leaders. Project Hub streamlines your academic requirements and deliverables in one integrated space."
 
   const startSandbox = (role: string) => {
     document.cookie = `demo_mode=true; path=/`
@@ -233,7 +234,6 @@ export default function LandingContent() {
     { label: 'Process', href: '#timeline' },
     { label: 'Features', href: '#features' },
     { label: 'Portals', href: '#portals' },
-    { label: 'Showcase', href: '#showcase' },
     { label: 'Contact', href: '#contact' },
   ]
 
@@ -242,47 +242,28 @@ export default function LandingContent() {
       
       {/* Subtle animated background orbs and pictures behind the world */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
-        <img src="/images/dashboard-hero.png" alt="" className="absolute top-[-10%] right-[-10%] w-[800px] h-auto object-cover opacity-[0.10] transform rotate-12" />
-        <img src="/images/collaboration-hero.png" alt="" className="absolute bottom-[10%] left-[-10%] w-[800px] h-auto object-cover opacity-[0.10] transform -rotate-12" />
+        {/* Animated grid */}
+        <div className="absolute inset-0 bg-[linear-gradient(rgba(0,0,0,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(0,0,0,0.03)_1px,transparent_1px)] bg-[size:100px_100px] [mask-image:radial-gradient(ellipse_at_center,black,transparent_80%)]" />
+
+        {/* Hero images with higher opacity */}
+        <img src="/images/dashboard-hero.png" alt="" className="absolute top-[-5%] right-[-10%] w-[900px] h-auto object-cover opacity-25 transform rotate-12 drop-shadow-2xl mix-blend-multiply" />
+        <img src="/images/collaboration-hero.png" alt="" className="absolute bottom-[5%] left-[-10%] w-[900px] h-auto object-cover opacity-25 transform -rotate-12 drop-shadow-2xl mix-blend-multiply" />
+        
+        {/* Lively 3D blobs */}
         <motion.div 
-          animate={{
-            x: [0, 45, -25, 0],
-            y: [0, -35, 45, 0],
-            scale: [1, 1.08, 0.92, 1]
-          }}
-          transition={{
-            duration: 16,
-            repeat: Infinity,
-            ease: "easeInOut"
-          }}
-          className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-violet-100/60 blur-[135px] rounded-full" 
+          animate={{ x: [0, 80, -80, 0], y: [0, -80, 80, 0], scale: [1, 1.15, 0.85, 1], rotate: [0, 90, 180, 360] }}
+          transition={{ duration: 18, repeat: Infinity, ease: "linear" }}
+          className="absolute top-[5%] left-[-5%] w-[450px] h-[450px] bg-gradient-to-br from-violet-500/30 to-fuchsia-500/30 blur-[90px] rounded-full mix-blend-multiply"
         />
         <motion.div 
-          animate={{
-            x: [0, -35, 35, 0],
-            y: [0, 45, -35, 0],
-            scale: [1, 0.92, 1.08, 1]
-          }}
-          transition={{
-            duration: 18,
-            repeat: Infinity,
-            ease: "easeInOut",
-            delay: 2
-          }}
-          className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-indigo-100/60 blur-[135px] rounded-full" 
+          animate={{ x: [0, -100, 100, 0], y: [0, 100, -100, 0], scale: [1, 0.8, 1.2, 1], rotate: [360, 180, 90, 0] }}
+          transition={{ duration: 24, repeat: Infinity, ease: "linear" }}
+          className="absolute bottom-[15%] right-[-5%] w-[550px] h-[550px] bg-gradient-to-tr from-blue-500/30 to-emerald-500/30 blur-[100px] rounded-full mix-blend-multiply"
         />
         <motion.div 
-          animate={{
-            x: [-20, 20, -10, -20],
-            y: [20, -20, 10, 20],
-          }}
-          transition={{
-            duration: 22,
-            repeat: Infinity,
-            ease: "easeInOut",
-            delay: 1
-          }}
-          className="absolute top-[30%] left-[25%] w-[40%] h-[40%] bg-emerald-100/30 blur-[150px] rounded-full" 
+          animate={{ x: [-30, 40, -20, -30], y: [30, -40, 20, 30] }}
+          transition={{ duration: 20, repeat: Infinity, ease: "easeInOut" }}
+          className="absolute top-[35%] left-[30%] w-[350px] h-[350px] bg-gradient-to-r from-amber-400/20 to-orange-500/20 blur-[120px] rounded-full mix-blend-multiply"
         />
       </div>
 
@@ -301,13 +282,13 @@ export default function LandingContent() {
           {/* Desktop nav links */}
           <div className="hidden md:flex items-center gap-8">
             {navLinks.map(link => (
-              <a
+              <Link
                 key={link.label}
                 href={link.href}
                 className="text-sm font-semibold text-slate-500 hover:text-slate-900 transition-colors"
               >
                 {link.label}
-              </a>
+              </Link>
             ))}
           </div>
 
@@ -337,14 +318,14 @@ export default function LandingContent() {
             className="md:hidden bg-white border-t border-slate-200/80 px-6 py-4 space-y-3 shadow-xl"
           >
             {navLinks.map(link => (
-              <a
+              <Link
                 key={link.label}
                 href={link.href}
                 onClick={() => setMobileMenuOpen(false)}
                 className="block text-sm font-semibold text-slate-600 hover:text-violet-700 py-2 transition-colors"
               >
                 {link.label}
-              </a>
+              </Link>
             ))}
             <div className="flex flex-col gap-3 pt-3 border-t border-slate-100">
               <Link href="/login" className="text-center py-2.5 border border-slate-200 rounded-2xl text-sm font-bold text-slate-700 hover:bg-slate-50">
@@ -361,63 +342,7 @@ export default function LandingContent() {
       {/* ===== HERO SECTION ===== */}
       <section id="home" className="relative pt-40 pb-20 px-6 max-w-7xl mx-auto text-center z-10">
         
-        {/* Floating continuous motion cards */}
-        <div className="hidden xl:block">
-          {/* Left Floating Card */}
-          <motion.div
-            animate={{
-              y: [0, -15, 0, 15, 0],
-              x: [0, 8, 0, -8, 0],
-              rotate: [0, 1, 0, -1, 0]
-            }}
-            transition={{
-              duration: 8,
-              repeat: Infinity,
-              ease: "easeInOut"
-            }}
-            className="absolute left-[-5%] top-[35%] w-60 bg-white border border-slate-200 shadow-xl p-4 rounded-2xl flex items-center gap-3.5 text-left select-none"
-          >
-            <div className="w-10 h-10 rounded-xl bg-violet-100 flex items-center justify-center shrink-0 border border-violet-200">
-              <Sparkles className="w-5 h-5 text-violet-600 animate-pulse" />
-            </div>
-            <div>
-              <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">Active Roster</h4>
-              <p className="text-xs text-slate-900 font-bold mt-1">142 Capstones</p>
-              <span className="text-[9px] text-emerald-600 flex items-center gap-1 mt-1 font-medium">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" />
-                Tracking Active
-              </span>
-            </div>
-          </motion.div>
-
-          {/* Right Floating Card */}
-          <motion.div
-            animate={{
-              y: [0, 15, 0, -15, 0],
-              x: [0, -6, 0, 6, 0],
-              rotate: [0, -1.5, 0, 1.5, 0]
-            }}
-            transition={{
-              duration: 10,
-              repeat: Infinity,
-              ease: "easeInOut",
-              delay: 1.5
-            }}
-            className="absolute right-[-5%] top-[30%] w-64 bg-white border border-slate-200 shadow-xl p-4 rounded-2xl flex items-center gap-3.5 text-left select-none"
-          >
-            <div className="w-10 h-10 rounded-xl bg-emerald-100 flex items-center justify-center shrink-0 border border-emerald-200">
-              <Users className="w-5 h-5 text-emerald-600" />
-            </div>
-            <div>
-              <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">Industry Vetted</h4>
-              <p className="text-xs text-slate-900 font-bold mt-1">48 Trusted Sponsors</p>
-              <div className="flex gap-1.5 mt-2">
-                <span className="text-[8px] bg-slate-100 border border-slate-200 px-1.5 py-0.5 rounded font-medium text-slate-500">Microsoft</span>
-                <span className="text-[8px] bg-slate-100 border border-slate-200 px-1.5 py-0.5 rounded font-medium text-slate-500">Google AI</span>
-              </div>
-            </div>
-          </motion.div>
-        </div>
+        {/* Removed floating cards as requested */}
 
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -448,7 +373,7 @@ export default function LandingContent() {
               <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
             </Link>
             <a
-              href="#showcase"
+              href="#portals"
               className="px-8 py-4 bg-white rounded-full font-bold text-lg text-slate-700 hover:bg-slate-50 transition-all border border-slate-200 shadow-sm cursor-pointer"
             >
               Explore Sandbox Mode
@@ -505,16 +430,16 @@ export default function LandingContent() {
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                   <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200">
-                    <span className="text-xs text-slate-400 uppercase tracking-widest block font-bold">Overall Ranks</span>
-                    <span className="text-2xl font-black text-slate-900 mt-1 block">Roster Alpha</span>
+                    <span className="text-xs text-slate-400 uppercase tracking-widest block font-bold">Project Status</span>
+                    <span className="text-2xl font-black text-emerald-600 mt-1 block">On Track</span>
                   </div>
                   <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200">
                     <span className="text-xs text-slate-400 uppercase tracking-widest block font-bold">Vetted Milestones</span>
                     <span className="text-2xl font-black text-slate-900 mt-1 block">4 / 4 Completed</span>
                   </div>
                   <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200">
-                    <span className="text-xs text-slate-400 uppercase tracking-widest block font-bold">Current Standing</span>
-                    <span className="text-2xl font-black text-violet-600 mt-1 block">94.8% Grade (A+)</span>
+                    <span className="text-xs text-slate-400 uppercase tracking-widest block font-bold">Vetting Queue</span>
+                    <span className="text-2xl font-black text-violet-600 mt-1 block">0 Pending</span>
                   </div>
                 </div>
                 <div className="flex justify-between items-center text-xs text-slate-400 pt-2">
@@ -550,18 +475,18 @@ export default function LandingContent() {
           />
           <TimelineCard 
             stepNumber="Step 2"
-            phase="Roster Allocation"
-            desc="Instructors utilize advanced algorithms to calibrate cohorts and assign teams based on student GPA, skills preferences, and workload ratios. Faculty mentors are matched to direct engineering guidance."
+            phase="Supervisor Allocation"
+            desc="Administrators pair each individual student with a qualified Faculty Supervisor based on academic background and project scope. Students are notified immediately upon assignment and can begin their milestone journey."
           />
           <TimelineCard 
             stepNumber="Step 3"
             phase="Milestone Vetting"
-            desc="Teams execute standard milestones (UI Mockups, Design Specifications, Prototype Audits, Testing). Instructors grade and deliver granular feedback in real-time, enforcing rigid checkmarks."
+            desc="Students execute standard milestones (Proposal, Design Specifications, Prototype Audits, Testing). Supervisors grade and deliver granular feedback in real-time, enforcing rigid milestone checkpoints."
           />
           <TimelineCard 
             stepNumber="Step 4"
             phase="Final Demonstration"
-            desc="Graduating engineers demonstrate their prototype to university staff and industry sponsors. Grading matrices compile, achievements archive, and rosters close for ABET accreditation audits."
+            desc="Each student presents their completed senior project to university staff and industry supervisors. Grading matrices compile, achievements archive, and the project is formally signed off for accreditation review."
           />
         </div>
       </section>
@@ -591,14 +516,14 @@ export default function LandingContent() {
           <FeatureCard 
             icon={<Users className="w-6 h-6 text-emerald-600" />}
             iconBg="bg-emerald-50 border border-emerald-200"
-            title="Roster Balancing Allocator"
-            desc="Reduces administrative stress. Formulates balanced groups by considering student tech backgrounds, specific grading weights, and team-size constraints, eliminating manually negotiated sign-ups."
+            title="Supervisor Assignment Engine"
+            desc="Streamlines the admin workflow for pairing each individual student with the most qualified Faculty Supervisor. Automated email notifications ensure both students and supervisors are promptly informed of new assignments."
           />
           <FeatureCard 
             icon={<Shield className="w-6 h-6 text-indigo-600" />}
             iconBg="bg-indigo-50 border border-indigo-200"
             title="Evaluation & Rubric Engine"
-            desc="Enforces consistent grading schemas. Instructors define rubric items and threshold limits. The engine automatically aggregates peer assessments, sponsor metrics, and mentor evaluations."
+            desc="Enforces consistent grading schemas. Supervisors define rubric items and threshold limits. The engine automatically aggregates milestone grades and supervisor evaluations into a transparent final assessment."
           />
           <FeatureCard 
             icon={<Code2 className="w-6 h-6 text-pink-600" />}
@@ -630,14 +555,14 @@ export default function LandingContent() {
             subtitle="Focus on Engineering Excellence"
             badgeColor="text-violet-600"
             borderHover="hover:border-violet-300 hover:shadow-violet-100"
-            desc="Review vetted project requirements, coordinate files and deliverables easily, receive direct chat evaluations from your advisor, collaborate on Git workflows, and build an accredited career portfolio."
+            desc="Work independently on your senior project. Upload deliverables, track milestone progress, receive direct feedback from your assigned supervisor, and build an accredited academic portfolio."
           />
           <RoleCard 
             role="👨‍🏫 For Faculty & Instructors"
-            subtitle="Effortless Roster Management"
+            subtitle="Effortless Supervision Management"
             badgeColor="text-emerald-700"
             borderHover="hover:border-emerald-300 hover:shadow-emerald-100"
-            desc="Standardize class-wide syllabus thresholds, automate student team balancing, track milestone queues, score project phases with comprehensive grids, and generate audit documentation for accreditation."
+            desc="Receive instant notifications when a student is assigned to you. Review project proposals, grade milestone submissions, and provide structured feedback through a streamlined evaluation interface."
           />
           <RoleCard 
             role="🏢 For Industry Partners"
@@ -656,8 +581,8 @@ export default function LandingContent() {
         </div>
       </section>
 
-      {/* ===== SECTION 4: SHOWCASE AND STATISTICS ===== */}
-      <section id="showcase" className="py-32 px-6 max-w-7xl mx-auto relative z-10 border-t border-slate-200/80">
+      {/* ===== SECTION 4: SYSTEM STATISTICS ===== */}
+      <section id="statistics" className="py-32 px-6 max-w-7xl mx-auto relative z-10 border-t border-slate-200/80">
         <div className="text-center mb-16">
           <span className="inline-flex items-center gap-1.5 px-3 py-1 mb-4 text-xs font-semibold tracking-wider text-pink-700 uppercase bg-pink-50 border border-pink-200 rounded-full">
             <LineChart className="w-3.5 h-3.5" />
@@ -688,7 +613,7 @@ export default function LandingContent() {
             value="98.4%"
             label="Evaluation Accuracy"
             gradient="bg-gradient-to-r from-pink-600 to-rose-600"
-            desc="Our peer-assessment matrices and dynamic grading algorithms ensure clear, accredited evaluations, eliminating grading discrepancies."
+            desc="Our grading algorithms and structured milestone vetting ensure clear, accredited evaluations, eliminating grading discrepancies."
           />
         </div>
       </section>
@@ -718,8 +643,8 @@ export default function LandingContent() {
                   { icon: <GraduationCap className="w-5 h-5 text-violet-600" />, label: 'Lead Coordinator', value: 'Dr. Elizabeth Vance', bg: 'bg-violet-50' },
                   { icon: <Mail className="w-5 h-5 text-indigo-600" />, label: 'Email', value: 'e.vance@university.edu', bg: 'bg-indigo-50' },
                   { icon: <Phone className="w-5 h-5 text-emerald-600" />, label: 'Direct Line', value: '+1 (555) 012-3456', bg: 'bg-emerald-50' },
-                  { icon: <Clock className="w-5 h-5 text-amber-600" />, label: 'Office Hours', value: 'Mon–Fri, 9 AM – 4 PM', bg: 'bg-amber-50' },
-                  { icon: <MapPin className="w-5 h-5 text-pink-600" />, label: 'Office', value: 'Engineering Hall, Room 204', bg: 'bg-pink-50' },
+                  { icon: <Clock className="w-5 h-5 text-amber-600" />, label: 'System Support Status', value: 'Active', bg: 'bg-amber-50' },
+                  { icon: <MapPin className="w-5 h-5 text-pink-600" />, label: 'System Status', value: 'Online', bg: 'bg-pink-50' },
                 ].map((item) => (
                   <div key={item.label} className="flex items-start gap-4">
                     <div className={`w-10 h-10 ${item.bg} rounded-xl flex items-center justify-center shrink-0`}>
@@ -841,7 +766,6 @@ export default function LandingContent() {
                 <li><a href="#timeline" className="hover:text-slate-900 transition-colors">Process</a></li>
                 <li><a href="#features" className="hover:text-slate-900 transition-colors">Features</a></li>
                 <li><a href="#portals" className="hover:text-slate-900 transition-colors">Portals</a></li>
-                <li><a href="#showcase" className="hover:text-slate-900 transition-colors">Showcase</a></li>
                 <li><a href="#contact" className="hover:text-slate-900 transition-colors">Contact</a></li>
               </ul>
             </div>

@@ -5,6 +5,7 @@ export interface MockProfile {
   full_name: string
   role: 'student' | 'instructor' | 'industry' | 'admin'
   email: string
+  phone?: string
 }
 
 export interface MockProject {
@@ -16,6 +17,8 @@ export interface MockProject {
   industry_partner_id: string | null
   status: 'pending' | 'approved' | 'rejected'
   is_recommended: boolean
+  origin: 'student' | 'industry'
+  team_members: string[]
   created_at: string
 }
 
@@ -46,6 +49,8 @@ export interface MockNotification {
   message: string
   type: 'system' | 'deadline'
   is_read: boolean
+  action_url?: string
+  action_label?: string
   created_at: string
 }
 
@@ -68,13 +73,13 @@ export interface MockDbState {
 }
 
 const DEFAULT_PROFILES: MockProfile[] = [
-  { id: 'demo-student-id', full_name: 'Alex Carter', role: 'student', email: 'student@university.edu' },
-  { id: 'demo-instructor-id', full_name: 'Dr. Sarah Johnson', role: 'instructor', email: 'instructor@university.edu' },
-  { id: 'demo-industry-id', full_name: 'TechCorp Mentorship', role: 'industry', email: 'partner@techcorp.com' },
-  { id: 'demo-admin-id', full_name: 'Admin Admin', role: 'admin', email: 'admin@university.edu' },
+  { id: 'demo-student-id', full_name: 'Alex Carter', role: 'student', email: 'student@university.edu', phone: '+254712345678' },
+  { id: 'demo-instructor-id', full_name: 'Dr. Sarah Johnson', role: 'instructor', email: 'instructor@university.edu', phone: '+254723456789' },
+  { id: 'demo-industry-id', full_name: 'TechCorp Mentorship', role: 'industry', email: 'partner@techcorp.com', phone: '+254734567890' },
+  { id: 'demo-admin-id', full_name: 'Admin Admin', role: 'admin', email: 'admin@university.edu', phone: '+254745678901' },
   // Additional users to act as alternative contacts or student leads
-  { id: 'demo-student-2', full_name: 'Chloe Smith', role: 'student', email: 'chloe@university.edu' },
-  { id: 'demo-student-3', full_name: 'Marcus Miller', role: 'student', email: 'marcus@university.edu' }
+  { id: 'demo-student-2', full_name: 'Chloe Smith', role: 'student', email: 'chloe@university.edu', phone: '+254756789012' },
+  { id: 'demo-student-3', full_name: 'Marcus Miller', role: 'student', email: 'marcus@university.edu', phone: '+254767890123' }
 ]
 
 const DEFAULT_PROJECTS: MockProject[] = [
@@ -87,7 +92,22 @@ const DEFAULT_PROJECTS: MockProject[] = [
     industry_partner_id: 'demo-industry-id',
     status: 'pending',
     is_recommended: false,
+    origin: 'industry',
+    team_members: ['demo-student-id'],
     created_at: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString() // 1 day ago
+  },
+  {
+    id: 'demo-solo-project',
+    title: 'Student Portfolio Web Application',
+    description: 'A personal portfolio website built with Next.js and deployed on Vercel, showcasing academic projects and technical skills.',
+    student_id: 'demo-student-2',
+    instructor_id: 'demo-instructor-id',
+    industry_partner_id: null,
+    status: 'pending',
+    is_recommended: false,
+    origin: 'student',
+    team_members: ['demo-student-2'],
+    created_at: new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString()
   }
 ]
 
@@ -209,6 +229,20 @@ export function getDbState(): MockDbState {
         migrated = true
       }
     })
+    
+    // Auto-migrate individual project records for new schema fields
+    if (parsed.projects) {
+      parsed.projects.forEach((p: any) => {
+        if (!p.origin) {
+          p.origin = p.industry_partner_id ? 'industry' : 'student'
+          migrated = true
+        }
+        if (!p.team_members) {
+          p.team_members = p.student_id ? [p.student_id] : []
+          migrated = true
+        }
+      })
+    }
     
     if (migrated) {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(parsed))

@@ -57,17 +57,23 @@ export default function LoginPage() {
       return
     }
 
-    const { data: profile } = await supabase.from('profiles').select('role').single()
+    const { data: { user } } = await supabase.auth.getUser()
+    
+    let role = null
+    if (user) {
+      const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
+      role = profile?.role
+    }
 
-    if (profile?.role) {
-      if (profile.role === 'student') {
+    if (role) {
+      if (role === 'student') {
         router.push('/student/dashboard')
-      } else if (profile.role === 'instructor') {
+      } else if (role === 'instructor') {
         router.push('/instructor/dashboard')
-      } else if (profile.role === 'industry') {
+      } else if (role === 'industry') {
         router.push('/partner/dashboard')
       } else {
-        router.push(`/${profile.role}`)
+        router.push(`/${role}`)
       }
     } else {
       router.push('/')

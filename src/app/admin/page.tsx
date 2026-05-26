@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import DashboardLayout from '@/components/dashboard/DashboardLayout'
+import { createAnnouncementNotifications } from '@/lib/notifications/notificationService'
 import { 
   Users, 
   Activity, 
