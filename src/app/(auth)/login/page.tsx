@@ -23,19 +23,15 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false)
 
   const startSandbox = (role: string) => {
+    let resolvedRole = role
+    if (role === 'industry') resolvedRole = 'partner'
+    if (role === 'admin') resolvedRole = 'instructor'
+
     document.cookie = `demo_mode=true; path=/`
-    document.cookie = `demo_role=${role}; path=/`
+    document.cookie = `demo_role=${resolvedRole}; path=/`
     if (typeof window !== 'undefined') {
       localStorage.setItem('demo_mode', 'true')
-      if (role === 'student') {
-        window.location.href = '/student/dashboard'
-      } else if (role === 'instructor') {
-        window.location.href = '/instructor/dashboard'
-      } else if (role === 'industry') {
-        window.location.href = '/partner/dashboard'
-      } else {
-        window.location.href = `/${role}`
-      }
+      window.location.href = `/dashboard/${resolvedRole}`
     }
   }
 
@@ -66,15 +62,10 @@ export default function LoginPage() {
     }
 
     if (role) {
-      if (role === 'student') {
-        router.push('/student/dashboard')
-      } else if (role === 'instructor') {
-        router.push('/instructor/dashboard')
-      } else if (role === 'industry') {
-        router.push('/partner/dashboard')
-      } else {
-        router.push(`/${role}`)
-      }
+      let resolvedRole = role
+      if (role === 'industry') resolvedRole = 'partner'
+      if (role === 'admin') resolvedRole = 'instructor'
+      router.push(`/dashboard/${resolvedRole}`)
     } else {
       router.push('/')
     }
@@ -269,9 +260,9 @@ export default function LoginPage() {
             <div className="grid grid-cols-2 gap-3 mb-2">
               {[
                 { label: '🎓 Student', role: 'student', color: 'hover:border-violet-400 hover:bg-violet-50' },
-                { label: '👨‍🏫 Instructor', role: 'instructor', color: 'hover:border-emerald-400 hover:bg-emerald-50' },
-                { label: '🏢 Industry Partner', role: 'industry', color: 'hover:border-indigo-400 hover:bg-indigo-50' },
-                { label: '🛠️ Administrator', role: 'admin', color: 'hover:border-amber-400 hover:bg-amber-50' }
+                { label: '👨‍🏫 Coordinator', role: 'instructor', color: 'hover:border-emerald-400 hover:bg-emerald-50' },
+                { label: '🔍 Supervisor', role: 'supervisor', color: 'hover:border-amber-400 hover:bg-amber-50' },
+                { label: '🏢 Partner', role: 'partner', color: 'hover:border-indigo-400 hover:bg-indigo-50' }
               ].map((b) => (
                 <button
                   key={b.role}

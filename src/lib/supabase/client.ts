@@ -1,13 +1,18 @@
 import { createBrowserClient } from '@supabase/ssr'
+import { createMockClient } from './mockClient'
 
 export function createClient() {
-  // Ensure Supabase credentials are provided
-  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
-    throw new Error('Supabase environment variables are missing. Please set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY.')
+  const isDemo = typeof window !== 'undefined' && 
+    (document.cookie.includes('demo_mode=true') || 
+     !process.env.NEXT_PUBLIC_SUPABASE_URL || 
+     !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)
+
+  if (isDemo) {
+    return createMockClient() as any
   }
 
   return createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   )
 }

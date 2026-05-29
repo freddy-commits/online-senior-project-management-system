@@ -3,7 +3,7 @@
 export interface MockProfile {
   id: string
   full_name: string
-  role: 'student' | 'instructor' | 'industry' | 'admin'
+  role: 'student' | 'instructor' | 'supervisor' | 'partner'
   email: string
   phone?: string
 }
@@ -13,12 +13,11 @@ export interface MockProject {
   title: string
   description: string
   student_id: string
-  instructor_id: string | null
-  industry_partner_id: string | null
+  supervisor_id: string | null
+  partner_id: string | null // Nullable for internal academic projects
   status: 'pending' | 'approved' | 'rejected'
-  is_recommended: boolean
   origin: 'student' | 'industry'
-  team_members: string[]
+  final_grade: string | null
   created_at: string
 }
 
@@ -28,8 +27,9 @@ export interface MockDeliverable {
   title: string
   description: string
   submission_url?: string
-  status: 'todo' | 'submitted' | 'graded'
-  grade?: string
+  status: 'todo' | 'submitted' | 'awaiting_partner' | 'partner_approved' | 'completed'
+  feedback_supervisor?: string
+  feedback_partner?: string
   due_date?: string
   created_at: string
 }
@@ -59,7 +59,7 @@ export interface MockAnnouncement {
   title: string
   content: string
   is_pinned: boolean
-  target_role: 'all' | 'student' | 'instructor' | 'industry'
+  target_role: 'all' | 'student' | 'instructor' | 'supervisor' | 'partner'
   created_at: string
 }
 
@@ -75,9 +75,9 @@ export interface MockDbState {
 const DEFAULT_PROFILES: MockProfile[] = [
   { id: 'demo-student-id', full_name: 'Alex Carter', role: 'student', email: 'student@university.edu', phone: '+254712345678' },
   { id: 'demo-instructor-id', full_name: 'Dr. Sarah Johnson', role: 'instructor', email: 'instructor@university.edu', phone: '+254723456789' },
-  { id: 'demo-industry-id', full_name: 'TechCorp Mentorship', role: 'industry', email: 'partner@techcorp.com', phone: '+254734567890' },
-  { id: 'demo-admin-id', full_name: 'Admin Admin', role: 'admin', email: 'admin@university.edu', phone: '+254745678901' },
-  // Additional users to act as alternative contacts or student leads
+  { id: 'demo-supervisor-id', full_name: 'Dr. Robert Miller', role: 'supervisor', email: 'supervisor@university.edu', phone: '+254756123456' },
+  { id: 'demo-partner-id', full_name: 'TechCorp Mentorship', role: 'partner', email: 'partner@techcorp.com', phone: '+254734567890' },
+  // Additional users to act as alternative student contacts
   { id: 'demo-student-2', full_name: 'Chloe Smith', role: 'student', email: 'chloe@university.edu', phone: '+254756789012' },
   { id: 'demo-student-3', full_name: 'Marcus Miller', role: 'student', email: 'marcus@university.edu', phone: '+254767890123' }
 ]
@@ -88,12 +88,11 @@ const DEFAULT_PROJECTS: MockProject[] = [
     title: 'AI-Powered Healthcare Dashboard',
     description: 'An interactive web application leveraging machine learning models to predict patient readmission rates and optimize staffing configurations.',
     student_id: 'demo-student-id',
-    instructor_id: 'demo-instructor-id',
-    industry_partner_id: 'demo-industry-id',
-    status: 'pending',
-    is_recommended: false,
+    supervisor_id: 'demo-supervisor-id',
+    partner_id: 'demo-partner-id',
+    status: 'approved',
     origin: 'industry',
-    team_members: ['demo-student-id'],
+    final_grade: null,
     created_at: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString() // 1 day ago
   },
   {
@@ -101,12 +100,11 @@ const DEFAULT_PROJECTS: MockProject[] = [
     title: 'Student Portfolio Web Application',
     description: 'A personal portfolio website built with Next.js and deployed on Vercel, showcasing academic projects and technical skills.',
     student_id: 'demo-student-2',
-    instructor_id: 'demo-instructor-id',
-    industry_partner_id: null,
+    supervisor_id: 'demo-supervisor-id',
+    partner_id: null, // Internal academic project
     status: 'pending',
-    is_recommended: false,
     origin: 'student',
-    team_members: ['demo-student-2'],
+    final_grade: null,
     created_at: new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString()
   }
 ]
@@ -139,13 +137,23 @@ const DEFAULT_DELIVERABLES: MockDeliverable[] = [
     status: 'todo',
     due_date: new Date(Date.now() + 40 * 24 * 60 * 60 * 1000).toISOString(),
     created_at: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
+  },
+  // Solo project deliverables
+  {
+    id: 'deliv-solo-1',
+    project_id: 'demo-solo-project',
+    title: 'Project Proposal',
+    description: 'Initial project scope, requirements, and tech stack options.',
+    status: 'todo',
+    due_date: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000).toISOString(),
+    created_at: new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString()
   }
 ]
 
 const DEFAULT_MESSAGES: MockMessage[] = [
   {
     id: 'msg-1',
-    sender_id: 'demo-instructor-id',
+    sender_id: 'demo-supervisor-id',
     receiver_id: 'demo-student-id',
     content: 'Welcome to the Senior Project portal! I will review your proposal by the end of the week. Please prepare your system architecture in the meantime.',
     created_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString() // 2 hours ago
@@ -201,7 +209,7 @@ if (typeof global !== 'undefined') {
 
 // Helpers for localStorage environment detection
 const isClient = typeof window !== 'undefined'
-const STORAGE_KEY = 'seniorproj_sandbox_db'
+const STORAGE_KEY = 'seniorproj_sandbox_db_v2'
 
 export function getDbState(): MockDbState {
   if (!isClient) {
@@ -220,7 +228,7 @@ export function getDbState(): MockDbState {
       return INITIAL_STATE
     }
     
-    // Auto-migrate: merge missing tables (like announcements) into existing state
+    // Auto-migrate: merge missing tables into existing state
     const parsed = JSON.parse(data)
     let migrated = false
     Object.keys(INITIAL_STATE).forEach(key => {
@@ -232,15 +240,31 @@ export function getDbState(): MockDbState {
     
     // Auto-migrate individual project records for new schema fields
     if (parsed.projects) {
-      parsed.projects.forEach((p: any) => {
-        if (!p.origin) {
-          p.origin = p.industry_partner_id ? 'industry' : 'student'
+      parsed.projects = parsed.projects.map((p: any) => {
+        let singleProjMigrated = false
+        const updated = { ...p }
+        if (!updated.origin) {
+          updated.origin = updated.partner_id || updated.industry_partner_id ? 'industry' : 'student'
+          singleProjMigrated = true
+        }
+        if (updated.instructor_id !== undefined) {
+          updated.supervisor_id = updated.instructor_id || updated.supervisor_id || null
+          delete updated.instructor_id
+          singleProjMigrated = true
+        }
+        if (updated.industry_partner_id !== undefined) {
+          updated.partner_id = updated.industry_partner_id || updated.partner_id || null
+          delete updated.industry_partner_id
+          singleProjMigrated = true
+        }
+        if (updated.team_members !== undefined) {
+          delete updated.team_members
+          singleProjMigrated = true
+        }
+        if (singleProjMigrated) {
           migrated = true
         }
-        if (!p.team_members) {
-          p.team_members = p.student_id ? [p.student_id] : []
-          migrated = true
-        }
+        return updated
       })
     }
     
@@ -297,10 +321,12 @@ export function resetDbState() {
 }
 
 // Global active user in cookie helper
-export function getActiveMockRole(): 'student' | 'instructor' | 'industry' | 'admin' {
+export function getActiveMockRole(): 'student' | 'instructor' | 'supervisor' | 'partner' {
   if (!isClient) return 'student'
   const match = document.cookie.match(/^(.*;)?\s*demo_role\s*=\s*([^;]+)(.*)?$/)
-  return (match ? match[2] : 'student') as any
+  const role = match ? match[2] : 'student'
+  if (role === 'industry') return 'partner' // backward compatibility mapping
+  return role as any
 }
 
 export function getActiveMockUser(): MockProfile {

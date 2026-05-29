@@ -30,15 +30,7 @@ export default function RegisterPage() {
     document.cookie = `demo_role=${role}; path=/`
     if (typeof window !== 'undefined') {
       localStorage.setItem('demo_mode', 'true')
-      if (role === 'student') {
-        window.location.href = '/student/dashboard'
-      } else if (role === 'instructor') {
-        window.location.href = '/instructor/dashboard'
-      } else if (role === 'industry') {
-        window.location.href = '/partner/dashboard'
-      } else {
-        window.location.href = `/${role}`
-      }
+      window.location.href = `/dashboard/${role}`
     }
   }
 
@@ -77,23 +69,15 @@ export default function RegisterPage() {
         role: selectedRole 
       }).eq('id', data.user.id)
 
-      if (selectedRole === 'student') {
-        router.push('/student/dashboard')
-      } else if (selectedRole === 'instructor') {
-        router.push('/instructor/dashboard')
-      } else if (selectedRole === 'industry') {
-        router.push('/partner/dashboard')
-      } else {
-        router.push(`/${selectedRole}`)
-      }
+      router.push(`/dashboard/${selectedRole}`)
     }
   }
 
   const roles = [
-    { id: 'student', title: 'Student', icon: <GraduationCap className="w-5 h-5" />, desc: 'Join teams & submit deliverables' },
-    { id: 'instructor', title: 'Instructor', icon: <Users className="w-5 h-5" />, desc: 'Mentor teams & grade milestones' },
-    { id: 'industry', title: 'Industry Partner', icon: <Building2 className="w-5 h-5" />, desc: 'Sponsor & propose final projects' },
-    { id: 'admin', title: 'Admin', icon: <ShieldCheck className="w-5 h-5" />, desc: 'Configure system & rosters' },
+    { id: 'student', title: 'Student', icon: <GraduationCap className="w-5 h-5" />, desc: 'Submit deliverables & track milestones' },
+    { id: 'supervisor', title: 'Supervisor', icon: <Users className="w-5 h-5" />, desc: 'Guide students & review progress' },
+    { id: 'instructor', title: 'Instructor', icon: <ShieldCheck className="w-5 h-5" />, desc: 'Manage courses & grade milestones' },
+    { id: 'partner', title: 'Industry Partner', icon: <Building2 className="w-5 h-5" />, desc: 'Sponsor & propose capstone projects' },
   ]
 
   return (
@@ -334,9 +318,9 @@ export default function RegisterPage() {
             <div className="grid grid-cols-2 gap-3">
               {[
                 { label: '🎓 Student', role: 'student', color: 'hover:border-violet-400 hover:bg-violet-50' },
-                { label: '👨‍🏫 Instructor', role: 'instructor', color: 'hover:border-emerald-400 hover:bg-emerald-50' },
-                { label: '🏢 Industry Partner', role: 'industry', color: 'hover:border-indigo-400 hover:bg-indigo-50' },
-                { label: '🛠️ Administrator', role: 'admin', color: 'hover:border-amber-400 hover:bg-amber-50' }
+                { label: '👨‍🏫 Supervisor', role: 'supervisor', color: 'hover:border-emerald-400 hover:bg-emerald-50' },
+                { label: '📋 Instructor', role: 'instructor', color: 'hover:border-indigo-400 hover:bg-indigo-50' },
+                { label: '🏢 Industry Partner', role: 'partner', color: 'hover:border-amber-400 hover:bg-amber-50' }
               ].map((b) => (
                 <button
                   key={b.role}

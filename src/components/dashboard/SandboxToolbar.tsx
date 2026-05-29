@@ -42,13 +42,13 @@ export default function SandboxToolbar() {
     document.cookie = `demo_role=${role}; path=/`
     localStorage.setItem('demo_mode', 'true')
     if (role === 'student') {
-      window.location.href = '/student/dashboard'
+      window.location.href = '/dashboard/student'
     } else if (role === 'instructor') {
-      window.location.href = '/instructor/dashboard'
+      window.location.href = '/dashboard/instructor'
     } else if (role === 'industry') {
-      window.location.href = '/partner/dashboard'
+      window.location.href = '/dashboard/partner'
     } else {
-      window.location.href = `/${role}`
+      window.location.href = `/dashboard/${role}`
     }
   }
 

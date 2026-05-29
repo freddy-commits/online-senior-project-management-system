@@ -31,7 +31,6 @@ class MockQueryBuilder {
   }
 
   or(expr: string) {
-    // Example: and(sender_id.eq.id,receiver_id.eq.id),and(sender_id.eq.id,receiver_id.eq.id)
     this.filters.push(item => {
       const match = expr.match(/[a-zA-Z0-9-]{5,}/g) || []
       if (match.length >= 4) {
@@ -92,10 +91,12 @@ class MockQueryBuilder {
           const cloned = { ...item }
           if (this.tableName === 'projects') {
             const student = state.profiles.find(p => p.id === item.student_id)
-            const instructor = state.profiles.find(p => p.id === item.instructor_id)
-            cloned.student = student ? { full_name: student.full_name } : null
-            cloned.instructor = instructor ? { full_name: instructor.full_name } : null
-            cloned.profiles = instructor ? { full_name: instructor.full_name } : null
+            const supervisor = state.profiles.find(p => p.id === item.supervisor_id)
+            const partner = state.profiles.find(p => p.id === item.partner_id)
+            cloned.student = student ? { full_name: student.full_name, email: student.email } : null
+            cloned.supervisor = supervisor ? { full_name: supervisor.full_name, email: supervisor.email } : null
+            cloned.partner = partner ? { full_name: partner.full_name, email: partner.email } : null
+            cloned.profiles = supervisor ? { full_name: supervisor.full_name, email: supervisor.email } : null // backward compatibility mapping
           }
           return cloned
         })
@@ -200,14 +201,18 @@ export function createMockClient() {
 
       async signInWithPassword({ email, role = 'student' }: { email: string, role?: string }) {
         const state = getDbState()
+        let resolvedRole = role
+        if (role === 'industry') resolvedRole = 'partner'
+        if (role === 'admin') resolvedRole = 'instructor'
+
         let user = state.profiles.find(p => p.email === email)
         
         if (!user) {
           // Auto create user in mock database to avoid errors
           user = {
-            id: `demo-${role}-${Math.random().toString(36).substring(2, 9)}`,
+            id: `demo-${resolvedRole}-${Math.random().toString(36).substring(2, 9)}`,
             full_name: email.split('@')[0].toUpperCase(),
-            role: role as any,
+            role: resolvedRole as any,
             email: email
           }
           state.profiles.push(user)
@@ -224,7 +229,9 @@ export function createMockClient() {
       async signUp({ email, password, options }: any) {
         const state = getDbState()
         const fullName = options?.data?.full_name || email.split('@')[0]
-        const role = options?.data?.role || 'student'
+        let role = options?.data?.role || 'student'
+        if (role === 'industry') role = 'partner'
+        if (role === 'admin') role = 'instructor'
 
         const newUser: MockProfile = {
           id: `demo-${role}-${Math.random().toString(36).substring(2, 9)}`,

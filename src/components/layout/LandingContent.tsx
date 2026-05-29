@@ -1,291 +1,96 @@
 'use client'
 
-import { motion, useScroll, useTransform } from 'framer-motion'
+import { useState, PointerEvent } from 'react'
+import { motion } from 'framer-motion'
 import Link from 'next/link'
-import { useRef, useState, useEffect } from 'react'
 import { 
   ArrowRight, 
-  Rocket, 
   Shield, 
-  Users, 
-  Code2, 
   Sparkles, 
   Workflow, 
-  Layout, 
-  Target, 
-  LineChart,
-  Mail,
-  Phone,
-  MapPin,
-  Clock,
-  Send,
-  CheckCircle2,
-  Building2,
-  GraduationCap,
-  Menu,
+  CheckCircle2, 
+  Building, 
+  GraduationCap, 
+  Menu, 
   X,
-  Bell
+  UserCheck,
+  ShieldAlert,
+  Award,
+  Layers
 } from 'lucide-react'
 
-// --- REUSABLE TYPEWRITER TEXT ENGINE ---
-interface TypewriterTextProps {
-  text: string;
-  isHovered: boolean;
-  speed?: number;
-}
-
-function TypewriterText({ text, isHovered, speed = 35 }: TypewriterTextProps) {
-  const [displayedText, setDisplayedText] = useState(text)
-  const [hasPlayed, setHasPlayed] = useState(false)
-
-  useEffect(() => {
-    if (!isHovered) {
-      setDisplayedText(text)
-      return
-    }
-
-    if (hasPlayed) return
-
-    const timeout = setTimeout(() => {
-      setDisplayedText("")
-      let currentIndex = 0
-      const interval = setInterval(() => {
-        if (currentIndex < text.length) {
-          setDisplayedText(text.slice(0, currentIndex + 1))
-          currentIndex++
-        } else {
-          clearInterval(interval)
-          setHasPlayed(true)
-        }
-      }, speed)
-
-      return () => clearInterval(interval)
-    }, 1000)
-
-    return () => clearTimeout(timeout)
-  }, [isHovered, text, speed, hasPlayed])
-
-  useEffect(() => {
-    if (!isHovered) {
-      setHasPlayed(false)
-    }
-  }, [isHovered])
-
-  return (
-    <span className="relative inline-block w-full text-slate-500">
-      {displayedText}
-      {isHovered && !hasPlayed && <span className="inline-block w-1.5 h-4 ml-0.5 bg-violet-600 animate-pulse align-middle" />}
-    </span>
-  )
-}
-
-// --- SYSTEM PROCESS: TIMELINE CARD ---
-interface TimelineCardProps {
-  phase: string;
-  stepNumber: string;
-  desc: string;
-}
-
-function TimelineCard({ phase, stepNumber, desc }: TimelineCardProps) {
-  const [hovered, setHovered] = useState(false)
-  return (
-    <div 
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-      className="p-6 md:p-8 rounded-[2rem] bg-white border border-slate-200/80 hover:border-violet-300 hover:shadow-lg hover:shadow-violet-100 transition-all flex flex-col justify-between min-h-[17rem] relative select-none shadow-sm cursor-pointer"
-    >
-      <div>
-        <div className="flex justify-between items-center mb-4">
-          <span className="text-violet-600 text-xs font-black uppercase tracking-widest bg-violet-50 px-3 py-1 rounded-full border border-violet-100">
-            {stepNumber}
-          </span>
-          <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">
-            Flow State
-          </span>
-        </div>
-        <h3 className="text-xl font-bold text-slate-900 mb-4">{phase}</h3>
-      </div>
-      <p className="text-slate-500 text-sm leading-relaxed min-h-[6.5rem]">
-        <TypewriterText text={desc} isHovered={hovered} />
-      </p>
-    </div>
-  )
-}
-
-// --- CORE CAPABILITIES: FEATURE CARD ---
-interface FeatureCardProps {
-  icon: React.ReactNode;
-  title: string;
-  desc: string;
-  iconBg: string;
-}
-
-function FeatureCard({ icon, title, desc, iconBg }: FeatureCardProps) {
-  const [hovered, setHovered] = useState(false)
-  return (
-    <div 
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-      className="p-8 rounded-[2rem] bg-white border border-slate-200/80 hover:border-violet-200 hover:shadow-lg hover:shadow-violet-50 transition-all select-none group min-h-[17rem] shadow-sm cursor-pointer"
-    >
-      <div className={`w-12 h-12 rounded-2xl ${iconBg} flex items-center justify-center mb-6 group-hover:scale-105 transition-transform`}>
-        {icon}
-      </div>
-      <h3 className="text-xl font-bold mb-4 text-slate-900">{title}</h3>
-      <p className="text-slate-500 text-sm leading-relaxed min-h-[6.5rem]">
-        <TypewriterText text={desc} isHovered={hovered} />
-      </p>
-    </div>
-  )
-}
-
-// --- PORTAL VALUE PROPOSITIONS: ROLE CARD ---
-interface RoleCardProps {
-  role: string;
-  subtitle: string;
-  desc: string;
-  badgeColor: string;
-  borderHover: string;
-}
-
-function RoleCard({ role, subtitle, desc, badgeColor, borderHover }: RoleCardProps) {
-  const [hovered, setHovered] = useState(false)
-  return (
-    <div 
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-      className={`p-8 rounded-[2.5rem] bg-white border border-slate-200/80 ${borderHover} hover:shadow-lg transition-all select-none min-h-[16rem] shadow-sm cursor-pointer`}
-    >
-      <span className={`text-[10px] font-black uppercase tracking-wider block mb-2 ${badgeColor}`}>
-        Platform Persona
-      </span>
-      <h3 className="text-2xl font-black text-slate-900 leading-none">{role}</h3>
-      <div className="text-slate-500 font-bold text-sm mt-1.5 mb-4">{subtitle}</div>
-      <p className="text-slate-500 text-sm leading-relaxed min-h-[6.5rem]">
-        <TypewriterText text={desc} isHovered={hovered} />
-      </p>
-    </div>
-  )
-}
-
-// --- STATISTICS SHOWCASE: METRIC CARD ---
-interface MetricCardProps {
-  value: string;
-  label: string;
-  desc: string;
-  gradient: string;
-}
-
-function MetricCard({ value, label, desc, gradient }: MetricCardProps) {
-  const [hovered, setHovered] = useState(false)
-  return (
-    <div 
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-      className="p-8 rounded-[2rem] bg-white border border-slate-200/80 hover:border-violet-200 hover:shadow-lg transition-all text-center select-none min-h-[14rem] shadow-sm cursor-pointer"
-    >
-      <div className={`text-4xl lg:text-5xl font-black text-transparent bg-clip-text ${gradient} mb-2`}>
-        {value}
-      </div>
-      <h4 className="text-slate-900 font-bold text-base mb-3">{label}</h4>
-      <p className="text-slate-500 text-xs leading-relaxed min-h-[5rem]">
-        <TypewriterText text={desc} isHovered={hovered} speed={30} />
-      </p>
-    </div>
-  )
-}
-
-// --- MAIN LANDING CONTENT EXPORT ---
 export default function LandingContent() {
-  const containerRef = useRef<HTMLDivElement>(null)
-  const { scrollYProgress } = useScroll({
-    target: containerRef,
-    offset: ['start start', 'end start']
-  })
-
-  const y1 = useTransform(scrollYProgress, [0, 1], [0, 200])
-  const y2 = useTransform(scrollYProgress, [0, 1], [0, -150])
-  
-  const [heroHovered, setHeroHovered] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-  const [contactForm, setContactForm] = useState({ name: '', email: '', message: '' })
-  const [contactSent, setContactSent] = useState(false)
-
-  const heroSubtitle = "A premium management system designed for the next generation of engineers, researchers, and industry leaders. Project Hub streamlines your academic requirements and deliverables in one integrated space."
+  const [heroTilt, setHeroTilt] = useState({ x: 0, y: 0 })
 
   const startSandbox = (role: string) => {
     document.cookie = `demo_mode=true; path=/`
     document.cookie = `demo_role=${role}; path=/`
     if (typeof window !== 'undefined') {
       localStorage.setItem('demo_mode', 'true')
-      window.location.href = `/${role}`
+      window.location.href = `/dashboard/${role}`
     }
   }
 
-  const handleContactSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    setContactSent(true)
-    setContactForm({ name: '', email: '', message: '' })
-    setTimeout(() => setContactSent(false), 4000)
+  const updateHeroTilt = (event: PointerEvent<HTMLDivElement>) => {
+    const rect = event.currentTarget.getBoundingClientRect()
+    const x = ((event.clientX - rect.left) / rect.width - 0.5) * 24
+    const y = ((event.clientY - rect.top) / rect.height - 0.5) * -24
+    setHeroTilt({ x, y })
+  }
+
+  const resetHeroTilt = () => {
+    setHeroTilt({ x: 0, y: 0 })
   }
 
   const navLinks = [
     { label: 'Home', href: '#' },
-    { label: 'Process', href: '#timeline' },
-    { label: 'Features', href: '#features' },
-    { label: 'Portals', href: '#portals' },
-    { label: 'Contact', href: '#contact' },
+    { label: 'Academic Flow', href: '#workflow' },
+    { label: 'Personas', href: '#personas' },
   ]
 
   return (
-    <div ref={containerRef} className="relative min-h-screen bg-[#f8fafc] text-slate-900 overflow-hidden font-sans">
+    <div className="relative min-h-screen bg-[#070a13] text-slate-100 overflow-hidden font-sans">
       
-      {/* Subtle animated background orbs and pictures behind the world */}
+      {/* Background Mesh Gradients */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
-        {/* Animated grid */}
-        <div className="absolute inset-0 bg-[linear-gradient(rgba(0,0,0,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(0,0,0,0.03)_1px,transparent_1px)] bg-[size:100px_100px] [mask-image:radial-gradient(ellipse_at_center,black,transparent_80%)]" />
-
-        {/* Hero images with higher opacity */}
-        <img src="/images/dashboard-hero.png" alt="" className="absolute top-[-5%] right-[-10%] w-[900px] h-auto object-cover opacity-25 transform rotate-12 drop-shadow-2xl mix-blend-multiply" />
-        <img src="/images/collaboration-hero.png" alt="" className="absolute bottom-[5%] left-[-10%] w-[900px] h-auto object-cover opacity-25 transform -rotate-12 drop-shadow-2xl mix-blend-multiply" />
+        <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.015)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.015)_1px,transparent_1px)] bg-[size:60px_60px] [mask-image:radial-gradient(ellipse_at_center,black,transparent_75%)]" />
         
-        {/* Lively 3D blobs */}
         <motion.div 
-          animate={{ x: [0, 80, -80, 0], y: [0, -80, 80, 0], scale: [1, 1.15, 0.85, 1], rotate: [0, 90, 180, 360] }}
-          transition={{ duration: 18, repeat: Infinity, ease: "linear" }}
-          className="absolute top-[5%] left-[-5%] w-[450px] h-[450px] bg-gradient-to-br from-violet-500/30 to-fuchsia-500/30 blur-[90px] rounded-full mix-blend-multiply"
+          animate={{ x: [0, 50, -50, 0], y: [0, -50, 50, 0], scale: [1, 1.1, 0.9, 1] }}
+          transition={{ duration: 15, repeat: Infinity, ease: "linear" }}
+          className="absolute top-[10%] left-[-5%] w-[500px] h-[500px] bg-gradient-to-br from-violet-600/10 to-indigo-600/10 blur-[130px] rounded-full"
         />
         <motion.div 
-          animate={{ x: [0, -100, 100, 0], y: [0, 100, -100, 0], scale: [1, 0.8, 1.2, 1], rotate: [360, 180, 90, 0] }}
-          transition={{ duration: 24, repeat: Infinity, ease: "linear" }}
-          className="absolute bottom-[15%] right-[-5%] w-[550px] h-[550px] bg-gradient-to-tr from-blue-500/30 to-emerald-500/30 blur-[100px] rounded-full mix-blend-multiply"
-        />
-        <motion.div 
-          animate={{ x: [-30, 40, -20, -30], y: [30, -40, 20, 30] }}
-          transition={{ duration: 20, repeat: Infinity, ease: "easeInOut" }}
-          className="absolute top-[35%] left-[30%] w-[350px] h-[350px] bg-gradient-to-r from-amber-400/20 to-orange-500/20 blur-[120px] rounded-full mix-blend-multiply"
+          animate={{ x: [0, -50, 50, 0], y: [0, 50, -50, 0], scale: [1, 0.9, 1.1, 1] }}
+          transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+          className="absolute bottom-[10%] right-[-5%] w-[600px] h-[600px] bg-gradient-to-tr from-indigo-600/10 to-emerald-600/5 blur-[150px] rounded-full"
         />
       </div>
 
-      {/* ===== HEADER ===== */}
-      <header className="fixed top-0 w-full z-50 border-b border-slate-200/80 bg-white/80 backdrop-blur-xl shadow-sm">
+      {/* Header */}
+      <header className="fixed top-0 w-full z-50 border-b border-slate-800/40 bg-slate-950/60 backdrop-blur-2xl shadow-sm">
         <nav className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2.5 group">
-            <div className="w-10 h-10 bg-gradient-to-br from-violet-600 to-indigo-700 rounded-xl flex items-center justify-center shadow-lg shadow-violet-500/20 group-hover:scale-105 transition-transform">
-              <span className="text-white font-black text-xl">P</span>
+            <div className="w-10 h-10 bg-gradient-to-br from-violet-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-violet-500/20 group-hover:scale-105 transition-transform">
+              <span className="text-white font-extrabold text-xl">P</span>
             </div>
-            <span className="text-xl font-bold tracking-tight text-slate-900 group-hover:text-violet-700 transition-colors">
-              Project Hub
-            </span>
+            <div className="flex flex-col">
+              <span className="text-sm font-black tracking-tight text-white leading-tight">
+                GRADUATE HUB
+              </span>
+              <span className="text-[8px] text-slate-400 font-semibold tracking-wider">
+                ACADEMIC GOVERNANCE
+              </span>
+            </div>
           </Link>
           
-          {/* Desktop nav links */}
           <div className="hidden md:flex items-center gap-8">
             {navLinks.map(link => (
               <Link
                 key={link.label}
                 href={link.href}
-                className="text-sm font-semibold text-slate-500 hover:text-slate-900 transition-colors"
+                className="text-xs font-black uppercase tracking-widest text-slate-400 hover:text-white transition-colors"
               >
                 {link.label}
               </Link>
@@ -293,505 +98,299 @@ export default function LandingContent() {
           </div>
 
           <div className="hidden md:flex items-center gap-4">
-            <Link href="/login" className="px-5 py-2 text-sm font-bold text-slate-600 hover:text-slate-900 transition-colors">
+            <Link href="/login" className="px-5 py-2 text-xs font-black uppercase tracking-widest text-slate-300 hover:text-white transition-colors">
               Log In
             </Link>
-            <Link href="/register" className="px-5 py-2.5 bg-slate-900 text-white text-sm font-bold rounded-full hover:bg-violet-700 transition-all shadow-lg shadow-slate-900/10">
-              Get Started
+            <Link href="/register" className="px-5 py-2.5 bg-white text-slate-950 text-xs font-black uppercase tracking-widest rounded-xl hover:bg-slate-100 transition-all shadow-md">
+              Register
             </Link>
           </div>
 
-          {/* Mobile hamburger */}
           <button
-            className="md:hidden p-2 hover:bg-slate-100 rounded-xl transition-colors"
+            className="md:hidden p-2 hover:bg-slate-900 border border-transparent hover:border-slate-800 rounded-xl transition-colors"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
           >
-            {mobileMenuOpen ? <X className="w-6 h-6 text-slate-600" /> : <Menu className="w-6 h-6 text-slate-600" />}
+            {mobileMenuOpen ? <X className="w-6 h-6 text-slate-300" /> : <Menu className="w-6 h-6 text-slate-300" />}
           </button>
         </nav>
 
-        {/* Mobile dropdown */}
         {mobileMenuOpen && (
           <motion.div
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="md:hidden bg-white border-t border-slate-200/80 px-6 py-4 space-y-3 shadow-xl"
+            className="md:hidden bg-slate-950 border-t border-slate-900 px-6 py-4 space-y-3 shadow-xl"
           >
             {navLinks.map(link => (
               <Link
                 key={link.label}
                 href={link.href}
                 onClick={() => setMobileMenuOpen(false)}
-                className="block text-sm font-semibold text-slate-600 hover:text-violet-700 py-2 transition-colors"
+                className="block text-xs font-black uppercase tracking-widest text-slate-400 hover:text-white py-2 transition-colors"
               >
                 {link.label}
               </Link>
             ))}
-            <div className="flex flex-col gap-3 pt-3 border-t border-slate-100">
-              <Link href="/login" className="text-center py-2.5 border border-slate-200 rounded-2xl text-sm font-bold text-slate-700 hover:bg-slate-50">
+            <div className="flex flex-col gap-3 pt-3 border-t border-slate-900">
+              <Link href="/login" className="text-center py-2.5 border border-slate-800 rounded-xl text-xs font-black uppercase tracking-widest text-slate-300 hover:bg-slate-900">
                 Log In
               </Link>
-              <Link href="/register" className="text-center py-2.5 bg-slate-900 rounded-2xl text-sm font-bold text-white hover:bg-violet-700 transition-all">
-                Get Started
+              <Link href="/register" className="text-center py-2.5 bg-white rounded-xl text-xs font-black uppercase tracking-widest text-slate-950 hover:bg-slate-100 transition-all">
+                Register
               </Link>
             </div>
           </motion.div>
         )}
       </header>
 
-      {/* ===== HERO SECTION ===== */}
-      <section id="home" className="relative pt-40 pb-20 px-6 max-w-7xl mx-auto text-center z-10">
-        
-        {/* Removed floating cards as requested */}
-
+      {/* Hero Section */}
+      <section className="relative pt-40 pb-20 px-6 max-w-7xl mx-auto text-center z-10">
         <motion.div
+          className="relative"
+          onPointerMove={updateHeroTilt}
+          onPointerLeave={resetHeroTilt}
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8 }}
-          style={{ y: y1 }}
-          onMouseEnter={() => setHeroHovered(true)}
-          onMouseLeave={() => setHeroHovered(false)}
-          className="cursor-pointer"
         >
-          <span className="inline-block px-4 py-1.5 mb-6 text-xs font-bold tracking-widest text-violet-600 uppercase bg-violet-50 border border-violet-200 rounded-full">
-            Revolutionizing Senior Projects
+          <div className="pointer-events-none absolute inset-0 overflow-hidden rounded-[3rem]">
+            <motion.div
+              animate={{ x: heroTilt.x * 0.35, y: heroTilt.y * 0.35 }}
+              transition={{ type: 'spring', stiffness: 80, damping: 18 }}
+              className="absolute top-8 left-1/2 w-[420px] h-[420px] -translate-x-1/2 rounded-full bg-violet-500/10 blur-3xl"
+            />
+            <motion.div
+              animate={{ x: heroTilt.x * -0.35, y: heroTilt.y * -0.35 }}
+              transition={{ type: 'spring', stiffness: 80, damping: 18 }}
+              className="absolute bottom-10 right-10 w-72 h-72 rounded-full bg-indigo-500/10 blur-3xl"
+            />
+            <motion.div
+              animate={{ x: heroTilt.x * 0.5, y: heroTilt.y * -0.25 }}
+              transition={{ type: 'spring', stiffness: 70, damping: 18 }}
+              className="absolute top-24 left-8 w-24 h-24 rounded-full bg-emerald-400/10 blur-2xl"
+            />
+            <motion.div
+              animate={{ x: heroTilt.x * -0.45, y: heroTilt.y * 0.2 }}
+              transition={{ type: 'spring', stiffness: 70, damping: 18 }}
+              className="absolute bottom-24 left-20 w-28 h-28 rounded-full bg-pink-500/10 blur-2xl"
+            />
+          </div>
+
+          <span className="inline-block px-4 py-1.5 mb-6 text-xs font-bold tracking-widest text-violet-400 uppercase bg-violet-500/10 border border-violet-500/20 rounded-full backdrop-blur-sm">
+            Individual Capstone Compliance Gateway
           </span>
-          <h1 className="text-5xl md:text-8xl font-black mb-8 leading-[1.1] tracking-tight text-slate-900">
-            The Future of <br />
-            <span className="bg-clip-text text-transparent bg-gradient-to-r from-violet-600 via-indigo-600 to-purple-600">
-              Academic Collaboration
+          <h1 className="text-5xl md:text-8xl font-black mb-8 leading-[1.05] tracking-tight text-white">
+            Academic Governance <br />
+            <span className="bg-clip-text text-transparent bg-gradient-to-r from-violet-400 via-indigo-400 to-emerald-400">
+              &amp; Milestone Compliance
             </span>
           </h1>
           
-          <div className="min-h-[5.5rem] max-w-2xl mx-auto mb-12 text-slate-500 text-lg md:text-xl leading-relaxed">
-            <TypewriterText text={heroSubtitle} speed={35} isHovered={true} />
-          </div>
+          <p className="max-w-2xl mx-auto mb-12 text-slate-400 text-sm md:text-base leading-relaxed">
+            The premium university workspace for managing senior graduation projects. Track academic compliance, submit deliverables directly, and review supervisor vetting feedback in a fully secure individual learning ecosystem.
+          </p>
           
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-6 mb-12">
-            <Link href="/register" className="group relative px-8 py-4 bg-slate-900 hover:bg-violet-700 rounded-full font-black text-lg text-white transition-all shadow-2xl shadow-slate-900/20 flex items-center gap-2 cursor-pointer uppercase tracking-wider">
-              Start Your Project
-              <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-12">
+            <Link href="/login" className="group relative px-6 py-4 bg-gradient-to-r from-violet-500 to-indigo-600 hover:from-violet-600 hover:to-indigo-700 rounded-xl font-black text-xs uppercase tracking-widest text-white transition-all shadow-xl shadow-violet-500/10 flex items-center gap-2 cursor-pointer">
+              Access Workspace
+              <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
             </Link>
             <a
-              href="#portals"
-              className="px-8 py-4 bg-white rounded-full font-bold text-lg text-slate-700 hover:bg-slate-50 transition-all border border-slate-200 shadow-sm cursor-pointer"
+              href="#personas"
+              className="px-6 py-4 bg-slate-900 border border-slate-800 hover:border-slate-700 text-xs font-black uppercase tracking-widest text-slate-300 rounded-xl transition-all cursor-pointer"
             >
-              Explore Sandbox Mode
+              Explore Portals
             </a>
           </div>
 
-          <div className="max-w-2xl mx-auto bg-white border border-slate-200 rounded-3xl p-6 shadow-lg">
-            <div className="text-xs font-black text-slate-400 uppercase tracking-widest mb-4">One-Click Sandbox Login (No DB Configuration Required)</div>
+          <motion.div
+            style={{ transform: `perspective(1300px) rotateX(${heroTilt.y}deg) rotateY(${heroTilt.x}deg)` }}
+            transition={{ type: 'spring', stiffness: 55, damping: 22 }}
+            className="relative mx-auto mb-14 max-w-5xl overflow-hidden rounded-[2.5rem] border border-white/10 bg-slate-950/90 p-8 shadow-2xl backdrop-blur-xl"
+          >
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(148,163,184,0.08),_transparent_35%),radial-gradient(circle_at_30%_80%,rgba(129,140,248,0.12),transparent_40%)] pointer-events-none" />
+            <div className="relative grid gap-6 lg:grid-cols-[1.3fr_0.9fr] items-center">
+              <div className="space-y-5 text-left">
+                <span className="inline-flex items-center gap-2 rounded-full border border-violet-500/20 bg-violet-500/10 px-4 py-1 text-[10px] font-black uppercase tracking-[0.35em] text-violet-300">
+                  Live 3D Portal Experience
+                </span>
+                <h3 className="text-3xl md:text-4xl font-black text-white tracking-tight">
+                  Your project command center with motion-driven depth
+                </h3>
+                <p className="text-slate-400 text-sm leading-relaxed max-w-xl">
+                  Explore the student workspace with layered parallax, animated content blocks, and a modern academic flow that feels alive from the first interaction.
+                </p>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="rounded-3xl border border-slate-800/80 bg-slate-900/90 p-4 text-left">
+                    <p className="text-[10px] uppercase tracking-[0.35em] text-slate-500">Milestone workflow</p>
+                    <p className="mt-3 text-sm font-black text-white">Animated checkpoint cards</p>
+                  </div>
+                  <div className="rounded-3xl border border-slate-800/80 bg-slate-900/90 p-4 text-left">
+                    <p className="text-[10px] uppercase tracking-[0.35em] text-slate-500">Collaboration Hub</p>
+                    <p className="mt-3 text-sm font-black text-white">Fast access to team messaging</p>
+                  </div>
+                </div>
+              </div>
+              <div className="relative flex items-center justify-center">
+                <div className="absolute -right-12 top-6 h-28 w-28 rounded-full bg-violet-500/10 blur-3xl" />
+                <div className="absolute -bottom-10 left-8 h-36 w-36 rounded-full bg-cyan-400/10 blur-3xl" />
+                <img
+                  src="/assets/student-dash.png"
+                  alt="Interactive student dashboard preview"
+                  className="relative w-full rounded-[2rem] border border-white/10 shadow-2xl object-cover"
+                />
+              </div>
+            </div>
+          </motion.div>
+
+          {/* Sandbox picker panel */}
+          <div className="max-w-3xl mx-auto bg-slate-900/60 border border-slate-800/80 rounded-[2.5rem] p-8 shadow-2xl relative overflow-hidden backdrop-blur-sm">
+            <div className="absolute top-0 right-0 p-4 opacity-5">
+              <Shield className="w-16 h-16 text-white" />
+            </div>
+            <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-4">
+              One-Click Sandbox Login (Instant Testing Environment)
+            </h3>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               {[
-                { label: '🎓 Student', role: 'student', color: 'hover:border-violet-400 hover:bg-violet-50' },
-                { label: '👨‍🏫 Instructor', role: 'instructor', color: 'hover:border-emerald-400 hover:bg-emerald-50' },
-                { label: '🏢 Industry Partner', role: 'industry', color: 'hover:border-indigo-400 hover:bg-indigo-50' },
-                { label: '🛠️ Administrator', role: 'admin', color: 'hover:border-amber-400 hover:bg-amber-50' }
+                { label: '🎓 Student Portal', role: 'student', color: 'hover:border-violet-500/40 hover:bg-violet-500/5 border-slate-800' },
+                { label: '👨‍🏫 Coordinator', role: 'instructor', color: 'hover:border-emerald-500/40 hover:bg-emerald-500/5 border-slate-800' },
+                { label: '🔍 Supervisor', role: 'supervisor', color: 'hover:border-amber-500/40 hover:bg-amber-500/5 border-slate-800' },
+                { label: '🏢 Industry Partner', role: 'partner', color: 'hover:border-indigo-500/40 hover:bg-indigo-500/5 border-slate-800' }
               ].map((b) => (
                 <button
                   key={b.role}
                   onClick={() => startSandbox(b.role)}
-                  className={`py-3 px-2 border border-slate-200 rounded-2xl text-xs font-bold text-slate-600 transition-all cursor-pointer ${b.color}`}
+                  className={`py-3.5 px-2 border rounded-xl text-xs font-bold text-slate-300 transition-all cursor-pointer bg-slate-950/80 ${b.color} active:scale-95`}
                 >
                   {b.label}
                 </button>
               ))}
             </div>
-          </div>
-        </motion.div>
-
-        {/* Dashboard Mockup */}
-        <motion.div 
-          className="mt-24 relative"
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ delay: 0.4, duration: 1 }}
-          style={{ y: y2 }}
-        >
-          <div className="absolute inset-0 bg-violet-200/40 blur-[100px] rounded-full pointer-events-none" />
-          <div className="relative border border-slate-200 rounded-[2rem] overflow-hidden shadow-2xl shadow-slate-200 bg-white">
-            <div className="flex items-center gap-2 px-6 py-4 bg-slate-50 border-b border-slate-200">
-              <div className="flex gap-1.5">
-                <div className="w-3 h-3 rounded-full bg-red-400" />
-                <div className="w-3 h-3 rounded-full bg-yellow-400" />
-                <div className="w-3 h-3 rounded-full bg-green-400" />
-              </div>
-              <div className="mx-auto text-xs text-slate-400 font-medium">project-dashboard.university.edu</div>
-            </div>
-            <div className="aspect-[16/9] w-full bg-[#f8fafc] relative flex items-center justify-center p-8">
-              <div className="border border-slate-200 bg-white rounded-3xl p-6 w-full max-w-4xl text-left shadow-lg relative">
-                <div className="flex justify-between items-center border-b border-slate-100 pb-4 mb-6">
-                  <div>
-                    <h3 className="text-lg font-bold text-slate-900">Project Hub Dashboard</h3>
-                    <p className="text-xs text-slate-400">Academic Year Capstones</p>
-                  </div>
-                  <span className="px-3 py-1 bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs rounded-full font-bold">Roster Verified</span>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                  <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200">
-                    <span className="text-xs text-slate-400 uppercase tracking-widest block font-bold">Project Status</span>
-                    <span className="text-2xl font-black text-emerald-600 mt-1 block">On Track</span>
-                  </div>
-                  <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200">
-                    <span className="text-xs text-slate-400 uppercase tracking-widest block font-bold">Vetted Milestones</span>
-                    <span className="text-2xl font-black text-slate-900 mt-1 block">4 / 4 Completed</span>
-                  </div>
-                  <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200">
-                    <span className="text-xs text-slate-400 uppercase tracking-widest block font-bold">Vetting Queue</span>
-                    <span className="text-2xl font-black text-violet-600 mt-1 block">0 Pending</span>
-                  </div>
-                </div>
-                <div className="flex justify-between items-center text-xs text-slate-400 pt-2">
-                  <span>Instructor: Dr. Elizabeth Vance</span>
-                  <span>Deliverable: Design Specs &amp; UI Renders</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </motion.div>
-      </section>
-
-      {/* ===== SECTION 1: THE CAPSTONE JOURNEY TIMELINE ===== */}
-      <section id="timeline" className="py-32 px-6 max-w-7xl mx-auto relative z-10 border-t border-slate-200/80">
-        <div className="text-center mb-16">
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 mb-4 text-xs font-semibold tracking-wider text-violet-600 uppercase bg-violet-50 border border-violet-200 rounded-full">
-            <Workflow className="w-3.5 h-3.5" />
-            Structured Process
-          </span>
-          <h2 className="text-3xl md:text-5xl font-black tracking-tight text-slate-900">
-            The Capstone Journey
-          </h2>
-          <p className="text-slate-500 text-sm mt-3 font-semibold">
-            Observe the fully integrated pipeline for managing academic engineering caps.
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <TimelineCard 
-            stepNumber="Step 1"
-            phase="Proposal & Pitching"
-            desc="Students or industry partners submit comprehensive project abstracts outlining the problem space, technology stacks, hardware, and specific engineering targets. Faculty advisors review the abstracts to ensure academic rigor and feasibility."
-          />
-          <TimelineCard 
-            stepNumber="Step 2"
-            phase="Supervisor Allocation"
-            desc="Administrators pair each individual student with a qualified Faculty Supervisor based on academic background and project scope. Students are notified immediately upon assignment and can begin their milestone journey."
-          />
-          <TimelineCard 
-            stepNumber="Step 3"
-            phase="Milestone Vetting"
-            desc="Students execute standard milestones (Proposal, Design Specifications, Prototype Audits, Testing). Supervisors grade and deliver granular feedback in real-time, enforcing rigid milestone checkpoints."
-          />
-          <TimelineCard 
-            stepNumber="Step 4"
-            phase="Final Demonstration"
-            desc="Each student presents their completed senior project to university staff and industry supervisors. Grading matrices compile, achievements archive, and the project is formally signed off for accreditation review."
-          />
-        </div>
-      </section>
-
-      {/* ===== SECTION 2: SYSTEM CAPABILITIES MATRIX ===== */}
-      <section id="features" className="py-32 px-6 max-w-7xl mx-auto relative z-10 border-t border-slate-200/80">
-        <div className="text-center mb-16">
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 mb-4 text-xs font-semibold tracking-wider text-emerald-700 uppercase bg-emerald-50 border border-emerald-200 rounded-full">
-            <Layout className="w-3.5 h-3.5" />
-            System Capabilities
-          </span>
-          <h2 className="text-3xl md:text-5xl font-black tracking-tight text-slate-900">
-            Core Modules &amp; Features
-          </h2>
-          <p className="text-slate-500 text-sm mt-3 font-semibold">
-            Fully integrated subsystems to manage your academic pipeline
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          <FeatureCard 
-            icon={<Rocket className="w-6 h-6 text-violet-600" />}
-            iconBg="bg-violet-50 border border-violet-200"
-            title="Milestone Upload Subsystem"
-            desc="Supports heavy code payloads, designs, and documentations. Automatically syncs with student repositories, schedules pipeline tests, and logs visual project health marks in a simple centralized feed."
-          />
-          <FeatureCard 
-            icon={<Users className="w-6 h-6 text-emerald-600" />}
-            iconBg="bg-emerald-50 border border-emerald-200"
-            title="Supervisor Assignment Engine"
-            desc="Streamlines the admin workflow for pairing each individual student with the most qualified Faculty Supervisor. Automated email notifications ensure both students and supervisors are promptly informed of new assignments."
-          />
-          <FeatureCard 
-            icon={<Shield className="w-6 h-6 text-indigo-600" />}
-            iconBg="bg-indigo-50 border border-indigo-200"
-            title="Evaluation & Rubric Engine"
-            desc="Enforces consistent grading schemas. Supervisors define rubric items and threshold limits. The engine automatically aggregates milestone grades and supervisor evaluations into a transparent final assessment."
-          />
-          <FeatureCard 
-            icon={<Code2 className="w-6 h-6 text-pink-600" />}
-            iconBg="bg-pink-50 border border-pink-200"
-            title="Industry Sponsor Interface"
-            desc="Connects universities with real-world companies. Enables sponsors to pitch concrete engineering problems, micro-fund student supplies, log evaluation notes, and recruit vetted technical talent."
-          />
-        </div>
-      </section>
-
-      {/* ===== SECTION 3: ROLE-BASED VALUE PROPOSITIONS ===== */}
-      <section id="portals" className="py-32 px-6 max-w-7xl mx-auto relative z-10 border-t border-slate-200/80">
-        <div className="text-center mb-16">
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 mb-4 text-xs font-semibold tracking-wider text-indigo-700 uppercase bg-indigo-50 border border-indigo-200 rounded-full">
-            <Target className="w-3.5 h-3.5" />
-            Role-Based Value
-          </span>
-          <h2 className="text-3xl md:text-5xl font-black tracking-tight text-slate-900">
-            Tailored Dashboard Portals
-          </h2>
-          <p className="text-slate-500 text-sm mt-3 font-semibold">
-            Dedicated experiences designed specifically for your role
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <RoleCard 
-            role="🎓 For Capstone Students"
-            subtitle="Focus on Engineering Excellence"
-            badgeColor="text-violet-600"
-            borderHover="hover:border-violet-300 hover:shadow-violet-100"
-            desc="Work independently on your senior project. Upload deliverables, track milestone progress, receive direct feedback from your assigned supervisor, and build an accredited academic portfolio."
-          />
-          <RoleCard 
-            role="👨‍🏫 For Faculty & Instructors"
-            subtitle="Effortless Supervision Management"
-            badgeColor="text-emerald-700"
-            borderHover="hover:border-emerald-300 hover:shadow-emerald-100"
-            desc="Receive instant notifications when a student is assigned to you. Review project proposals, grade milestone submissions, and provide structured feedback through a streamlined evaluation interface."
-          />
-          <RoleCard 
-            role="🏢 For Industry Partners"
-            subtitle="Engage and Recruit Innovators"
-            badgeColor="text-indigo-600"
-            borderHover="hover:border-indigo-300 hover:shadow-indigo-100"
-            desc="Propose authentic challenges, mentor teams via interactive evaluation channels, monitor supply chain budgets, verify deliverable statuses, and gain early recruitment access to graduating engineers."
-          />
-          <RoleCard 
-            role="🛠️ For System Administrators"
-            subtitle="Full Control Over Academics"
-            badgeColor="text-amber-600"
-            borderHover="hover:border-amber-300 hover:shadow-amber-100"
-            desc="Initiate new semester cohorts, synchronise directories, manage database rosters, review audit logs, and oversee cross-departmental capstone compliance benchmarks smoothly."
-          />
-        </div>
-      </section>
-
-      {/* ===== SECTION 4: SYSTEM STATISTICS ===== */}
-      <section id="statistics" className="py-32 px-6 max-w-7xl mx-auto relative z-10 border-t border-slate-200/80">
-        <div className="text-center mb-16">
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 mb-4 text-xs font-semibold tracking-wider text-pink-700 uppercase bg-pink-50 border border-pink-200 rounded-full">
-            <LineChart className="w-3.5 h-3.5" />
-            System Traction
-          </span>
-          <h2 className="text-3xl md:text-5xl font-black tracking-tight text-slate-900">
-            Project Hub in Numbers
-          </h2>
-          <p className="text-slate-500 text-sm mt-3 font-semibold">
-            Real impact across leading university programs
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          <MetricCard 
-            value="142+"
-            label="Capstones Tracked"
-            gradient="bg-gradient-to-r from-violet-600 to-indigo-600"
-            desc="Senior capstones across software, mechanical, hardware, and biotechnology sectors successfully managing sprint phases on Project Hub this semester."
-          />
-          <MetricCard 
-            value="48"
-            label="Industry Partners"
-            gradient="bg-gradient-to-r from-emerald-600 to-teal-600"
-            desc="Global corporations and local tech agencies providing sponsorship funds, mentor guidance, and final project sign-off reviews."
-          />
-          <MetricCard 
-            value="98.4%"
-            label="Evaluation Accuracy"
-            gradient="bg-gradient-to-r from-pink-600 to-rose-600"
-            desc="Our grading algorithms and structured milestone vetting ensure clear, accredited evaluations, eliminating grading discrepancies."
-          />
-        </div>
-      </section>
-
-      {/* ===== SECTION 5: CONTACT ===== */}
-      <section id="contact" className="py-32 px-6 max-w-7xl mx-auto relative z-10 border-t border-slate-200/80">
-        <div className="text-center mb-16">
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 mb-4 text-xs font-semibold tracking-wider text-violet-600 uppercase bg-violet-50 border border-violet-200 rounded-full">
-            <Mail className="w-3.5 h-3.5" />
-            Get In Touch
-          </span>
-          <h2 className="text-3xl md:text-5xl font-black tracking-tight text-slate-900">
-            Contact &amp; Support
-          </h2>
-          <p className="text-slate-400 text-sm mt-3">
-            Reach out to the Project Hub team or your capstone coordinator
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-          {/* Left: Coordinator Info */}
-          <div className="space-y-6">
-            <div className="bg-white border border-slate-200 rounded-3xl p-8 shadow-sm">
-              <h3 className="text-xl font-black text-slate-900 mb-6">Capstone Coordinator</h3>
-              <div className="space-y-5">
-                {[
-                  { icon: <GraduationCap className="w-5 h-5 text-violet-600" />, label: 'Lead Coordinator', value: 'Dr. Elizabeth Vance', bg: 'bg-violet-50' },
-                  { icon: <Mail className="w-5 h-5 text-indigo-600" />, label: 'Email', value: 'e.vance@university.edu', bg: 'bg-indigo-50' },
-                  { icon: <Phone className="w-5 h-5 text-emerald-600" />, label: 'Direct Line', value: '+1 (555) 012-3456', bg: 'bg-emerald-50' },
-                  { icon: <Clock className="w-5 h-5 text-amber-600" />, label: 'System Support Status', value: 'Active', bg: 'bg-amber-50' },
-                  { icon: <MapPin className="w-5 h-5 text-pink-600" />, label: 'System Status', value: 'Online', bg: 'bg-pink-50' },
-                ].map((item) => (
-                  <div key={item.label} className="flex items-start gap-4">
-                    <div className={`w-10 h-10 ${item.bg} rounded-xl flex items-center justify-center shrink-0`}>
-                      {item.icon}
-                    </div>
-                    <div>
-                      <div className="text-[10px] font-black uppercase tracking-widest text-slate-400">{item.label}</div>
-                      <div className="text-sm font-bold text-slate-700 mt-0.5">{item.value}</div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="bg-gradient-to-br from-violet-600 to-indigo-700 border border-violet-500 rounded-3xl p-8 shadow-xl shadow-violet-200">
-              <Building2 className="w-8 h-8 text-white/80 mb-4" />
-              <h4 className="text-white font-black text-lg mb-2">Need Urgent Help?</h4>
-              <p className="text-violet-100 text-sm leading-relaxed mb-4">
-                For immediate platform support, submission errors, or login issues, email our technical help desk.
-              </p>
-              <a href="mailto:support@projecthub.edu" className="inline-flex items-center gap-2 px-5 py-2.5 bg-white rounded-full text-sm font-black text-violet-700 hover:bg-violet-50 transition-all">
-                <Mail className="w-4 h-4" />
-                support@projecthub.edu
-              </a>
-            </div>
-          </div>
-
-          {/* Right: Contact Form */}
-          <div className="bg-white border border-slate-200 rounded-3xl p-8 shadow-sm">
-            <h3 className="text-xl font-black text-slate-900 mb-6">Send a Message</h3>
-            {contactSent ? (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="flex flex-col items-center justify-center py-20 text-center"
-              >
-                <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mb-4">
-                  <CheckCircle2 className="w-8 h-8 text-emerald-600" />
-                </div>
-                <h4 className="font-black text-slate-900 text-lg mb-2">Message Sent!</h4>
-                <p className="text-slate-500 text-sm">We'll get back to you within 24 hours.</p>
-              </motion.div>
-            ) : (
-              <form onSubmit={handleContactSubmit} className="space-y-5">
-                <div>
-                  <label className="block text-xs font-black uppercase tracking-wider text-slate-500 mb-2">Full Name</label>
-                  <input
-                    type="text"
-                    required
-                    value={contactForm.name}
-                    onChange={e => setContactForm(p => ({ ...p, name: e.target.value }))}
-                    placeholder="John Doe"
-                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-3.5 px-4 text-slate-900 placeholder:text-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-violet-400/40 focus:border-violet-400 transition-all"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-black uppercase tracking-wider text-slate-500 mb-2">Email Address</label>
-                  <input
-                    type="email"
-                    required
-                    value={contactForm.email}
-                    onChange={e => setContactForm(p => ({ ...p, email: e.target.value }))}
-                    placeholder="name@university.edu"
-                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-3.5 px-4 text-slate-900 placeholder:text-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-violet-400/40 focus:border-violet-400 transition-all"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-black uppercase tracking-wider text-slate-500 mb-2">Message</label>
-                  <textarea
-                    required
-                    rows={5}
-                    value={contactForm.message}
-                    onChange={e => setContactForm(p => ({ ...p, message: e.target.value }))}
-                    placeholder="Tell us how we can help you..."
-                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-3.5 px-4 text-slate-900 placeholder:text-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-violet-400/40 focus:border-violet-400 transition-all resize-none"
-                  />
-                </div>
-                <button
-                  type="submit"
-                  className="w-full py-4 bg-slate-900 hover:bg-violet-700 text-white font-black rounded-2xl shadow-xl shadow-slate-900/10 transition-all flex items-center justify-center gap-2 text-sm uppercase tracking-wider"
-                >
-                  <Send className="w-4 h-4" />
-                  Send Message
-                </button>
-              </form>
-            )}
-          </div>
-        </div>
-      </section>
-
-      {/* ===== FOOTER ===== */}
-      <footer className="py-20 px-6 border-t border-slate-200/80 relative z-10 bg-slate-50">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between gap-12">
-          <div className="max-w-sm">
-            <div className="flex items-center gap-2.5 mb-6">
-              <div className="w-8 h-8 bg-gradient-to-br from-violet-600 to-indigo-700 rounded-lg flex items-center justify-center">
-                <span className="text-white font-black text-lg">P</span>
-              </div>
-              <span className="text-lg font-bold tracking-tight text-slate-900">Project Hub</span>
-            </div>
-            <p className="text-slate-500 text-sm leading-relaxed mb-6 font-medium">
-              Building the next generation of engineers through seamless project management and industry collaboration.
+            <p className="text-[10px] text-slate-500 mt-3 font-semibold">
+              Bypasses real database connections using mock fallbacks, enabling instant interface layout inspections.
             </p>
-            <div className="flex gap-3">
-              <Link href="/login" className="px-4 py-2 border border-slate-200 rounded-full text-xs font-bold text-slate-600 hover:bg-white hover:border-violet-300 transition-all">
-                Log In
-              </Link>
-              <Link href="/register" className="px-4 py-2 bg-slate-900 rounded-full text-xs font-bold text-white hover:bg-violet-700 transition-all">
-                Get Started
-              </Link>
-            </div>
           </div>
+        </motion.div>
+      </section>
+
+      {/* Academic Workflow Timeline */}
+      <section id="workflow" className="py-24 px-6 max-w-7xl mx-auto relative z-10 border-t border-slate-800/20">
+        <div className="text-center mb-16">
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 mb-4 text-xs font-semibold tracking-wider text-violet-400 uppercase bg-violet-500/10 border border-violet-500/20 rounded-full">
+            <Workflow className="w-3.5 h-3.5" />
+            Milestone Governance
+          </span>
+          <h2 className="text-3xl md:text-5xl font-black tracking-tight text-white">
+            Dual-Track Milestone Timeline
+          </h2>
+          <p className="text-slate-400 text-xs mt-2 font-semibold">
+            Standard milestones mapping that supports both internal academic and industry-sponsored graduation requirements.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="bg-slate-900/40 border border-slate-800/80 rounded-[2rem] p-6 shadow-lg backdrop-blur-sm flex flex-col justify-between min-h-[12rem]">
+            <div className="flex justify-between items-center">
+              <span className="text-violet-400 text-[10px] font-black uppercase tracking-widest bg-violet-500/10 px-2.5 py-0.5 rounded-full border border-violet-500/20">Phase 1</span>
+              <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Milestone 1</span>
+            </div>
+            <h3 className="text-lg font-extrabold text-white mt-4">Proposal Submission</h3>
+            <p className="text-slate-400 text-xs mt-2 leading-relaxed">
+              Student pitches the abstract, methodology, and tech stack options. Supervisors vet requirements for university scope approval.
+            </p>
+          </div>
+
+          <div className="bg-slate-900/40 border border-slate-800/80 rounded-[2rem] p-6 shadow-lg backdrop-blur-sm flex flex-col justify-between min-h-[12rem]">
+            <div className="flex justify-between items-center">
+              <span className="text-indigo-400 text-[10px] font-black uppercase tracking-widest bg-indigo-500/10 px-2.5 py-0.5 rounded-full border border-indigo-500/20">Phase 2</span>
+              <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Milestone 2</span>
+            </div>
+            <h3 className="text-lg font-extrabold text-white mt-4">System Architecture Vetting</h3>
+            <p className="text-slate-400 text-xs mt-2 leading-relaxed">
+              Students upload data schema diagrams and API outlines. If sponsored, this milestone triggers dynamic level-1 industry approvals.
+            </p>
+          </div>
+
+          <div className="bg-slate-900/40 border border-slate-800/80 rounded-[2rem] p-6 shadow-lg backdrop-blur-sm flex flex-col justify-between min-h-[12rem]">
+            <div className="flex justify-between items-center">
+              <span className="text-emerald-400 text-[10px] font-black uppercase tracking-widest bg-emerald-500/10 px-2.5 py-0.5 rounded-full border border-emerald-500/20">Phase 3</span>
+              <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Milestone 3</span>
+            </div>
+            <h3 className="text-lg font-extrabold text-white mt-4">Code Inspection &amp; Grading</h3>
+            <p className="text-slate-400 text-xs mt-2 leading-relaxed">
+              Final demonstration, repository reviews, and code auditing. The course coordinator inputs final graduation grades.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* Role Personas Overview */}
+      <section id="personas" className="py-24 px-6 max-w-7xl mx-auto relative z-10 border-t border-slate-800/20">
+        <div className="text-center mb-16">
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 mb-4 text-xs font-semibold tracking-wider text-emerald-400 uppercase bg-emerald-500/10 border border-emerald-500/20 rounded-full">
+            <Layers className="w-3.5 h-3.5" />
+            Course Roles
+          </span>
+          <h2 className="text-3xl md:text-5xl font-black tracking-tight text-white">
+            Target Academic Roles
+          </h2>
+          <p className="text-slate-400 text-xs mt-2 font-semibold">
+            Governed exclusively by exactly four user roles, optimized for individual capstones.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
           
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-12">
-            <div>
-              <h4 className="font-bold mb-6 text-sm text-slate-900">Navigation</h4>
-              <ul className="space-y-4 text-sm text-slate-500">
-                <li><a href="#" className="hover:text-slate-900 transition-colors">Home</a></li>
-                <li><a href="#timeline" className="hover:text-slate-900 transition-colors">Process</a></li>
-                <li><a href="#features" className="hover:text-slate-900 transition-colors">Features</a></li>
-                <li><a href="#portals" className="hover:text-slate-900 transition-colors">Portals</a></li>
-                <li><a href="#contact" className="hover:text-slate-900 transition-colors">Contact</a></li>
-              </ul>
+          <div className="bg-slate-900/40 border border-slate-800/80 rounded-[2rem] p-6 shadow-lg backdrop-blur-sm">
+            <div className="w-10 h-10 rounded-xl bg-violet-500/10 border border-violet-500/20 flex items-center justify-center text-violet-400 mb-4">
+              <GraduationCap className="w-5 h-5" />
             </div>
-            <div>
-              <h4 className="font-bold mb-6 text-sm text-slate-900">Account</h4>
-              <ul className="space-y-4 text-sm text-slate-500">
-                <li><Link href="/login" className="hover:text-slate-900 transition-colors">Sign In</Link></li>
-                <li><Link href="/register" className="hover:text-slate-900 transition-colors">Register</Link></li>
-                <li className="hover:text-slate-900 cursor-pointer transition-colors">Documentation</li>
-                <li className="hover:text-slate-900 cursor-pointer transition-colors">Guides</li>
-              </ul>
-            </div>
-            <div>
-              <h4 className="font-bold mb-6 text-sm text-slate-900">Legal</h4>
-              <ul className="space-y-4 text-sm text-slate-500">
-                <li className="hover:text-slate-900 cursor-pointer transition-colors">Privacy Policy</li>
-                <li className="hover:text-slate-900 cursor-pointer transition-colors">Terms of Service</li>
-                <li><a href="#contact" className="hover:text-slate-900 transition-colors">Contact Us</a></li>
-              </ul>
-            </div>
+            <h4 className="text-base font-extrabold text-white">Student Portal</h4>
+            <p className="text-slate-400 text-xs mt-2 leading-relaxed">
+              Individual workspace to submit deliverable repository links, review supervisor evaluation feedback, and track compliance.
+            </p>
           </div>
+
+          <div className="bg-slate-900/40 border border-slate-800/80 rounded-[2rem] p-6 shadow-lg backdrop-blur-sm">
+            <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-500 mb-4">
+              <UserCheck className="w-5 h-5" />
+            </div>
+            <h4 className="text-base font-extrabold text-white">Academic Supervisor</h4>
+            <p className="text-slate-400 text-xs mt-2 leading-relaxed">
+              Faculty mentor portal to view assigned students, provide assessment remarks, and mark standard milestones completed.
+            </p>
+          </div>
+
+          <div className="bg-slate-900/40 border border-slate-800/80 rounded-[2rem] p-6 shadow-lg backdrop-blur-sm">
+            <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 mb-4">
+              <ShieldAlert className="w-5 h-5" />
+            </div>
+            <h4 className="text-base font-extrabold text-white">Course Coordinator</h4>
+            <p className="text-slate-400 text-xs mt-2 leading-relaxed">
+              Global dashboard to vet proposals, use double allocation matrices to assign supervisor/student pairs, and submit final grades.
+            </p>
+          </div>
+
+          <div className="bg-slate-900/40 border border-slate-800/80 rounded-[2rem] p-6 shadow-lg backdrop-blur-sm">
+            <div className="w-10 h-10 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 mb-4">
+              <Building className="w-5 h-5" />
+            </div>
+            <h4 className="text-base font-extrabold text-white">Industry Partner</h4>
+            <p className="text-slate-400 text-xs mt-2 leading-relaxed">
+              Optional external portal to pitch sponsored projects and trigger level-1 sign-offs for sponsored deliverables.
+            </p>
+          </div>
+
         </div>
-        <div className="max-w-7xl mx-auto mt-20 pt-8 border-t border-slate-200 text-center text-slate-400 text-xs font-semibold">
-          © {new Date().getFullYear()} Project Hub. All rights reserved.
-        </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="bg-slate-950 border-t border-slate-800/40 py-12 px-6 text-center z-10 relative">
+        <p className="text-slate-500 text-xs font-semibold uppercase tracking-wider">
+          © {new Date().getFullYear()} Graduate Hub. Academic Governance Ecosystem. All Rights Reserved.
+        </p>
       </footer>
+
     </div>
   )
 }

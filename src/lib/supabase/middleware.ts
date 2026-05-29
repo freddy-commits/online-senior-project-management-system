@@ -7,8 +7,8 @@ export async function updateSession(request: NextRequest) {
   })
 
   const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    process.env.NEXT_PUBLIC_SUPABASE_URL || 'http://localhost:54321',
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'mock-key',
     {
       cookies: {
         getAll() {
@@ -32,9 +32,32 @@ export async function updateSession(request: NextRequest) {
     !process.env.NEXT_PUBLIC_SUPABASE_URL || 
     !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
+  const path = request.nextUrl.pathname
+
+  // Legacy redirects to avoid any 404s
+  if (path.startsWith('/student/dashboard')) {
+    const url = request.nextUrl.clone()
+    url.pathname = '/dashboard/student'
+    return NextResponse.redirect(url)
+  }
+  if (path.startsWith('/instructor/dashboard')) {
+    const url = request.nextUrl.clone()
+    url.pathname = '/dashboard/instructor'
+    return NextResponse.redirect(url)
+  }
+  if (path.startsWith('/partner/dashboard')) {
+    const url = request.nextUrl.clone()
+    url.pathname = '/dashboard/partner'
+    return NextResponse.redirect(url)
+  }
+  if (path.startsWith('/admin')) {
+    const url = request.nextUrl.clone()
+    url.pathname = '/dashboard/instructor'
+    return NextResponse.redirect(url)
+  }
+
   if (isDemo) {
     const demoRole = request.cookies.get('demo_role')?.value
-    const path = request.nextUrl.pathname
     
     const isPublicPath = 
       path === '/' || 
@@ -49,6 +72,16 @@ export async function updateSession(request: NextRequest) {
       url.pathname = '/login'
       return NextResponse.redirect(url)
     }
+
+    if (path === '/dashboard' || path === '/dashboard/') {
+      const url = request.nextUrl.clone()
+      let mappedRole = demoRole || 'student'
+      if (mappedRole === 'industry') mappedRole = 'partner'
+      if (mappedRole === 'admin') mappedRole = 'instructor'
+      url.pathname = `/dashboard/${mappedRole}`
+      return NextResponse.redirect(url)
+    }
+
     return supabaseResponse
   }
 
@@ -72,6 +105,16 @@ export async function updateSession(request: NextRequest) {
     // no user, potentially respond by redirecting the user to the login page
     const url = request.nextUrl.clone()
     url.pathname = '/login'
+    return NextResponse.redirect(url)
+  }
+
+  if (user && (path === '/dashboard' || path === '/dashboard/')) {
+    const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
+    let role = profile?.role || 'student'
+    if (role === 'industry') role = 'partner'
+    if (role === 'admin') role = 'instructor'
+    const url = request.nextUrl.clone()
+    url.pathname = `/dashboard/${role}`
     return NextResponse.redirect(url)
   }
 

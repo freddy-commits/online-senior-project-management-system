@@ -72,11 +72,11 @@ export default function DashboardLayout({ children, role, userName }: DashboardL
   }
 
   const menuItems = [
-    { name: 'Overview', icon: <LayoutDashboard className="w-5 h-5" />, path: `/${role}` },
+    { name: 'Workspace', icon: <LayoutDashboard className="w-5 h-5" />, path: `/dashboard/${role}` },
     { name: 'Messages', icon: <MessageSquare className="w-5 h-5" />, path: `/messages` },
-    { name: 'My Projects', icon: <FolderKanban className="w-5 h-5" />, path: `/${role}/projects` },
-    { name: 'Team', icon: <Users className="w-5 h-5" />, path: `/${role}/team` },
-    { name: 'Settings', icon: <Settings className="w-5 h-5" />, path: `/${role}/settings` },
+    { name: 'Project Overview', icon: <FolderKanban className="w-5 h-5" />, path: `/dashboard/${role}` },
+    { name: 'Team', icon: <Users className="w-5 h-5" />, path: `/messages` },
+    { name: 'Settings', icon: <Settings className="w-5 h-5" />, path: `/dashboard/${role}` },
   ]
 
   const unreadCount = notifications.filter(n => !n.is_read).length
