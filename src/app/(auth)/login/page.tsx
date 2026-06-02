@@ -1,6 +1,7 @@
 'use client'
 
 import { createClient } from '@/lib/supabase/client'
+import { getDbState } from '@/lib/supabase/mockDb'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
@@ -72,6 +73,23 @@ export default function LoginPage() {
       }
 
       if (role) {
+        // Enforce role matching under live/real Supabase session
+        if (role !== selectedRole) {
+          // Log out from Supabase if role doesn't match to prevent active session in wrong role
+          await supabase.auth.signOut()
+          const profileRoleName = role === 'industry' ? 'an Industry Partner' : `a ${role}`
+          const selectedRoleName = selectedRole === 'industry' ? 'an Industry Partner' : `a ${selectedRole}`
+          setError(`This account is registered as ${profileRoleName}, but you selected ${selectedRoleName}.`)
+          setLoading(false)
+          return
+        }
+
+        // Clear demo mode cookie & localStorage
+        document.cookie = 'demo_mode=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;'
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem('demo_mode')
+        }
+
         // Set live cookies
         document.cookie = `demo_role=${role}; path=/`
 
@@ -90,6 +108,46 @@ export default function LoginPage() {
     } catch (err: any) {
       console.warn("Auth signin failed, falling back to mock sandbox session:", err.message || err)
       
+      // Fallback role validation logic for local sandbox / mock profiles database
+      let mockProfile = null
+      try {
+        const state = getDbState()
+        mockProfile = state.profiles.find((p: any) => p.email.toLowerCase() === email.toLowerCase())
+      } catch (e) {
+        console.error("Error reading mock state:", e)
+      }
+
+      if (mockProfile && mockProfile.role !== selectedRole) {
+        const profileRoleName = mockProfile.role === 'industry' ? 'an Industry Partner' : `a ${mockProfile.role}`
+        const selectedRoleName = selectedRole === 'industry' ? 'an Industry Partner' : `a ${selectedRole}`
+        setError(`This account is registered as ${profileRoleName}, but you selected ${selectedRoleName}.`)
+        setLoading(false)
+        return
+      }
+
+      // Also do standard checks if they entered specific default names/keywords to prevent obvious mismatches if profile doesn't exist
+      const emailLower = email.toLowerCase()
+      if (emailLower.includes('instructor') && selectedRole !== 'instructor') {
+        setError(`This email is associated with an Instructor account, but you selected ${selectedRole === 'industry' ? 'an Industry Partner' : `a ${selectedRole}`}.`)
+        setLoading(false)
+        return
+      }
+      if (emailLower.includes('student') && selectedRole !== 'student') {
+        setError(`This email is associated with a Student account, but you selected ${selectedRole === 'industry' ? 'an Industry Partner' : `a ${selectedRole}`}.`)
+        setLoading(false)
+        return
+      }
+      if (emailLower.includes('partner') && selectedRole !== 'industry') {
+        setError(`This email is associated with an Industry Partner account, but you selected ${selectedRole === 'industry' ? 'an Industry Partner' : `a ${selectedRole}`}.`)
+        setLoading(false)
+        return
+      }
+      if (emailLower.includes('admin') && selectedRole !== 'admin') {
+        setError(`This email is associated with an Admin account, but you selected ${selectedRole === 'industry' ? 'an Industry Partner' : `a ${selectedRole}`}.`)
+        setLoading(false)
+        return
+      }
+
       // Fallback: set demo cookies & localStorage
       document.cookie = `demo_mode=true; path=/`
       document.cookie = `demo_role=${selectedRole}; path=/`

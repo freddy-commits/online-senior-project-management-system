@@ -82,6 +82,12 @@ export default function RegisterPage() {
           role: selectedRole 
         }).eq('id', data.user.id)
 
+        // Clear demo mode cookie & localStorage
+        document.cookie = 'demo_mode=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;'
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem('demo_mode')
+        }
+
         // Set live cookies
         document.cookie = `demo_role=${selectedRole}; path=/`
 

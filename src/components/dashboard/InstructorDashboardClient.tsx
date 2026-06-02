@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { createClient } from '@/lib/supabase/client'
+import { useTrack } from '@/components/providers/TrackProvider'
 import { 
   CheckCircle2, 
   Clock, 
@@ -15,10 +16,11 @@ import {
   ShieldCheck,
   Building2,
   Briefcase,
-  AlertCircle
+  AlertCircle,
+  UserCheck
 } from 'lucide-react'
 
-type ProjectType = any // we'll use 'any' for now or proper type if defined
+type ProjectType = any
 
 export default function InstructorDashboardClient({ 
   initialProjects, 
@@ -27,7 +29,10 @@ export default function InstructorDashboardClient({
   initialProjects: ProjectType[], 
   supervisors: any[] 
 }) {
-  const [activeTab, setActiveTab] = useState<'industry' | 'solo'>('industry')
+  const { trackMode } = useTrack()
+  const isCapstone = trackMode === 'thesis' || trackMode === 'advisor' || trackMode === 'supervisor' || trackMode === 'panel'
+  const activeTab = isCapstone ? 'solo' : 'industry'
+
   const [projects, setProjects] = useState(initialProjects)
   
   // Approval Modal State
@@ -46,15 +51,20 @@ export default function InstructorDashboardClient({
   const totalTeams = industryProjects.length
   const queueSize = soloProjects.filter(p => p.status === 'pending').length
   const approvals = soloProjects.filter(p => p.status === 'approved').length
-  // Dummy milestone data for now
   const milestones = 42
 
   async function refreshProjects() {
     const { data } = await supabase
       .from('projects')
-      .select('*, student:student_id(full_name, email), instructor:instructor_id(full_name), supervisor:supervisor_id(full_name), partner:partner_id(full_name)')
+      .select('*, student:student_id(full_name, email), instructor:instructor_id(full_name), supervisor:instructor_id(full_name), partner:industry_partner_id(full_name)')
       .order('created_at', { ascending: false })
-    if (data) setProjects(data)
+    if (data) {
+      const enriched = data.map((p: any) => ({
+        ...p,
+        origin: p.industry_partner_id ? 'industry' : 'academic'
+      }))
+      setProjects(enriched)
+    }
   }
 
   async function handleApproveProject(e: React.FormEvent) {
@@ -66,7 +76,7 @@ export default function InstructorDashboardClient({
       .from('projects')
       .update({
         status: 'approved',
-        supervisor_id: selectedSupervisorId
+        instructor_id: selectedSupervisorId
       })
       .eq('id', selectedProjectForApproval.id)
 
@@ -115,35 +125,33 @@ export default function InstructorDashboardClient({
 
       {/* Header Section */}
       <div className="space-y-1">
-        <span className="text-[10px] font-black text-[#5c3e1c] uppercase tracking-widest block">
+        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">
           ADVISOR OVERVIEW
         </span>
         <h1 className="text-2xl font-black text-slate-900 tracking-tight">Capstone Management</h1>
       </div>
 
-      {/* Segmented Control */}
-      <div className="flex gap-1 bg-slate-100 p-1.5 rounded-xl w-fit">
-        <button
-          onClick={() => setActiveTab('industry')}
-          className={`px-8 py-2.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${
-            activeTab === 'industry'
-              ? 'bg-[#5c3e1c] text-white shadow-sm'
-              : 'text-slate-400 hover:text-slate-700'
-          }`}
-        >
-          Industry Teams
-        </button>
-        <button
-          onClick={() => setActiveTab('solo')}
-          className={`px-8 py-2.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${
-            activeTab === 'solo'
-              ? 'bg-[#5c3e1c] text-white shadow-sm'
-              : 'text-slate-400 hover:text-slate-700'
-          }`}
-        >
-          Solo Capstones
-        </button>
+      {/* Stats Row */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+        <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow">
+          <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">Total Teams</span>
+          <span className="text-3xl font-black text-slate-900">{totalTeams}</span>
+        </div>
+        <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow">
+          <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">Queue Size</span>
+          <span className="text-3xl font-black text-red-600">{queueSize < 10 ? `0${queueSize}` : queueSize}</span>
+        </div>
+        <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow">
+          <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">Milestones</span>
+          <span className="text-3xl font-black text-slate-900">{milestones}</span>
+        </div>
+        <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow">
+          <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">Approvals</span>
+          <span className="text-3xl font-black text-slate-900">{approvals}</span>
+        </div>
       </div>
+
+      {/* Segmented control removed in favor of global track switcher */}
 
       {/* Project Grid */}
       <AnimatePresence mode="wait">
@@ -156,8 +164,8 @@ export default function InstructorDashboardClient({
           className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
         >
           {activeTab === 'industry' && industryProjects.map((project, idx) => (
-            <div key={project.id} className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow flex flex-col">
-              <div className="p-5 flex-1 space-y-4">
+            <div key={project.id} className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between p-5 min-h-48">
+              <div className="space-y-3">
                 <div className="flex justify-between items-start">
                   <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">
                     TEAM ALPHA-{idx + 1}
@@ -179,7 +187,7 @@ export default function InstructorDashboardClient({
                 </div>
               </div>
 
-              <div className="p-5 border-t border-slate-50 bg-slate-50/50 space-y-3">
+              <div className="border-t border-slate-100 pt-4 mt-4 space-y-3">
                 <div className="flex justify-between items-center text-[9px] font-black uppercase tracking-widest">
                   <span className="text-slate-500">Liaison Feedback</span>
                   <span className="text-emerald-600 flex items-center gap-1">
@@ -197,10 +205,10 @@ export default function InstructorDashboardClient({
           ))}
 
           {activeTab === 'solo' && soloProjects.map((project) => (
-            <div key={project.id} className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow flex flex-col">
-              <div className="p-5 flex-1 space-y-4">
+            <div key={project.id} className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between p-5 min-h-48">
+              <div className="space-y-3">
                 <div className="flex justify-between items-start">
-                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">
+                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block truncate max-w-[150px]">
                     {project.student?.full_name || 'Unknown Student'}
                   </span>
                   <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-widest ${
@@ -226,7 +234,7 @@ export default function InstructorDashboardClient({
               </div>
 
               {project.status === 'pending' && (
-                <div className="p-4 border-t border-slate-50 bg-indigo-50/30">
+                <div className="pt-4 border-t border-slate-100 mt-4">
                   <button
                     onClick={() => {
                       setSelectedProjectForApproval(project)
@@ -248,26 +256,6 @@ export default function InstructorDashboardClient({
           )}
         </motion.div>
       </AnimatePresence>
-
-      {/* Stats Row */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-6 pt-6">
-        <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm hover:shadow-md transition-shadow">
-          <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">Total Teams</span>
-          <span className="text-3xl font-black text-slate-900">{totalTeams}</span>
-        </div>
-        <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm hover:shadow-md transition-shadow">
-          <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">Queue Size</span>
-          <span className="text-3xl font-black text-red-600">{queueSize < 10 ? `0${queueSize}` : queueSize}</span>
-        </div>
-        <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm hover:shadow-md transition-shadow">
-          <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">Milestones</span>
-          <span className="text-3xl font-black text-slate-900">{milestones}</span>
-        </div>
-        <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm hover:shadow-md transition-shadow">
-          <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">Approvals</span>
-          <span className="text-3xl font-black text-slate-900">{approvals}</span>
-        </div>
-      </div>
 
       {/* Slide-over Approval Modal */}
       <AnimatePresence>

@@ -56,8 +56,56 @@ export default function StudentDashboardClient({
   initialProjects 
 }: StudentDashboardClientProps) {
   const { trackMode } = useTrack()
-  const activeProject = initialProjects && initialProjects.length > 0 ? initialProjects[0] : null
-  const hasActiveProject = activeProject && activeProject.status !== 'rejected'
+  const [projectList, setProjectList] = useState<any[]>(initialProjects || [])
+  const [profile, setProfile] = useState<any>(initialProfile)
+
+  useEffect(() => {
+    const isDemo = typeof window !== 'undefined' && (
+      localStorage.getItem('demo_mode') === 'true' || 
+      document.cookie.includes('demo_mode=true')
+    )
+
+    if (isDemo && typeof window !== 'undefined') {
+      const storageKey = 'seniorproj_sandbox_db'
+      const data = localStorage.getItem(storageKey)
+      if (data) {
+        try {
+          const parsed = JSON.parse(data)
+          const activeProfile = parsed.profiles.find((p: any) => p.role === 'student') || parsed.profiles[0]
+          
+          if (activeProfile) {
+            setProfile(activeProfile)
+            
+            const studentProjs = parsed.projects.filter((p: any) => 
+              p.student_id === activeProfile.id || p.team_members.includes(activeProfile.id)
+            )
+
+            const enrichedProjs = studentProjs.map((p: any) => {
+              const supervisor = parsed.profiles.find((prof: any) => prof.id === p.instructor_id)
+              const partner = parsed.profiles.find((prof: any) => prof.id === p.industry_partner_id)
+              return {
+                ...p,
+                supervisor: supervisor ? { full_name: supervisor.full_name, email: supervisor.email } : null,
+                partner: partner ? { full_name: partner.full_name, email: partner.email } : null
+              }
+            })
+
+            enrichedProjs.sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+            setProjectList(enrichedProjs)
+          }
+        } catch (e) {
+          console.error("Error loading mock projects for student dashboard:", e)
+        }
+      }
+    }
+  }, [initialProjects, initialProfile])
+
+  // Differentiate projects by track: capstone vs industry
+  const activeProject = trackMode === 'thesis' 
+    ? (projectList.find(p => p.origin === 'student' || p.origin === 'academic') || null)
+    : (projectList.find(p => p.origin === 'industry') || null)
+
+  const hasActiveProject = activeProject !== null && activeProject.status !== 'rejected'
   
   
   // Interactive features states

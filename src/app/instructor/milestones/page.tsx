@@ -1,8 +1,8 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
-import InstructorDashboardClient from '@/components/dashboard/InstructorDashboardClient'
+import InstructorMilestonesClient from '@/components/dashboard/InstructorMilestonesClient'
 
-export default async function InstructorDashboardPage() {
+export default async function InstructorMilestonesPage() {
   const supabase = await createClient()
   
   const { data: { user }, error: authError } = await supabase.auth.getUser()
@@ -19,7 +19,7 @@ export default async function InstructorDashboardPage() {
     .single()
 
   if (!profile || profile.role !== 'instructor') {
-    redirect('/login') // or an unauthorized page
+    redirect('/login')
   }
 
   // Fetch all projects
@@ -41,7 +41,7 @@ export default async function InstructorDashboardPage() {
 
   return (
     <div className="p-8 pb-20">
-      <InstructorDashboardClient 
+      <InstructorMilestonesClient 
         initialProjects={enrichedProjects} 
         supervisors={supervisors || []} 
       />

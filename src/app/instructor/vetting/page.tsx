@@ -51,10 +51,14 @@ export default function InstructorVettingPage() {
       .select('*, student:student_id(full_name, email), industry_partner:industry_partner_id(full_name, email)')
       .order('created_at', { ascending: false })
 
-    setProposals(projs || [])
+    const enrichedProjs = (projs || []).map((p: any) => ({
+      ...p,
+      origin: p.industry_partner_id ? 'industry' : 'student'
+    }))
+    setProposals(enrichedProjs)
     
     // Auto-select first item in current view if possible
-    const initialList = projs || []
+    const initialList = enrichedProjs
     const pendingOnly = initialList.filter((p: any) => p.status === 'pending')
     if (pendingOnly.length > 0) {
       setSelectedProposal(pendingOnly[0])
@@ -532,7 +536,7 @@ export default function InstructorVettingPage() {
                   <div className="p-6 bg-slate-50 border border-slate-200 rounded-2xl flex items-center gap-3">
                     <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
                     <div className="text-xs text-slate-500 font-medium">
-                      This proposal has been <strong className="text-slate-800">{selectedProposal.status}</strong>. Supervisor allocation is handled on the <a href="/instructor/allocation" className="text-emerald-600 hover:underline font-bold">Roster Allocation</a> page under administrative command.
+                      This proposal has been <strong className="text-slate-800">{selectedProposal.status}</strong>. Supervisor allocation is handled on the <a href="/instructor/teams" className="text-emerald-600 hover:underline font-bold">Team Allocation</a> page under administrative command.
                     </div>
                   </div>
                 )}

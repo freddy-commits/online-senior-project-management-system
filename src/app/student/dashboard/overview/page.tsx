@@ -18,13 +18,18 @@ export default async function OverviewPage() {
 
   const { data: projects } = await supabase
     .from('projects')
-    .select('*, supervisor:supervisor_id(full_name, email), partner:partner_id(full_name, email)')
+    .select('*, supervisor:instructor_id(full_name, email), partner:industry_partner_id(full_name, email)')
     .eq('student_id', user.id)
     .order('created_at', { ascending: false })
 
+  const enrichedProjects = projects?.map(p => ({
+    ...p,
+    origin: p.industry_partner_id ? 'industry' : 'academic'
+  })) || []
+
   return (
     <div className="p-8 pb-20">
-      <StudentDashboardClient initialProfile={profile} initialProjects={projects} />
+      <StudentDashboardClient initialProfile={profile} initialProjects={enrichedProjects} />
     </div>
   )
 }

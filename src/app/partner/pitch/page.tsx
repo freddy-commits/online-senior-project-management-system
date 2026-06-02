@@ -38,16 +38,14 @@ export default function PartnerPitchPage() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) throw new Error('Unauthenticated partner session')
 
-      // Insert sponsored proposal as projects with industry_partner_id and origin: 'industry'
+      // Insert sponsored proposal as projects with industry_partner_id
       const { error: projError } = await supabase
         .from('projects')
         .insert({
           title: projectTitle,
           description: `[Sponsor: ${companyName}] - Rep: ${repName}. Description: ${projectDesc}. Required Stack: ${techStack}`,
           industry_partner_id: user.id,
-          status: 'pending',
-          origin: 'industry',
-          team_members: []
+          status: 'pending'
         })
 
       if (projError) throw projError

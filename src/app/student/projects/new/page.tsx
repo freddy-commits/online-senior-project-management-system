@@ -7,7 +7,7 @@ import { FileText, Loader2, Info } from 'lucide-react'
 import { useTrack } from '@/components/providers/TrackProvider'
 
 export default function NewProjectPage() {
-  const { trackMode } = useTrack()
+  const { trackMode, setTrackMode } = useTrack()
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [submitting, setSubmitting] = useState(false)
@@ -17,12 +17,14 @@ export default function NewProjectPage() {
   const router = useRouter()
 
   useEffect(() => {
-    if (trackMode === 'industry') {
-      router.push('/student/dashboard/overview')
+    // If the user lands here, they are starting a capstone project.
+    // We should automatically transition their track mode context to 'thesis'.
+    if (trackMode !== 'thesis') {
+      setTrackMode('thesis')
     }
-  }, [trackMode, router])
+  }, [trackMode, setTrackMode])
 
-  if (trackMode === 'industry') {
+  if (trackMode !== 'thesis') {
     return null
   }
 
@@ -40,7 +42,6 @@ export default function NewProjectPage() {
       const { error: insertError } = await supabase.from('projects').insert({
         title,
         description,
-        origin: 'academic',
         status: 'pending',
         student_id: user.id
       })
@@ -49,7 +50,8 @@ export default function NewProjectPage() {
 
       router.push('/student/dashboard/overview')
     } catch (err: any) {
-      setError(err.message || 'Failed to submit the project proposal.')
+      console.error("Supabase project insert failed:", err)
+      setError(err.message || 'Failed to submit the project proposal to Supabase.')
     } finally {
       setSubmitting(false)
     }
