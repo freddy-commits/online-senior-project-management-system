@@ -99,16 +99,16 @@ export default function PartnerLayout({ children }: { children: React.ReactNode 
       <motion.aside 
         initial={false}
         animate={{ width: isSidebarOpen ? 280 : 80 }}
-        className="relative z-50 bg-white border-r border-slate-200 flex flex-col transition-all duration-300 shadow-sm"
+        className="relative z-50 bg-[#0b192f] flex flex-col transition-all duration-300 shadow-xl"
       >
-        <div className="h-20 flex items-center px-6 border-b border-slate-200">
+        <div className="h-20 flex items-center px-6 border-b border-white/10">
           <Link href="/" className="flex items-center gap-3">
-            <div className="w-8 h-8 bg-gradient-to-br from-indigo-600 to-purple-700 rounded-lg flex items-center justify-center shrink-0">
+            <div className="w-8 h-8 bg-[#e37b2d] rounded-lg flex items-center justify-center shrink-0">
               <span className="text-white font-bold text-lg">P</span>
             </div>
             {isSidebarOpen && (
-              <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="font-bold text-lg tracking-tight text-slate-900">
-                Project Hub
+              <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="font-bold text-lg tracking-tight text-white">
+                Project Station
               </motion.span>
             )}
           </Link>
@@ -122,7 +122,7 @@ export default function PartnerLayout({ children }: { children: React.ReactNode 
                 key={item.name} 
                 href={item.path}
                 className={`flex items-center gap-4 px-4 py-3 rounded-2xl transition-all group relative ${
-                  isActive ? 'bg-slate-900 text-white shadow-lg shadow-slate-900/10' : 'text-slate-500 hover:bg-slate-100 hover:text-slate-900'
+                  isActive ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' : 'text-slate-400 hover:bg-white/5 hover:text-white'
                 }`}
               >
                 <div className="shrink-0">{item.icon}</div>
@@ -136,14 +136,14 @@ export default function PartnerLayout({ children }: { children: React.ReactNode 
           })}
         </nav>
 
-        <div className="p-4 border-t border-slate-200">
-          <div className="bg-slate-50 rounded-2xl p-3 flex items-center gap-3 overflow-hidden border border-slate-200">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-600 to-purple-700 flex items-center justify-center font-bold text-lg shrink-0 text-white">
+        <div className="p-4 border-t border-white/10">
+          <div className="bg-white/5 rounded-2xl p-3 flex items-center gap-3 overflow-hidden border border-white/10">
+            <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center font-bold text-lg shrink-0 text-white">
               {userName[0]}
             </div>
             {isSidebarOpen && (
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex-1 min-w-0">
-                <div className="font-bold text-sm truncate text-slate-900">{userName}</div>
+                <div className="font-bold text-sm truncate text-white">{userName}</div>
                 <div className="text-[10px] text-slate-400 uppercase font-black tracking-widest">Industry Partner</div>
               </motion.div>
             )}
@@ -151,7 +151,7 @@ export default function PartnerLayout({ children }: { children: React.ReactNode 
               <button onClick={async () => {
                 await supabase.auth.signOut()
                 window.location.href = '/'
-              }} className="p-2 hover:bg-slate-200 rounded-lg transition-colors">
+              }} className="p-2 hover:bg-white/10 rounded-lg transition-colors">
                 <LogOut className="w-4 h-4 text-slate-400" />
               </button>
             )}

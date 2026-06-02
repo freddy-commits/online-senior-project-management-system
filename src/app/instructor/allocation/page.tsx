@@ -23,6 +23,7 @@ import {
 export default function InstructorAllocationPage() {
   const [projects, setProjects] = useState<any[]>([])
   const [instructors, setInstructors] = useState<any[]>([])
+  const [supervisors, setSupervisors] = useState<any[]>([])
   const [students, setStudents] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [processing, setProcessing] = useState<string | null>(null)
@@ -35,6 +36,8 @@ export default function InstructorAllocationPage() {
   const [selectedMembers, setSelectedMembers] = useState<string[]>([])
   const [memberSearchQuery, setMemberSearchQuery] = useState('')
 
+  // Approval state moved to Dashboard
+
   const supabase = createClient()
 
   useEffect(() => {
@@ -45,7 +48,7 @@ export default function InstructorAllocationPage() {
     // Fetch projects with student and instructor details
     const { data: projs } = await supabase
       .from('projects')
-      .select('*, student:student_id(full_name, email), instructor:instructor_id(full_name)')
+      .select('*, student:student_id(full_name, email), instructor:instructor_id(full_name), supervisor:supervisor_id(full_name)')
       .order('created_at', { ascending: false })
     
     setProjects(projs || [])
@@ -53,6 +56,10 @@ export default function InstructorAllocationPage() {
     // Fetch all instructors
     const { data: inst } = await supabase.from('profiles').select('id, full_name').eq('role', 'instructor')
     setInstructors(inst || [])
+
+    // Fetch all supervisors
+    const { data: sups } = await supabase.from('profiles').select('id, full_name').eq('role', 'supervisor')
+    setSupervisors(sups || [])
 
     // Fetch students
     const { data: studs } = await supabase.from('profiles').select('id, full_name, email').eq('role', 'student')
@@ -230,6 +237,8 @@ export default function InstructorAllocationPage() {
     setProcessing(null)
   }
 
+  // Approval logic moved to Dashboard
+
   // Filter roster listing
   const filteredProjects = projects.filter(p => {
     if (!searchQuery.trim()) return true
@@ -392,26 +401,31 @@ export default function InstructorAllocationPage() {
                       </td>
                       
                       <td className="px-6 py-5">
-                        {/* Strictly administrative display badges */}
-                        {p.instructor ? (
+                        {p.status === 'pending' ? (
+                          <div className="flex flex-col gap-1">
+                            <span className="text-[9px] font-black uppercase text-amber-600 bg-amber-50 border border-amber-200/50 px-2.5 py-1 rounded w-fit tracking-wide">
+                              Pending Approval
+                            </span>
+                            <span className="text-[9px] font-black uppercase text-slate-500 mt-1">
+                              Manage in Dashboard
+                            </span>
+                          </div>
+                        ) : p.supervisor ? (
                           <div className="flex flex-col gap-1">
                             <div className="flex items-center gap-2">
                               <div className="w-6 h-6 rounded-lg bg-indigo-50 border border-indigo-100 flex items-center justify-center font-bold text-[10px] text-indigo-700">
-                                {p.instructor.full_name[0]}
+                                {p.supervisor.full_name[0]}
                               </div>
-                              <span className="font-bold text-xs text-slate-700">{p.instructor.full_name}</span>
+                              <span className="font-bold text-xs text-slate-700">{p.supervisor.full_name}</span>
                             </div>
                             <span className="text-[8px] font-black uppercase text-indigo-400 tracking-wider">
-                              Assigned by Admin
+                              Assigned Supervisor
                             </span>
                           </div>
                         ) : (
                           <div className="flex flex-col gap-1">
-                            <span className="text-[9px] font-black uppercase text-amber-600 bg-amber-50 border border-amber-200/50 px-2.5 py-1 rounded w-fit tracking-wide">
-                              Admin Pair Pending
-                            </span>
-                            <span className="text-[8px] text-slate-400 font-semibold italic">
-                              Supervisor Matching Restricted
+                            <span className="text-[9px] font-black uppercase text-slate-500 bg-slate-100 border border-slate-200 px-2.5 py-1 rounded w-fit tracking-wide">
+                              Approved (No Supervisor)
                             </span>
                           </div>
                         )}
@@ -665,6 +679,7 @@ export default function InstructorAllocationPage() {
         )}
       </AnimatePresence>
 
+      {/* Approval Panel moved to Dashboard */}
     </div>
   )
 }
