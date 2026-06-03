@@ -27,10 +27,7 @@ export async function updateSession(request: NextRequest) {
     }
   )
 
-  const hasDemoCookie = request.cookies.has('demo_mode')
-  const isDemo = hasDemoCookie || 
-    !process.env.NEXT_PUBLIC_SUPABASE_URL || 
-    !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  const isDemo = false
 
   if (isDemo) {
     const demoRole = request.cookies.get('demo_role')?.value

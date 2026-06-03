@@ -6,19 +6,13 @@ import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { 
-  User, 
-  Mail, 
-  Lock, 
   Users, 
   GraduationCap, 
   Building2, 
   Loader2, 
-  ArrowRight, 
   Check, 
   Eye, 
   EyeOff, 
-  Sparkles,
-  HelpCircle,
   Sliders,
   Briefcase
 } from 'lucide-react'
@@ -30,24 +24,6 @@ export default function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [selectedRole, setSelectedRole] = useState('student')
 
-  const startSandbox = (role: string) => {
-    document.cookie = `demo_mode=true; path=/`
-    document.cookie = `demo_role=${role}; path=/`
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('demo_mode', 'true')
-      if (role === 'student') {
-        window.location.href = '/student/dashboard'
-      } else if (role === 'instructor') {
-        window.location.href = '/instructor/dashboard'
-      } else if (role === 'industry') {
-        window.location.href = '/partner/dashboard'
-      } else if (role === 'supervisor') {
-        window.location.href = '/supervisor/dashboard'
-      } else {
-        window.location.href = '/admin'
-      }
-    }
-  }
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -60,76 +36,50 @@ export default function RegisterPage() {
     const fullName = formData.get('fullName') as string
 
     try {
-      const supabase = createClient()
-      const { data, error: signUpError } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: {
-            full_name: fullName,
-            role: selectedRole,
-          },
-        },
+      // Step 1: Create the user via server-side admin API (bypasses broken trigger)
+      const res = await fetch('/api/auth/signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password, fullName, role: selectedRole }),
       })
 
-      if (signUpError) {
-        throw signUpError
+      const result = await res.json()
+
+      if (!res.ok) {
+        throw new Error(result.error || 'Registration failed.')
       }
 
-      if (data.user) {
-        await supabase.from('profiles').update({ 
-          full_name: fullName, 
-          role: selectedRole 
-        }).eq('id', data.user.id)
+      // Step 2: Sign in with the newly created credentials to establish session
+      const supabase = createClient()
+      const { error: signInError } = await supabase.auth.signInWithPassword({ email, password })
 
-        // Clear demo mode cookie & localStorage
-        document.cookie = 'demo_mode=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;'
-        if (typeof window !== 'undefined') {
-          localStorage.removeItem('demo_mode')
-        }
-
-        // Set live cookies
-        document.cookie = `demo_role=${selectedRole}; path=/`
-
-        if (selectedRole === 'student') {
-          router.push('/student/dashboard')
-        } else if (selectedRole === 'instructor') {
-          router.push('/instructor/dashboard')
-        } else if (selectedRole === 'industry') {
-          router.push('/partner/dashboard')
-        } else if (selectedRole === 'supervisor') {
-          router.push('/supervisor/dashboard')
-        } else {
-          router.push('/admin')
-        }
-      } else {
-        throw new Error('Registration failed to return user data.')
+      if (signInError) {
+        throw new Error('Account created but sign-in failed. Please go to login page.')
       }
-    } catch (err: any) {
-      console.warn("Auth signup failed, falling back to mock sandbox session:", err.message || err)
-      
-      // Fallback: set demo cookies & localStorage
-      document.cookie = `demo_mode=true; path=/`
-      document.cookie = `demo_role=${selectedRole}; path=/`
+
+      // Clear any leftover sandbox cookies
+      document.cookie = 'demo_mode=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;'
       if (typeof window !== 'undefined') {
-        localStorage.setItem('demo_mode', 'true')
-        localStorage.setItem('user_name', fullName)
+        localStorage.removeItem('demo_mode')
       }
-      
-      // Redirect to correct dashboard
-      setTimeout(() => {
-        if (selectedRole === 'student') {
-          window.location.href = '/student/dashboard'
-        } else if (selectedRole === 'instructor') {
-          window.location.href = '/instructor/dashboard'
-        } else if (selectedRole === 'industry') {
-          window.location.href = '/partner/dashboard'
-        } else if (selectedRole === 'supervisor') {
-          window.location.href = '/supervisor/dashboard'
-        } else {
-          window.location.href = '/admin'
-        }
-      }, 300)
+      document.cookie = `demo_role=${selectedRole}; path=/`
+
+      // Step 3: Redirect to the right dashboard
+      if (selectedRole === 'student') {
+        router.push('/student/dashboard')
+      } else if (selectedRole === 'instructor') {
+        router.push('/instructor/dashboard')
+      } else if (selectedRole === 'industry') {
+        router.push('/partner/dashboard')
+      } else if (selectedRole === 'supervisor') {
+        router.push('/supervisor/dashboard')
+      } else {
+        router.push('/admin')
+      }
+
+    } catch (err: any) {
+      console.error('Registration error:', err.message || err)
+      setError(err.message || 'Registration failed. Please try again.')
     } finally {
       setLoading(false)
     }
@@ -334,29 +284,7 @@ export default function RegisterPage() {
             </div>
           </form>
 
-          {/* Sandbox direct shortcut strip */}
-          <div className="border-t border-slate-100 pt-4 space-y-2">
-            <span className="text-[9px] font-black uppercase tracking-wider text-slate-400 block text-center">
-              Or direct sandbox login (No database setup)
-            </span>
-            <div className="grid grid-cols-2 gap-2">
-              {[
-                { label: '🎓 Student', role: 'student', color: 'hover:border-blue-400 hover:bg-blue-50/50' },
-                { label: '👨‍🏫 Instructor', role: 'instructor', color: 'hover:border-emerald-400 hover:bg-emerald-50/50' },
-                { label: '🏢 Industry', role: 'industry', color: 'hover:border-indigo-400 hover:bg-indigo-50/50' },
-                { label: '🧑‍💼 Supervisor', role: 'supervisor', color: 'hover:border-cyan-400 hover:bg-cyan-50/50' },
-                { label: '🛠️ Admin', role: 'admin', color: 'hover:border-amber-400 hover:bg-amber-50/50' }
-              ].map((b) => (
-                <button
-                  key={b.role}
-                  onClick={() => startSandbox(b.role)}
-                  className={`py-2 px-1 border border-slate-200 rounded-xl text-[10px] font-bold text-slate-500 bg-slate-50 transition-all cursor-pointer ${b.color}`}
-                >
-                  {b.label}
-                </button>
-              ))}
-            </div>
-          </div>
+
 
           {/* Redirect to sign in */}
           <div className="text-center text-xs font-semibold text-slate-400 pt-2">

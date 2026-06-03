@@ -1,26 +1,20 @@
 'use client'
 
 import { createClient } from '@/lib/supabase/client'
-import { getDbState } from '@/lib/supabase/mockDb'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { 
-  User, 
-  Mail, 
-  Lock, 
   Users, 
   GraduationCap, 
   Building2, 
   Loader2, 
-  ArrowRight, 
   Check, 
   Eye, 
   EyeOff, 
-  Sparkles,
-  HelpCircle,
-  Sliders
+  Sliders,
+  Briefcase
 } from 'lucide-react'
 
 export default function LoginPage() {
@@ -30,22 +24,6 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [selectedRole, setSelectedRole] = useState('student')
 
-  const startSandbox = (role: string) => {
-    document.cookie = `demo_mode=true; path=/`
-    document.cookie = `demo_role=${role}; path=/`
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('demo_mode', 'true')
-      if (role === 'student') {
-        window.location.href = '/student/dashboard'
-      } else if (role === 'instructor') {
-        window.location.href = '/instructor/dashboard'
-      } else if (role === 'industry') {
-        window.location.href = '/partner/dashboard'
-      } else {
-        window.location.href = '/admin'
-      }
-    }
-  }
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -99,6 +77,8 @@ export default function LoginPage() {
           router.push('/instructor/dashboard')
         } else if (role === 'industry') {
           router.push('/partner/dashboard')
+        } else if (role === 'supervisor') {
+          router.push('/supervisor/dashboard')
         } else {
           router.push('/admin')
         }
@@ -106,68 +86,8 @@ export default function LoginPage() {
         router.push('/')
       }
     } catch (err: any) {
-      console.warn("Auth signin failed, falling back to mock sandbox session:", err.message || err)
-      
-      // Fallback role validation logic for local sandbox / mock profiles database
-      let mockProfile = null
-      try {
-        const state = getDbState()
-        mockProfile = state.profiles.find((p: any) => p.email.toLowerCase() === email.toLowerCase())
-      } catch (e) {
-        console.error("Error reading mock state:", e)
-      }
-
-      if (mockProfile && mockProfile.role !== selectedRole) {
-        const profileRoleName = mockProfile.role === 'industry' ? 'an Industry Partner' : `a ${mockProfile.role}`
-        const selectedRoleName = selectedRole === 'industry' ? 'an Industry Partner' : `a ${selectedRole}`
-        setError(`This account is registered as ${profileRoleName}, but you selected ${selectedRoleName}.`)
-        setLoading(false)
-        return
-      }
-
-      // Also do standard checks if they entered specific default names/keywords to prevent obvious mismatches if profile doesn't exist
-      const emailLower = email.toLowerCase()
-      if (emailLower.includes('instructor') && selectedRole !== 'instructor') {
-        setError(`This email is associated with an Instructor account, but you selected ${selectedRole === 'industry' ? 'an Industry Partner' : `a ${selectedRole}`}.`)
-        setLoading(false)
-        return
-      }
-      if (emailLower.includes('student') && selectedRole !== 'student') {
-        setError(`This email is associated with a Student account, but you selected ${selectedRole === 'industry' ? 'an Industry Partner' : `a ${selectedRole}`}.`)
-        setLoading(false)
-        return
-      }
-      if (emailLower.includes('partner') && selectedRole !== 'industry') {
-        setError(`This email is associated with an Industry Partner account, but you selected ${selectedRole === 'industry' ? 'an Industry Partner' : `a ${selectedRole}`}.`)
-        setLoading(false)
-        return
-      }
-      if (emailLower.includes('admin') && selectedRole !== 'admin') {
-        setError(`This email is associated with an Admin account, but you selected ${selectedRole === 'industry' ? 'an Industry Partner' : `a ${selectedRole}`}.`)
-        setLoading(false)
-        return
-      }
-
-      // Fallback: set demo cookies & localStorage
-      document.cookie = `demo_mode=true; path=/`
-      document.cookie = `demo_role=${selectedRole}; path=/`
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('demo_mode', 'true')
-        localStorage.setItem('user_name', email.split('@')[0].toUpperCase())
-      }
-      
-      // Redirect to correct dashboard
-      setTimeout(() => {
-        if (selectedRole === 'student') {
-          window.location.href = '/student/dashboard'
-        } else if (selectedRole === 'instructor') {
-          window.location.href = '/instructor/dashboard'
-        } else if (selectedRole === 'industry') {
-          window.location.href = '/partner/dashboard'
-        } else {
-          window.location.href = '/admin'
-        }
-      }, 300)
+      console.error("Auth signin failed:", err.message || err)
+      setError(err.message || 'Authentication failed. Please check your credentials.')
     } finally {
       setLoading(false)
     }
@@ -249,12 +169,13 @@ export default function LoginPage() {
             
             {/* Interactive Role Selection Grid */}
             <div className="space-y-1.5 pb-2">
-              <label className="text-[10px] text-slate-400 font-black uppercase tracking-wider block ml-1">Choose role bypass target</label>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+              <label className="text-[10px] text-slate-400 font-black uppercase tracking-wider block ml-1">I am signing in as</label>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                 {[
                   { role: 'student', label: 'Student', desc: 'Capstone tracks', icon: <GraduationCap className="w-5 h-5" />, color: 'border-blue-200 text-blue-600 bg-blue-50/10' },
                   { role: 'instructor', label: 'Instructor', desc: 'Jury evaluation', icon: <Users className="w-5 h-5" />, color: 'border-emerald-200 text-emerald-600 bg-emerald-50/10' },
                   { role: 'industry', label: 'Industry', desc: 'Sponsor briefs', icon: <Building2 className="w-5 h-5" />, color: 'border-indigo-200 text-indigo-600 bg-indigo-50/10' },
+                  { role: 'supervisor', label: 'Supervisor', desc: 'Mentorship', icon: <Briefcase className="w-5 h-5" />, color: 'border-cyan-200 text-cyan-600 bg-cyan-50/10' },
                   { role: 'admin', label: 'Admin', desc: 'Cohort admin', icon: <Sliders className="w-5 h-5" />, color: 'border-amber-200 text-amber-600 bg-amber-50/10' }
                 ].map((r) => {
                   const isSelected = selectedRole === r.role
@@ -325,28 +246,7 @@ export default function LoginPage() {
             </div>
           </form>
 
-          {/* Sandbox direct shortcut strip */}
-          <div className="border-t border-slate-100 pt-4 space-y-2">
-            <span className="text-[9px] font-black uppercase tracking-wider text-slate-400 block text-center">
-              Or direct sandbox login (No database setup)
-            </span>
-            <div className="grid grid-cols-2 gap-2">
-              {[
-                { label: '🎓 Student', role: 'student', color: 'hover:border-blue-400 hover:bg-blue-50/50' },
-                { label: '👨‍🏫 Instructor', role: 'instructor', color: 'hover:border-emerald-400 hover:bg-emerald-50/50' },
-                { label: '🏢 Industry', role: 'industry', color: 'hover:border-indigo-400 hover:bg-indigo-50/50' },
-                { label: '🛠️ Admin', role: 'admin', color: 'hover:border-amber-400 hover:bg-amber-50/50' }
-              ].map((b) => (
-                <button
-                  key={b.role}
-                  onClick={() => startSandbox(b.role)}
-                  className={`py-2 px-1 border border-slate-200 rounded-xl text-[10px] font-bold text-slate-500 bg-slate-50 transition-all cursor-pointer ${b.color}`}
-                >
-                  {b.label}
-                </button>
-              ))}
-            </div>
-          </div>
+
 
           {/* Redirect to sign up */}
           <div className="text-center text-xs font-semibold text-slate-400 pt-2">

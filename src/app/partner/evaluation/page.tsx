@@ -15,6 +15,20 @@ import {
   ThumbsUp
 } from 'lucide-react'
 
+const getMilestoneDescription = (title: string): string => {
+  const descMap: Record<string, string> = {
+    'Project Proposal': 'Detailed research scope, timeline, risk mitigation plans, and software architecture diagrams.',
+    'Initial Architecture & Schema': 'Define the application database modeling, entity relationship diagram, and API interface specifications.',
+    'Mid-Term Presentation': 'Status report on baseline execution, initial results telemetry, and frontend/backend integration status.',
+    'Final Execution & Thesis': 'Final code repository release, user evaluation validation reports, and the printed thesis defense draft.',
+    'Project Pitch & Scoping': 'Aligning with the industry mentor on team expectations, technical stack requirements, and MVP objectives.',
+    'System Architecture Diagram': 'Documenting application infrastructure, cloud service endpoints, data schemas, and API routes.',
+    'Beta Demo & Testing': 'Deploying the interactive application build, executing end-to-end integration tests, and collecting partner telemetry.',
+    'Final Client Deliverables': 'Handing over administrative control settings, final production build artifacts, and client handover presentations.'
+  }
+  return descMap[title] || 'No description provided.'
+}
+
 export default function PartnerEvaluationPage() {
   const [projects, setProjects] = useState<any[]>([])
   const [deliverables, setDeliverables] = useState<any[]>([])
@@ -53,9 +67,13 @@ export default function PartnerEvaluationPage() {
         .eq('project_id', projs[0].id)
         .order('due_date', { ascending: true })
 
-      setDeliverables(delivs || [])
-      if (delivs && delivs.length > 0) {
-        setSelectedDeliv(delivs[0])
+      const enriched = (delivs || []).map((d: any) => ({
+        ...d,
+        description: d.description || getMilestoneDescription(d.title)
+      }))
+      setDeliverables(enriched)
+      if (enriched.length > 0) {
+        setSelectedDeliv(enriched[0])
       }
     }
     setLoading(false)
@@ -104,8 +122,12 @@ export default function PartnerEvaluationPage() {
         .eq('project_id', selectedProj.id)
         .order('due_date', { ascending: true })
 
-      setDeliverables(data || [])
-      const updatedDeliv = data?.find((d: any) => d.id === selectedDeliv.id)
+      const enriched = (data || []).map((d: any) => ({
+        ...d,
+        description: d.description || getMilestoneDescription(d.title)
+      }))
+      setDeliverables(enriched)
+      const updatedDeliv = enriched.find((d: any) => d.id === selectedDeliv.id)
       setSelectedDeliv(updatedDeliv || null)
     }
     setProcessing(false)
@@ -146,8 +168,12 @@ export default function PartnerEvaluationPage() {
                       .select('*')
                       .eq('project_id', p.id)
                       .order('due_date', { ascending: true })
-                    setDeliverables(data || [])
-                    setSelectedDeliv(data?.[0] || null)
+                    const enriched = (data || []).map((d: any) => ({
+                      ...d,
+                      description: d.description || getMilestoneDescription(d.title)
+                    }))
+                    setDeliverables(enriched)
+                    setSelectedDeliv(enriched[0] || null)
                   }}
                   className={`w-full p-4 text-left rounded-2xl border transition-all text-xs font-bold ${
                     selectedProj?.id === p.id 

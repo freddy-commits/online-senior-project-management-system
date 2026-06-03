@@ -22,10 +22,19 @@ export default async function OverviewPage() {
     .eq('student_id', user.id)
     .order('created_at', { ascending: false })
 
-  const enrichedProjects = projects?.map(p => ({
-    ...p,
-    origin: p.industry_partner_id ? 'industry' : 'academic'
-  })) || []
+  const enrichedProjects = await Promise.all((projects || []).map(async p => {
+    const { data: delivs } = await supabase
+      .from('deliverables')
+      .select('*')
+      .eq('project_id', p.id)
+      .order('due_date', { ascending: true })
+
+    return {
+      ...p,
+      origin: p.industry_partner_id ? 'industry' : 'academic',
+      deliverables: delivs || []
+    }
+  }))
 
   return (
     <div className="p-8 pb-20">

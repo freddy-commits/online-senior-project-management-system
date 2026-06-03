@@ -3,7 +3,7 @@
 export interface MockProfile {
   id: string
   full_name: string
-  role: 'student' | 'instructor' | 'industry' | 'admin'
+  role: 'student' | 'instructor' | 'industry' | 'admin' | 'supervisor'
   email: string
   phone?: string
 }
@@ -77,6 +77,7 @@ const DEFAULT_PROFILES: MockProfile[] = [
   { id: 'demo-instructor-id', full_name: 'Dr. Sarah Johnson', role: 'instructor', email: 'instructor@university.edu', phone: '+254723456789' },
   { id: 'demo-industry-id', full_name: 'TechCorp Mentorship', role: 'industry', email: 'partner@techcorp.com', phone: '+254734567890' },
   { id: 'demo-admin-id', full_name: 'Admin Admin', role: 'admin', email: 'admin@university.edu', phone: '+254745678901' },
+  { id: 'demo-supervisor-id', full_name: 'Dr. James Wilson', role: 'supervisor', email: 'supervisor@university.edu', phone: '+254755555555' },
   // Additional users to act as alternative contacts or student leads
   { id: 'demo-student-2', full_name: 'Chloe Smith', role: 'student', email: 'chloe@university.edu', phone: '+254756789012' },
   { id: 'demo-student-3', full_name: 'Marcus Miller', role: 'student', email: 'marcus@university.edu', phone: '+254767890123' }
@@ -297,13 +298,20 @@ export function resetDbState() {
 }
 
 // Global active user in cookie helper
-export function getActiveMockRole(): 'student' | 'instructor' | 'industry' | 'admin' {
+export function getActiveMockRole(): 'student' | 'instructor' | 'industry' | 'admin' | 'supervisor' {
   if (!isClient) return 'student'
   const match = document.cookie.match(/^(.*;)?\s*demo_role\s*=\s*([^;]+)(.*)?$/)
   return (match ? match[2] : 'student') as any
 }
 
 export function getActiveMockUser(): MockProfile {
+  if (isClient) {
+    const activeEmail = localStorage.getItem('active_user_email')
+    if (activeEmail) {
+      const profile = getDbState().profiles.find(p => p.email.toLowerCase() === activeEmail.toLowerCase())
+      if (profile) return profile
+    }
+  }
   const role = getActiveMockRole()
   const profiles = getDbState().profiles
   return profiles.find(p => p.role === role) || profiles[0]

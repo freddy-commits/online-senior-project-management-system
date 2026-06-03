@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
 import { 
   GraduationCap, 
@@ -51,6 +52,20 @@ interface SoloTask {
   completed: boolean
 }
 
+const getMilestoneDescription = (title: string): string => {
+  const descMap: Record<string, string> = {
+    'Project Proposal': 'Detailed research scope, timeline, risk mitigation plans, and software architecture diagrams.',
+    'Initial Architecture & Schema': 'Define the application database modeling, entity relationship diagram, and API interface specifications.',
+    'Mid-Term Presentation': 'Status report on baseline execution, initial results telemetry, and frontend/backend integration status.',
+    'Final Execution & Thesis': 'Final code repository release, user evaluation validation reports, and the printed thesis defense draft.',
+    'Project Pitch & Scoping': 'Aligning with the industry mentor on team expectations, technical stack requirements, and MVP objectives.',
+    'System Architecture Diagram': 'Documenting application infrastructure, cloud service endpoints, data schemas, and API routes.',
+    'Beta Demo & Testing': 'Deploying the interactive application build, executing end-to-end integration tests, and collecting partner telemetry.',
+    'Final Client Deliverables': 'Handing over administrative control settings, final production build artifacts, and client handover presentations.'
+  }
+  return descMap[title] || 'No description provided.'
+}
+
 export default function StudentDashboardClient({ 
   initialProfile, 
   initialProjects 
@@ -60,10 +75,7 @@ export default function StudentDashboardClient({
   const [profile, setProfile] = useState<any>(initialProfile)
 
   useEffect(() => {
-    const isDemo = typeof window !== 'undefined' && (
-      localStorage.getItem('demo_mode') === 'true' || 
-      document.cookie.includes('demo_mode=true')
-    )
+    const isDemo = false
 
     if (isDemo && typeof window !== 'undefined') {
       const storageKey = 'seniorproj_sandbox_db'
@@ -83,10 +95,15 @@ export default function StudentDashboardClient({
             const enrichedProjs = studentProjs.map((p: any) => {
               const supervisor = parsed.profiles.find((prof: any) => prof.id === p.instructor_id)
               const partner = parsed.profiles.find((prof: any) => prof.id === p.industry_partner_id)
+              
+              // Seed deliverables from mock DB if they exist
+              const delivs = parsed.deliverables ? parsed.deliverables.filter((d: any) => d.project_id === p.id) : []
+              
               return {
                 ...p,
                 supervisor: supervisor ? { full_name: supervisor.full_name, email: supervisor.email } : null,
-                partner: partner ? { full_name: partner.full_name, email: partner.email } : null
+                partner: partner ? { full_name: partner.full_name, email: partner.email } : null,
+                deliverables: delivs
               }
             })
 
@@ -106,6 +123,42 @@ export default function StudentDashboardClient({
     : (projectList.find(p => p.origin === 'industry') || null)
 
   const hasActiveProject = activeProject !== null && activeProject.status !== 'rejected'
+
+  // Dynamic metrics calculations based on activeProject.deliverables
+  const deliverables = activeProject?.deliverables || []
+  const totalCount = deliverables.length
+  const completedCount = deliverables.filter((d: any) => d.status === 'graded' || d.status === 'completed').length
+  const submittedCount = deliverables.filter((d: any) => d.status === 'submitted').length
+  
+  const progressPercent = totalCount > 0 
+    ? Math.round(((completedCount + submittedCount) / totalCount) * 105) > 100 
+      ? 100 
+      : Math.round(((completedCount + submittedCount) / totalCount) * 100) 
+    : 0
+
+  const overdueCount = deliverables.filter((d: any) => {
+    return d.status === 'todo' && d.due_date && new Date(d.due_date).getTime() < Date.now()
+  }).length
+  
+  const healthPercent = Math.max(0, 100 - overdueCount * 25)
+
+  let healthLabel = 'Excellent'
+  let healthColor = 'text-emerald-600 bg-emerald-50 border-emerald-100'
+  let healthStroke = '#10b981'
+
+  if (healthPercent < 50) {
+    healthLabel = 'Critical'
+    healthColor = 'text-rose-600 bg-rose-50 border-rose-100'
+    healthStroke = '#ef4444'
+  } else if (healthPercent < 75) {
+    healthLabel = 'At Risk'
+    healthColor = 'text-amber-600 bg-amber-50 border-amber-100'
+    healthStroke = '#f59e0b'
+  } else if (healthPercent < 90) {
+    healthLabel = 'Good'
+    healthColor = 'text-blue-600 bg-blue-50 border-blue-100'
+    healthStroke = '#3b82f6'
+  }
   
   
   // Interactive features states
@@ -208,205 +261,206 @@ export default function StudentDashboardClient({
             className="space-y-6"
           >
             {!hasActiveProject ? (
-              <div className="p-12 text-center bg-white rounded-[2rem] border border-slate-200 shadow-sm mt-8">
-                <Briefcase className="w-12 h-12 text-slate-300 mx-auto mb-4" />
-                <h2 className="text-xl font-bold text-slate-900 tracking-tight">Waiting for Allocation</h2>
-                <p className="text-sm font-semibold text-slate-500 mt-2 max-w-md mx-auto">
-                  Your Instructor will assign you to an Industry Project shortly. Please check back later.
-                </p>
+              <div className="space-y-6">
+                {/* Placeholder Health Dashboards */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 opacity-30 pointer-events-none select-none">
+                  <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm flex items-center justify-between gap-6">
+                    <div>
+                      <span className="text-[10px] font-black text-slate-400 tracking-wider uppercase block">Project Health</span>
+                      <span className="text-2xl font-black text-slate-900 mt-2 block">--%</span>
+                    </div>
+                    <div className="w-16 h-16 bg-slate-100 rounded-2xl" />
+                  </div>
+                  <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm">
+                    <span className="text-[10px] font-black text-slate-400 tracking-wider uppercase block mb-3">Task Velocity</span>
+                    <div className="h-10 bg-slate-100 rounded" />
+                  </div>
+                  <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm">
+                    <span className="text-[10px] font-black text-slate-400 tracking-wider uppercase block mb-1">Progress Trend</span>
+                    <div className="h-10 bg-slate-100 rounded" />
+                  </div>
+                </div>
+
+                <div className="p-12 text-center bg-white rounded-[2rem] border border-slate-200 shadow-sm mt-8 space-y-5">
+                  <div className="w-16 h-16 bg-slate-50 border border-slate-100 text-slate-400 rounded-3xl flex items-center justify-center mx-auto shadow-md">
+                    <Briefcase className="w-8 h-8" />
+                  </div>
+                  <div className="space-y-2">
+                    <h2 className="text-xl font-bold text-slate-900 tracking-tight">Waiting for Allocation</h2>
+                    <p className="text-sm font-semibold text-slate-500 max-w-md mx-auto leading-relaxed">
+                      Your Instructor will assign you to an Industry Project shortly. Project health index and progress graphs will become active once your team allocation is finalized.
+                    </p>
+                  </div>
+                </div>
               </div>
             ) : (
               <>
-                <div className="flex justify-between items-end border-b border-slate-100 pb-2">
-              <div>
-                <h1 className="text-2xl font-black text-slate-950 tracking-tight">{activeProject?.title || 'TechCorp Smart City API'}</h1>
-                <p className="text-xs text-slate-400 font-semibold mt-1">{activeProject?.description || 'Real-time traffic orchestration and data visualization platform.'}</p>
-              </div>
-
-              <div className="flex gap-2 text-center shrink-0">
-                <div className="bg-slate-50 border border-slate-100 rounded-xl p-2.5">
-                  <span className="text-[8px] text-slate-400 font-extrabold uppercase block">Year</span>
-                  <span className="text-sm font-black text-slate-900">02</span>
-                </div>
-                <div className="bg-slate-50 border border-slate-100 rounded-xl p-2.5">
-                  <span className="text-[8px] text-slate-400 font-extrabold uppercase block">Grade</span>
-                  <span className="text-sm font-black text-[#0f8b5a]">A-</span>
-                </div>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              
-              {/* Left Column Area (Sponsor Brief & Milestones) */}
-              <div className="md:col-span-2 space-y-6">
-                
-                {/* Sponsor Brief Card */}
-                <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm hover:shadow-md transition-shadow grid grid-cols-1 sm:grid-cols-3 gap-4 items-center">
-                  <div className="sm:col-span-2 space-y-4">
-                    <h3 className="text-[10px] font-black text-slate-400 tracking-wider uppercase block">Sponsor Brief</h3>
-                    <p className="text-xs text-slate-600 font-semibold leading-relaxed">
-                      "Our goal is to prototype a scalable API that handles up to 5,000 concurrent sensor nodes for metropolitan traffic management. Students must ensure 99.9% uptime for the simulation module."
-                    </p>
-                    <div className="flex gap-1.5 flex-wrap">
-                      {['Python 3.11', 'PostgreSQL', 'Docker', 'Redis'].map(t => (
-                        <span key={t} className="text-[9px] font-bold bg-slate-50 text-slate-500 px-2.5 py-1 rounded border border-slate-150">
-                          {t}
-                        </span>
-                      ))}
-                    </div>
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-100 pb-4">
+                  <div className="space-y-1">
+                    <span className="text-[10px] font-black text-[#0c59db] uppercase tracking-widest block">
+                      YEAR 3 • INDUSTRY TRACK
+                    </span>
+                    <h1 className="text-2xl font-black text-slate-900 tracking-tight leading-tight">{activeProject.title}</h1>
+                    <p className="text-xs text-slate-500 font-medium leading-relaxed max-w-2xl">{activeProject.description}</p>
                   </div>
-                  <div className="w-full h-36 bg-slate-50 rounded-2xl overflow-hidden border border-slate-150">
-                    <img 
-                      src="https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=300" 
-                      alt="TechCorp Smart City" 
-                      className="w-full h-full object-cover"
-                    />
+                  <div className="bg-slate-50 border border-slate-100 rounded-xl p-2.5 shrink-0 text-center">
+                    <span className="text-[8px] text-slate-400 font-extrabold uppercase block">Status</span>
+                    <span className="text-xs font-black text-emerald-600 uppercase">{activeProject.status}</span>
                   </div>
                 </div>
 
-                {/* Industry Milestones Timeline Checklist */}
-                <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm hover:shadow-md transition-shadow space-y-4">
-                  <h3 className="text-[10px] font-black text-slate-400 tracking-wider uppercase block">Industry Milestones</h3>
+                {/* Project Health Row */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   
-                  <div className="space-y-4 relative pl-5 border-l-2 border-slate-100">
-                    {/* Milestone 1 */}
-                    <div className="relative">
-                      <div className="absolute -left-[27px] top-0.5 w-3.5 h-3.5 rounded-full bg-emerald-500 border-2 border-white ring-4 ring-white" />
-                      <div className="space-y-0.5">
-                        <h4 className="text-xs font-bold text-slate-800 leading-snug">Phase 1: Architecture Review</h4>
-                        <p className="text-[10px] text-slate-400 font-semibold">
-                          System design document and database schema approval by TechCorp mentors.
-                        </p>
-                        <span className="text-[8px] text-emerald-600 font-black uppercase tracking-wider block mt-1">
-                          COMPLETED OCT 14
+                  {/* Card 1: Health index gauge */}
+                  <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm hover:shadow-md transition-shadow flex items-center justify-between gap-6">
+                    <div>
+                      <span className="text-[10px] font-black text-slate-400 tracking-wider uppercase block">Project Health</span>
+                      <span className="text-2xl font-black text-slate-900 mt-2 block">{healthPercent}%</span>
+                      <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase border mt-1 ${healthColor}`}>
+                        {healthLabel}
+                      </span>
+                    </div>
+                    <div className="relative w-20 h-20 shrink-0">
+                      <svg className="w-full h-full transform -rotate-90">
+                        <circle cx="40" cy="40" r="32" stroke="#f1f5f9" strokeWidth="6" fill="transparent" />
+                        <circle cx="40" cy="40" r="32" stroke={healthStroke} strokeWidth="6" fill="transparent" strokeDasharray="201" strokeDashoffset={201 - (201 * healthPercent) / 100} strokeLinecap="round" />
+                      </svg>
+                      <div className="absolute inset-0 flex items-center justify-center text-xs font-black text-slate-850">{healthPercent}%</div>
+                    </div>
+                  </div>
+
+                  {/* Card 2: Total Progress */}
+                  <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm hover:shadow-md transition-shadow flex items-center justify-between gap-6">
+                    <div>
+                      <span className="text-[10px] font-black text-slate-400 tracking-wider uppercase block">Total Progress</span>
+                      <span className="text-2xl font-black text-slate-900 mt-2 block">{progressPercent}%</span>
+                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase bg-blue-50 text-blue-600 border border-blue-100 mt-1">
+                        In Motion
+                      </span>
+                    </div>
+                    <div className="relative w-20 h-20 shrink-0">
+                      <svg className="w-full h-full transform -rotate-90">
+                        <circle cx="40" cy="40" r="32" stroke="#f1f5f9" strokeWidth="6" fill="transparent" />
+                        <circle cx="40" cy="40" r="32" stroke="#0c59db" strokeWidth="6" fill="transparent" strokeDasharray="201" strokeDashoffset={201 - (201 * progressPercent) / 100} strokeLinecap="round" />
+                      </svg>
+                      <div className="absolute inset-0 flex items-center justify-center text-xs font-black text-slate-850">{progressPercent}%</div>
+                    </div>
+                  </div>
+
+                  {/* Card 3: Project Roles Metadata */}
+                  <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm hover:shadow-md transition-shadow space-y-3">
+                    <span className="text-[10px] font-black text-slate-400 tracking-wider uppercase block">Project Allocation</span>
+                    <div className="space-y-2 text-xs">
+                      <div className="flex justify-between items-center border-b border-slate-50 pb-1.5">
+                        <span className="text-slate-400 font-semibold">Supervisor</span>
+                        <span className="text-slate-800 font-bold truncate max-w-[150px]" title={activeProject.supervisor?.full_name || 'Pending Matching...'}>
+                          {activeProject.supervisor?.full_name || 'Pending Matching...'}
                         </span>
                       </div>
-                    </div>
-
-                    {/* Milestone 2 */}
-                    <div className="relative">
-                      <div className="absolute -left-[27px] top-0.5 w-3.5 h-3.5 rounded-full bg-blue-600 border-2 border-white ring-4 ring-white" />
-                      <div className="space-y-2">
-                        <div className="space-y-0.5">
-                          <h4 className="text-xs font-bold text-slate-800 leading-snug">Phase 2: Alpha Simulation Prototype</h4>
-                          <p className="text-[10px] text-slate-400 font-semibold">
-                            Developing the core simulation engine with WebSocket real-time updates.
-                          </p>
-                        </div>
-                        <div className="w-1/2 space-y-1">
-                          <div className="flex justify-between items-center text-[9px] font-black text-slate-400">
-                            <span>Progress</span>
-                            <span className="text-blue-600">65%</span>
-                          </div>
-                          <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden border border-slate-100">
-                            <div className="bg-blue-600 h-full rounded-full w-[65%]" />
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Milestone 3 */}
-                    <div className="relative">
-                      <div className="absolute -left-[27px] top-0.5 w-3.5 h-3.5 rounded-full bg-slate-200 border-2 border-white ring-4 ring-white" />
-                      <div className="space-y-0.5">
-                        <h4 className="text-xs font-bold text-slate-800 leading-snug">Phase 3: Security &amp; Load Testing</h4>
-                        <p className="text-[10px] text-slate-400 font-semibold">
-                          Penetration testing and benchmarking under high-concurrency loads.
-                        </p>
-                        <span className="text-[8px] text-slate-400 font-black uppercase tracking-wider block mt-1">
-                          DUE JAN 15
+                      <div className="flex justify-between items-center">
+                        <span className="text-slate-400 font-semibold">Industry Partner</span>
+                        <span className="text-slate-800 font-bold truncate max-w-[150px]" title={activeProject.partner?.full_name || 'Pending Matching...'}>
+                          {activeProject.partner?.full_name || 'Pending Matching...'}
                         </span>
                       </div>
                     </div>
                   </div>
                 </div>
 
-              </div>
-
-              {/* Right Column Area (Leaderboard & Team Roster) */}
-              <div className="space-y-6">
-                
-                {/* Team Leaderboard Card */}
-                <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm hover:shadow-md transition-shadow space-y-4">
-                  <h3 className="text-[10px] font-black text-slate-400 tracking-wider uppercase block">Team Leaderboard</h3>
-                  
-                  <div className="space-y-2">
-                    {/* Rank 1 */}
-                    <div className="bg-[#b37a1f]/10 border border-[#b37a1f]/20 rounded-2xl p-3.5 flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <span className="w-6 h-6 rounded-lg bg-[#b37a1f]/20 text-[#b37a1f] font-extrabold text-[10px] flex items-center justify-center shrink-0">01</span>
-                        <span className="text-xs font-bold text-slate-800">Visionary Voyagers</span>
-                      </div>
-                      <span className="text-xs font-black text-[#b37a1f]">2,450 pts</span>
-                    </div>
-
-                    {/* Rank 2 */}
-                    <div className="bg-slate-50 border border-slate-100 rounded-2xl p-3 flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <span className="w-6 h-6 bg-white border border-slate-200 rounded-lg text-slate-400 font-bold text-[10px] flex items-center justify-center shrink-0">02</span>
-                        <span className="text-xs font-bold text-slate-700">Urban Grid Tech</span>
-                      </div>
-                      <span className="text-xs font-extrabold text-slate-500">2,310 pts</span>
-                    </div>
-
-                    {/* Rank 3 */}
-                    <div className="bg-slate-50 border border-slate-100 rounded-2xl p-3 flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <span className="w-6 h-6 bg-white border border-slate-200 rounded-lg text-slate-400 font-bold text-[10px] flex items-center justify-center shrink-0">03</span>
-                        <span className="text-xs font-bold text-slate-700">Node Knights</span>
-                      </div>
-                      <span className="text-xs font-extrabold text-slate-500">2,180 pts</span>
-                    </div>
+                {/* Milestones timeline */}
+                <div className="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm hover:shadow-md transition-shadow space-y-4">
+                  <div className="flex justify-between items-center border-b border-slate-100 pb-3">
+                    <h3 className="text-sm font-black text-slate-900 tracking-tight">Project Milestones &amp; Deliverables Roadmap</h3>
+                    <Link href="/student/milestones" className="text-xs font-bold text-blue-600 hover:underline flex items-center gap-1">
+                      Go to Milestones Workspace <ChevronRight className="w-4 h-4" />
+                    </Link>
                   </div>
-
-                  <button className="text-[10px] font-black text-slate-400 hover:text-slate-700 block text-center w-full uppercase tracking-widest pt-1">
-                    View full rankings →
-                  </button>
-                </div>
-
-                {/* My Team Card */}
-                <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm hover:shadow-md transition-shadow space-y-4">
-                  <h3 className="text-[10px] font-black text-slate-400 tracking-wider uppercase block">My Team</h3>
                   
-                  <div className="space-y-3">
-                    {[
-                      { name: 'Alex Rivera', role: 'Lead Developer', avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150', isMe: true },
-                      { name: 'Sara Chen', role: 'UX/UI Designer', avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150', isMe: false },
-                      { name: 'Marcus Thorne', role: 'Data Engineer', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150', isMe: false }
-                    ].map((member, i) => (
-                      <div key={i} className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                          <img className="w-8 h-8 rounded-full object-cover shadow-sm border border-slate-100" src={member.avatar} alt={member.name} />
-                          <div>
-                            <h4 className="text-xs font-bold text-slate-800">{member.name}</h4>
-                            <p className="text-[9px] text-slate-400 font-semibold mt-0.5">{member.role}</p>
-                          </div>
-                        </div>
-
-                        {member.isMe && (
-                          <span className="px-2 py-0.5 bg-blue-50 text-blue-600 rounded text-[9px] font-black uppercase tracking-widest border border-blue-100">
-                            YOU
+                  {deliverables.length === 0 ? (
+                    <div className="text-center py-10 text-slate-400 font-bold text-xs">
+                      No milestones have been seeded for this project. Visit the Milestones workspace to get started.
+                    </div>
+                  ) : (
+                    <div className="space-y-6 relative pl-5 border-l-2 border-slate-100 mt-4">
+                      {deliverables.map((deliv: any) => {
+                        const isOverdue = deliv.status === 'todo' && deliv.due_date && new Date(deliv.due_date).getTime() < Date.now()
+                        
+                        let statusBadge = (
+                          <span className="text-[8px] font-black uppercase px-2 py-0.5 rounded bg-slate-50 text-slate-500 border border-slate-200">
+                            Todo
                           </span>
-                        )}
-                      </div>
-                    ))}
+                        )
+                        let dotColor = 'bg-slate-350'
+                        if (deliv.status === 'graded') {
+                          statusBadge = (
+                            <span className="text-[8px] font-black uppercase px-2 py-0.5 rounded bg-emerald-50 text-emerald-600 border border-emerald-150">
+                              Graded
+                            </span>
+                          )
+                          dotColor = 'bg-emerald-500'
+                        } else if (deliv.status === 'submitted') {
+                          statusBadge = (
+                            <span className="text-[8px] font-black uppercase px-2 py-0.5 rounded bg-blue-50 text-blue-600 border border-blue-150">
+                              Submitted
+                            </span>
+                          )
+                          dotColor = 'bg-blue-650'
+                        } else if (isOverdue) {
+                          statusBadge = (
+                            <span className="text-[8px] font-black uppercase px-2 py-0.5 rounded bg-rose-50 text-rose-600 border border-rose-150">
+                              Overdue
+                            </span>
+                          )
+                          dotColor = 'bg-rose-500'
+                        }
 
-                    {/* Invite Role button */}
-                    <button className="w-full py-3.5 bg-slate-50 border border-dashed border-slate-200 hover:border-slate-400 rounded-2xl flex items-center justify-center gap-1.5 text-xs font-bold text-slate-500 transition-colors group cursor-pointer mt-4">
-                      <Plus className="w-4 h-4 text-slate-400 group-hover:text-slate-600 transition-colors" />
-                      Invite Student / Open Role
-                    </button>
+                        const formattedDueDate = deliv.due_date 
+                          ? new Date(deliv.due_date).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' })
+                          : 'No Date'
 
-                    {/* Team Chat button */}
-                    <button className="w-full bg-[#f4f7fe] hover:bg-blue-50 text-[#0c59db] flex items-center justify-center py-3 rounded-2xl font-extrabold text-xs tracking-wider uppercase transition-colors cursor-pointer mt-2.5">
-                      Team Chat
-                    </button>
-                  </div>
+                        return (
+                          <div key={deliv.id} className="relative group">
+                            {/* Dot Node */}
+                            <div className={`absolute -left-[27px] top-1.5 w-3.5 h-3.5 rounded-full border-2 border-white ring-4 ring-white transition-transform group-hover:scale-110 ${dotColor}`} />
+                            
+                            <div className="space-y-1">
+                              <div className="flex items-center gap-2">
+                                <h4 className="text-sm font-bold text-slate-800 leading-snug">{deliv.title}</h4>
+                                {statusBadge}
+                              </div>
+                              <p className="text-xs text-slate-500 font-semibold">
+                                {deliv.description || getMilestoneDescription(deliv.title)}
+                              </p>
+                              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 pt-1 text-[10px] text-slate-400 font-bold">
+                                <span className="flex items-center gap-1">
+                                  <Calendar className="w-3.5 h-3.5 shrink-0" />
+                                  Due: {formattedDueDate}
+                                </span>
+                                {deliv.submission_url && (
+                                  <span className="flex items-center gap-1 text-slate-650">
+                                    <FileText className="w-3.5 h-3.5 shrink-0" />
+                                    Sub: {deliv.submission_url}
+                                  </span>
+                                )}
+                              </div>
+                              {deliv.feedback_partner && (
+                                <div className="mt-2 p-3 bg-slate-50 border border-slate-100 rounded-xl text-xs italic text-slate-600 font-medium">
+                                  <strong>Partner Feedback:</strong> "{deliv.feedback_partner}"
+                                </div>
+                              )}
+                              {deliv.feedback_supervisor && (
+                                <div className="mt-2 p-3 bg-slate-50 border border-slate-100 rounded-xl text-xs italic text-slate-600 font-medium">
+                                  <strong>Supervisor Feedback:</strong> "{deliv.feedback_supervisor}"
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  )}
                 </div>
-
-              </div>
-
-            </div>
               </>
             )}
           </motion.div>
@@ -422,234 +476,218 @@ export default function StudentDashboardClient({
             className="space-y-6"
           >
             {!hasActiveProject ? (
-              <div className="p-12 text-center bg-white rounded-[2rem] border border-slate-200 shadow-sm mt-8">
-                <GraduationCap className="w-12 h-12 text-slate-300 mx-auto mb-4" />
-                <h2 className="text-xl font-bold text-slate-900 tracking-tight">
-                  {activeProject?.status === 'rejected' ? 'Proposal Rejected' : 'No Active Project'}
-                </h2>
-                <p className="text-sm font-semibold text-slate-500 mt-2 mb-8 max-w-md mx-auto">
-                  {activeProject?.status === 'rejected' 
-                    ? 'Your previous Capstone Proposal was rejected by the instructor. Please revise your ideas and submit a new proposal.'
-                    : "You haven't submitted a Capstone Proposal yet. Start your academic thesis by drafting a proposal."}
-                </p>
-                <a href="/student/projects/new" className="inline-flex items-center gap-2 px-8 py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-black uppercase tracking-widest rounded-xl shadow-md transition-all">
-                  <Plus className="w-4 h-4" />
-                  {activeProject?.status === 'rejected' ? 'Submit New Proposal' : 'Start Capstone Project'}
-                </a>
+              <div className="space-y-6">
+                {/* Placeholder Health Dashboards */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 opacity-30 pointer-events-none select-none">
+                  <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm flex items-center justify-between gap-6">
+                    <div>
+                      <span className="text-[10px] font-black text-slate-400 tracking-wider uppercase block">Project Health</span>
+                      <span className="text-2xl font-black text-slate-900 mt-2 block">--%</span>
+                    </div>
+                    <div className="w-16 h-16 bg-slate-100 rounded-2xl" />
+                  </div>
+                  <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm">
+                    <span className="text-[10px] font-black text-slate-400 tracking-wider uppercase block mb-3">Task Velocity</span>
+                    <div className="h-10 bg-slate-100 rounded" />
+                  </div>
+                  <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm">
+                    <span className="text-[10px] font-black text-slate-400 tracking-wider uppercase block mb-1">Progress Trend</span>
+                    <div className="h-10 bg-slate-100 rounded" />
+                  </div>
+                </div>
+
+                <div className="p-12 text-center bg-white rounded-[2rem] border border-slate-200 shadow-sm mt-8 space-y-5">
+                  <div className="w-16 h-16 bg-amber-50 border border-amber-100 text-[#a75d24] rounded-3xl flex items-center justify-center mx-auto shadow-md">
+                    <AlertTriangle className="w-8 h-8" />
+                  </div>
+                  <div className="space-y-2">
+                    <h2 className="text-xl font-bold text-slate-900 tracking-tight">
+                      {activeProject?.status === 'rejected' ? 'Proposal Rejected' : 'Health Telemetry Unavailable'}
+                    </h2>
+                    <p className="text-sm font-semibold text-slate-500 max-w-md mx-auto leading-relaxed">
+                      {activeProject?.status === 'rejected' 
+                        ? 'Your previous Capstone Proposal was rejected by the instructor. Please visit the Milestones page to submit a new proposal.'
+                        : "You haven't submitted a Capstone Proposal yet. Project health index and progress graphs will become active once you start your project."}
+                    </p>
+                  </div>
+                  <Link href="/student/milestones" className="inline-flex items-center gap-2 px-8 py-3.5 bg-indigo-650 hover:bg-indigo-700 text-white text-xs font-black uppercase tracking-widest rounded-xl shadow-md transition-all">
+                    <Plus className="w-4 h-4" />
+                    Start Capstone Project in Milestones
+                  </Link>
+                </div>
               </div>
             ) : (
               <>
-                <div className="space-y-1.5">
-                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">
-                    YEAR 4 • CAPSTONE TRACK
-                  </span>
-              <div className="flex justify-between items-start border-b border-slate-100 pb-2 gap-4">
-                <div>
-                  <h1 className="text-2xl font-black text-slate-950 tracking-tight leading-none">{activeProject?.title || 'Advanced Machine Learning Thesis'}</h1>
-                  <p className="text-xs text-slate-400 font-semibold mt-1.5">{activeProject?.description || 'A solo research project focused on transformer architectures for low-resource linguistic datasets.'}</p>
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-100 pb-4">
+                  <div className="space-y-1">
+                    <span className="text-[10px] font-black text-[#a75d24] uppercase tracking-widest block">
+                      YEAR 4 • CAPSTONE TRACK
+                    </span>
+                    <h1 className="text-2xl font-black text-slate-900 tracking-tight leading-tight">{activeProject.title}</h1>
+                    <p className="text-xs text-slate-500 font-medium leading-relaxed max-w-2xl">{activeProject.description}</p>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <span className="inline-flex items-center gap-1 px-3 py-1 bg-[#fdf5f0] text-[#a75d24] rounded-full text-[9px] font-black uppercase tracking-widest border border-[#a75d24]/20">
+                      <GraduationCap className="w-3.5 h-3.5" />
+                      Solo Track
+                    </span>
+                    <div className="bg-slate-50 border border-slate-100 rounded-xl p-2 text-center">
+                      <span className="text-[8px] text-slate-400 font-extrabold uppercase block">Status</span>
+                      <span className="text-xs font-black text-[#a75d24] uppercase">{activeProject.status}</span>
+                    </div>
+                  </div>
                 </div>
-                <span className="inline-flex items-center gap-1 px-3 py-1 bg-blue-50 text-blue-600 rounded-full text-[9px] font-black uppercase tracking-widest border border-blue-100 shrink-0">
-                  <GraduationCap className="w-3.5 h-3.5" />
-                  Solo Track
-                </span>
-              </div>
-            </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              
-              {/* Left Column: Progress circle dial & Thesis Metadata */}
-              <div className="space-y-6">
-                
-                {/* Radial progress ring dial */}
-                <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm hover:shadow-md transition-shadow text-center space-y-4">
-                  <h3 className="text-[10px] font-black text-slate-400 tracking-wider uppercase block text-left">Total Progress</h3>
+                {/* Project Health Row */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   
-                  {/* Circle shape progress indicator */}
-                  <div className="relative w-36 h-36 mx-auto flex items-center justify-center">
-                    <svg className="absolute w-full h-full transform -rotate-90">
-                      <circle cx="72" cy="72" r="58" stroke="#f1f5f9" strokeWidth="8" fill="transparent" />
-                      <circle cx="72" cy="72" r="58" stroke="#0c59db" strokeWidth="10" fill="transparent" strokeDasharray="364" strokeDashoffset="127" strokeLinecap="round" />
-                    </svg>
-                    <div className="text-center space-y-1">
-                      <span className="text-2xl font-black text-slate-950 block leading-none">65%</span>
-                      <span className="text-[9px] text-slate-400 font-black uppercase tracking-wider block">Complete</span>
-                    </div>
-                  </div>
-
-                  <div className="text-left border-t border-slate-50 pt-4 flex justify-between items-center text-xs font-bold">
-                    <span className="text-slate-400">Research Phase</span>
-                    <span className="text-[#0c59db]">In Progress</span>
-                  </div>
-                </div>
-
-                {/* Thesis Metadata table card */}
-                <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm hover:shadow-md transition-shadow space-y-4">
-                  <h3 className="text-[10px] font-black text-slate-400 tracking-wider uppercase block">Thesis Metadata</h3>
-                  
-                  <div className="space-y-3 font-semibold text-xs text-slate-700">
-                    <div className="flex justify-between items-center border-b border-slate-50 pb-2">
-                      <span className="text-slate-400">Supervisor</span>
-                      <span className="text-slate-800 font-bold">{activeProject?.supervisor?.full_name || 'Pending Assignment...'}</span>
-                    </div>
-                    <div className="flex justify-between items-center border-b border-slate-50 pb-2">
-                      <span className="text-slate-400">Credits</span>
-                      <span className="text-slate-800 font-bold">12 Units</span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-slate-400">Deadline</span>
-                      <span className="text-rose-600 font-bold">May 15, 2024</span>
-                    </div>
-                  </div>
-                </div>
-
-              </div>
-
-              {/* Center Column: Academic Milestones Timeline */}
-              <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm hover:shadow-md transition-shadow">
-                <h3 className="text-[10px] font-black text-slate-400 tracking-wider uppercase block mb-5">Academic Milestones</h3>
-                
-                <div className="space-y-5 relative pl-5 border-l-2 border-slate-100">
-                  {/* Milestone 1 */}
-                  <div className="relative">
-                    <div className="absolute -left-[27px] top-0.5 w-3.5 h-3.5 rounded-full bg-emerald-500 border-2 border-white ring-4 ring-white" />
-                    <div className="space-y-0.5">
-                      <h4 className="text-xs font-bold text-slate-800 leading-snug">Proposal Defense</h4>
-                      <p className="text-[9px] text-slate-400 font-semibold">
-                        Successfully defended initial research scope and methodology.
-                      </p>
-                      <span className="text-[8px] text-emerald-600 font-black uppercase tracking-wider block mt-1">
-                        COMPLETED OCT 12
+                  {/* Card 1: Health index gauge */}
+                  <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm hover:shadow-md transition-shadow flex items-center justify-between gap-6">
+                    <div>
+                      <span className="text-[10px] font-black text-slate-400 tracking-wider uppercase block">Project Health</span>
+                      <span className="text-2xl font-black text-slate-900 mt-2 block">{healthPercent}%</span>
+                      <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase border mt-1 ${healthColor}`}>
+                        {healthLabel}
                       </span>
                     </div>
-                  </div>
-
-                  {/* Milestone 2 */}
-                  <div className="relative">
-                    <div className="absolute -left-[27px] top-0.5 w-3.5 h-3.5 rounded-full bg-emerald-500 border-2 border-white ring-4 ring-white" />
-                    <div className="space-y-0.5">
-                      <h4 className="text-xs font-bold text-slate-800 leading-snug">Literature Review</h4>
-                      <p className="text-[9px] text-slate-400 font-semibold">
-                        Comprehensive analysis of 45+ peer-reviewed papers on Transformers.
-                      </p>
-                      <span className="text-[8px] text-emerald-600 font-black uppercase tracking-wider block mt-1">
-                        COMPLETED DEC 05
-                      </span>
+                    <div className="relative w-20 h-20 shrink-0">
+                      <svg className="w-full h-full transform -rotate-90">
+                        <circle cx="40" cy="40" r="32" stroke="#f1f5f9" strokeWidth="6" fill="transparent" />
+                        <circle cx="40" cy="40" r="32" stroke={healthStroke} strokeWidth="6" fill="transparent" strokeDasharray="201" strokeDashoffset={201 - (201 * healthPercent) / 100} strokeLinecap="round" />
+                      </svg>
+                      <div className="absolute inset-0 flex items-center justify-center text-xs font-black text-slate-850">{healthPercent}%</div>
                     </div>
                   </div>
 
-                  {/* Milestone 3 */}
-                  <div className="relative">
-                    <div className="absolute -left-[27px] top-0.5 w-3.5 h-3.5 rounded-full bg-blue-600 border-2 border-white ring-4 ring-white" />
-                    <div className="space-y-0.5">
-                      <h4 className="text-xs font-bold text-slate-800 leading-snug">Data Preprocessing</h4>
-                      <p className="text-[9px] text-slate-400 font-semibold">
-                        Cleaning and tokenizing low-resource dialect datasets.
-                      </p>
-                      <span className="text-[8px] text-blue-600 font-black uppercase tracking-wider block mt-1">
-                        IN PROGRESS
+                  {/* Card 2: Total Progress */}
+                  <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm hover:shadow-md transition-shadow flex items-center justify-between gap-6">
+                    <div>
+                      <span className="text-[10px] font-black text-slate-400 tracking-wider uppercase block">Total Progress</span>
+                      <span className="text-2xl font-black text-slate-900 mt-2 block">{progressPercent}%</span>
+                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase bg-[#fdf5f0] text-[#a75d24] border border-[#a75d24]/10 mt-1">
+                        In Progress
                       </span>
+                    </div>
+                    <div className="relative w-20 h-20 shrink-0">
+                      <svg className="w-full h-full transform -rotate-90">
+                        <circle cx="40" cy="40" r="32" stroke="#f1f5f9" strokeWidth="6" fill="transparent" />
+                        <circle cx="40" cy="40" r="32" stroke="#a75d24" strokeWidth="6" fill="transparent" strokeDasharray="201" strokeDashoffset={201 - (201 * progressPercent) / 100} strokeLinecap="round" />
+                      </svg>
+                      <div className="absolute inset-0 flex items-center justify-center text-xs font-black text-slate-850">{progressPercent}%</div>
                     </div>
                   </div>
 
-                  {/* Milestone 4 */}
-                  <div className="relative">
-                    <div className="absolute -left-[27px] top-0.5 w-3.5 h-3.5 rounded-full bg-slate-200 border-2 border-white ring-4 ring-white" />
-                    <div className="space-y-0.5">
-                      <h4 className="text-xs font-bold text-slate-800 leading-snug">Defense Prep</h4>
-                      <p className="text-[9px] text-slate-400 font-semibold">
-                        Preparing final results and presentation deck for committee.
-                      </p>
-                      <span className="text-[8px] text-slate-400 font-black uppercase tracking-wider block mt-1">
-                        DUE APRIL 20
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Right Column: Interactive Solo Task Checklist */}
-              <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm hover:shadow-md transition-shadow space-y-4">
-                <h3 className="text-[10px] font-black text-slate-400 tracking-wider uppercase block">Solo Task Checklist</h3>
-                
-                <div className="space-y-3.5">
-                  {soloTasks.map((task) => (
-                    <div key={task.id} className="flex items-start gap-2.5 hover:bg-slate-50 p-0.5 rounded-lg transition-colors">
-                      <button 
-                        onClick={() => handleToggleTask(task.id)}
-                        className={`w-5 h-5 rounded border flex items-center justify-center shrink-0 transition-colors ${
-                          task.completed 
-                            ? 'bg-blue-600 border-blue-600 text-white' 
-                            : 'border-slate-300 hover:border-slate-400 bg-white'
-                        }`}
-                      >
-                        {task.completed && <Check className="w-3.5 h-3.5 stroke-[3]" />}
-                      </button>
-                      <div className="flex-1 min-w-0">
-                        <h4 className={`text-xs font-bold text-slate-800 leading-snug ${task.completed ? 'line-through text-slate-400 font-medium' : ''}`}>
-                          {task.text}
-                        </h4>
-                        <p className={`text-[9px] text-slate-400 mt-0.5 ${task.completed ? 'text-slate-400' : ''}`}>
-                          {task.desc}
-                        </p>
+                  {/* Card 3: Project Roles Metadata */}
+                  <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm hover:shadow-md transition-shadow space-y-3">
+                    <span className="text-[10px] font-black text-slate-400 tracking-wider uppercase block">Thesis Allocation</span>
+                    <div className="space-y-2 text-xs">
+                      <div className="flex justify-between items-center border-b border-slate-50 pb-1.5">
+                        <span className="text-slate-400 font-semibold">Supervisor</span>
+                        <span className="text-slate-800 font-bold truncate max-w-[150px]" title={activeProject.supervisor?.full_name || 'Pending Matching...'}>
+                          {activeProject.supervisor?.full_name || 'Pending Matching...'}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-slate-400 font-semibold">Credits</span>
+                        <span className="text-slate-800 font-bold">12 Units (Solo)</span>
                       </div>
                     </div>
-                  ))}
+                  </div>
                 </div>
 
-                {/* Add task inline form */}
-                <AnimatePresence>
-                  {isAddingTask ? (
-                    <motion.form 
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: 'auto' }}
-                      exit={{ opacity: 0, height: 0 }}
-                      onSubmit={handleAddTask}
-                      className="pt-3 border-t border-slate-105 space-y-3 overflow-hidden"
-                    >
-                      <input 
-                        type="text" 
-                        value={newTaskText}
-                        onChange={(e) => setNewTaskText(e.target.value)}
-                        placeholder="Enter task name..." 
-                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold focus:outline-none focus:ring-2 focus:ring-blue-500/20 text-slate-900"
-                        autoFocus
-                      />
-                      <input 
-                        type="text" 
-                        value={newTaskDesc}
-                        onChange={(e) => setNewTaskDesc(e.target.value)}
-                        placeholder="Description (optional)" 
-                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold focus:outline-none focus:ring-2 focus:ring-blue-500/20 text-slate-900"
-                      />
-                      <div className="flex justify-end gap-2 pt-1">
-                        <button 
-                          type="button" 
-                          onClick={() => setIsAddingTask(false)}
-                          className="px-2.5 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider text-slate-500 hover:bg-slate-100"
-                        >
-                          Cancel
-                        </button>
-                        <button 
-                          type="submit" 
-                          className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-[10px] font-black uppercase tracking-wider"
-                        >
-                          Save Task
-                        </button>
-                      </div>
-                    </motion.form>
+                {/* Academic Milestones timeline */}
+                <div className="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm hover:shadow-md transition-shadow space-y-4">
+                  <div className="flex justify-between items-center border-b border-slate-100 pb-3">
+                    <h3 className="text-sm font-black text-slate-900 tracking-tight">Academic Milestones &amp; Thesis Roadmap</h3>
+                    <Link href="/student/milestones" className="text-xs font-bold text-[#a75d24] hover:underline flex items-center gap-1">
+                      Go to Milestones Workspace <ChevronRight className="w-4 h-4" />
+                    </Link>
+                  </div>
+                  
+                  {deliverables.length === 0 ? (
+                    <div className="text-center py-10 text-slate-400 font-bold text-xs">
+                      No milestones have been seeded for this project. Visit the Milestones workspace to get started.
+                    </div>
                   ) : (
-                    <button 
-                      onClick={() => setIsAddingTask(true)}
-                      className="w-full py-3 bg-white border border-dashed border-slate-200 hover:border-slate-400 rounded-2xl flex items-center justify-center gap-1.5 text-xs font-bold text-slate-500 transition-colors group cursor-pointer mt-4 uppercase tracking-wider"
-                    >
-                      <Plus className="w-4 h-4 text-slate-400 group-hover:text-slate-600 transition-colors" />
-                      Add New Task
-                    </button>
-                  )}
-                </AnimatePresence>
-              </div>
+                    <div className="space-y-6 relative pl-5 border-l-2 border-slate-100 mt-4">
+                      {deliverables.map((deliv: any) => {
+                        const isOverdue = deliv.status === 'todo' && deliv.due_date && new Date(deliv.due_date).getTime() < Date.now()
+                        
+                        let statusBadge = (
+                          <span className="text-[8px] font-black uppercase px-2 py-0.5 rounded bg-slate-50 text-slate-500 border border-slate-200">
+                            Todo
+                          </span>
+                        )
+                        let dotColor = 'bg-slate-350'
+                        if (deliv.status === 'graded') {
+                          statusBadge = (
+                            <span className="text-[8px] font-black uppercase px-2 py-0.5 rounded bg-emerald-50 text-emerald-600 border border-emerald-150">
+                              Graded
+                            </span>
+                          )
+                          dotColor = 'bg-emerald-500'
+                        } else if (deliv.status === 'submitted') {
+                          statusBadge = (
+                            <span className="text-[8px] font-black uppercase px-2 py-0.5 rounded bg-blue-50 text-blue-600 border border-blue-150">
+                              Submitted
+                            </span>
+                          )
+                          dotColor = 'bg-blue-650'
+                        } else if (isOverdue) {
+                          statusBadge = (
+                            <span className="text-[8px] font-black uppercase px-2 py-0.5 rounded bg-rose-50 text-rose-600 border border-rose-150">
+                              Overdue
+                            </span>
+                          )
+                          dotColor = 'bg-rose-500'
+                        }
 
-            </div>
+                        const formattedDueDate = deliv.due_date 
+                          ? new Date(deliv.due_date).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' })
+                          : 'No Date'
+
+                        return (
+                          <div key={deliv.id} className="relative group">
+                            {/* Dot Node */}
+                            <div className={`absolute -left-[27px] top-1.5 w-3.5 h-3.5 rounded-full border-2 border-white ring-4 ring-white transition-transform group-hover:scale-110 ${dotColor}`} />
+                            
+                            <div className="space-y-1">
+                              <div className="flex items-center gap-2">
+                                <h4 className="text-sm font-bold text-slate-800 leading-snug">{deliv.title}</h4>
+                                {statusBadge}
+                              </div>
+                              <p className="text-xs text-slate-500 font-semibold">
+                                {deliv.description || getMilestoneDescription(deliv.title)}
+                              </p>
+                              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 pt-1 text-[10px] text-slate-400 font-bold">
+                                <span className="flex items-center gap-1">
+                                  <Calendar className="w-3.5 h-3.5 shrink-0" />
+                                  Due: {formattedDueDate}
+                                </span>
+                                {deliv.submission_url && (
+                                  <span className="flex items-center gap-1 text-slate-650">
+                                    <FileText className="w-3.5 h-3.5 shrink-0" />
+                                    Sub: {deliv.submission_url}
+                                  </span>
+                                )}
+                              </div>
+                              {deliv.feedback_partner && (
+                                <div className="mt-2 p-3 bg-slate-50 border border-slate-100 rounded-xl text-xs italic text-slate-600 font-medium">
+                                  <strong>Partner Feedback:</strong> "{deliv.feedback_partner}"
+                                </div>
+                              )}
+                              {deliv.feedback_supervisor && (
+                                <div className="mt-2 p-3 bg-[#fdf5f0] border border-[#a75d24]/10 rounded-xl text-xs italic text-slate-700 font-medium">
+                                  <strong>Supervisor Feedback:</strong> "{deliv.feedback_supervisor}"
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  )}
+                </div>
               </>
             )}
           </motion.div>

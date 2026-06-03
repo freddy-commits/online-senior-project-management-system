@@ -74,6 +74,61 @@ export default function LandingContent() {
       {/* ===== MAIN CONTINUOUS PAGE CONTAINER ===== */}
       <main className="flex-1 w-full space-y-0">
 
+        {/* ================== PREMIUM HERO SECTION WITH BACKGROUND IMAGE ================== */}
+        <section className="relative bg-[url('/landing_bg.png')] bg-cover bg-center py-20 lg:py-32 px-6 overflow-hidden flex items-center justify-center min-h-[60vh] border-b border-indigo-950/20">
+          {/* Deep glass overlay */}
+          <div className="absolute inset-0 bg-gradient-to-br from-slate-950/85 via-indigo-950/75 to-purple-950/80 z-0" />
+          
+          <div className="max-w-4xl mx-auto text-center relative z-10 space-y-8">
+            <motion.div
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-indigo-500/20 border border-indigo-400/30 text-indigo-200 text-[10px] font-black uppercase tracking-wider"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-indigo-400 animate-pulse" />
+              Integrated Academic Workspace
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.1 }}
+              className="space-y-4"
+            >
+              <h1 className="text-4xl md:text-7xl font-black text-white tracking-tight leading-[1.1] drop-shadow-sm">
+                Your Projects.<br />
+                <span className="bg-clip-text text-transparent bg-gradient-to-r from-indigo-300 via-purple-300 to-amber-200">
+                  Fully Centralized.
+                </span>
+              </h1>
+              <p className="text-xs md:text-sm text-indigo-200/80 font-bold max-w-2xl mx-auto leading-relaxed">
+                Connect academic rigor with industrial relevance. Track deliverables, manage client milestones, and collaborate in one modern, premium workspace.
+              </p>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.5, delay: 0.2 }}
+              className="flex flex-wrap gap-4 justify-center pt-2"
+            >
+              <Link
+                href="/login"
+                className="px-8 py-4 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-black tracking-wider uppercase transition-all shadow-lg shadow-indigo-600/30 hover:shadow-indigo-600/40 active:scale-95 text-center cursor-pointer min-w-[150px]"
+              >
+                Access Workspaces
+              </Link>
+              <Link
+                href="/register"
+                className="px-8 py-4 bg-white/10 hover:bg-white/15 border border-white/20 hover:border-white/30 text-white rounded-xl text-xs font-black tracking-wider uppercase transition-all active:scale-95 text-center cursor-pointer min-w-[150px] backdrop-blur-sm"
+              >
+                Create Account
+              </Link>
+            </motion.div>
+          </div>
+        </section>
+
         {/* ================== SECTION 1: YEARS 1-3 COMPLEX INDUSTRY CHALLENGES (PEACH) ================== */}
         <section className="bg-[#fee2d5] border-b border-[#fdd1bd] py-16 lg:py-24 px-6 lg:px-12 relative overflow-hidden">
           <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-12 gap-10 lg:gap-16 items-center relative z-10">

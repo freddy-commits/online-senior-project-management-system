@@ -1,9 +1,38 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import TrackSwitcher from '@/components/navigation/TrackSwitcher'
 import { Bell } from 'lucide-react'
 
 export default function MasterHeader({ role = 'student' }: { role?: string }) {
+  const [fullName, setFullName] = useState('User')
+  
+  useEffect(() => {
+    async function loadProfile() {
+      try {
+        const { createClient } = await import('@/lib/supabase/client')
+        const supabase = createClient()
+        const { data: { user } } = await supabase.auth.getUser()
+        if (user) {
+          const { data } = await supabase.from('profiles').select('full_name').eq('id', user.id).single()
+          if (data?.full_name) {
+            setFullName(data.full_name)
+          }
+        }
+      } catch (e) {
+        console.error("Supabase user load error:", e)
+      }
+    }
+    loadProfile()
+  }, [])
+
+  const initials = fullName
+    .split(' ')
+    .map((n) => n[0])
+    .slice(0, 2)
+    .join('')
+    .toUpperCase() || 'U'
+
   return (
     <header className="h-20 bg-white border-b border-slate-200 px-8 flex items-center justify-between shrink-0 z-40 sticky top-0">
       <div className="flex items-center gap-4">
@@ -25,11 +54,11 @@ export default function MasterHeader({ role = 'student' }: { role?: string }) {
         {/* Dark User Avatar */}
         <div className="flex items-center gap-3 border-l border-slate-200 pl-6">
           <div className="flex flex-col items-end hidden sm:flex">
-            <span className="text-xs font-black text-slate-900 leading-none">Alex Rivera</span>
+            <span className="text-xs font-black text-slate-900 leading-none">{fullName}</span>
             <span className="text-[9px] font-bold text-slate-500 uppercase tracking-wider mt-1">{role}</span>
           </div>
-          <div className="w-10 h-10 bg-slate-900 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-md">
-            AR
+          <div className="w-10 h-10 bg-slate-900 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-md select-none">
+            {initials}
           </div>
         </div>
       </div>

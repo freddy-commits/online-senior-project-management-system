@@ -93,9 +93,13 @@ class MockQueryBuilder {
           if (this.tableName === 'projects') {
             const student = state.profiles.find(p => p.id === item.student_id)
             const instructor = state.profiles.find(p => p.id === item.instructor_id)
-            cloned.student = student ? { full_name: student.full_name } : null
-            cloned.instructor = instructor ? { full_name: instructor.full_name } : null
-            cloned.profiles = instructor ? { full_name: instructor.full_name } : null
+            const partner = state.profiles.find(p => p.id === item.industry_partner_id)
+            
+            cloned.student = student ? { id: student.id, full_name: student.full_name, email: student.email } : null
+            cloned.instructor = instructor ? { id: instructor.id, full_name: instructor.full_name, email: instructor.email } : null
+            cloned.supervisor = instructor ? { id: instructor.id, full_name: instructor.full_name, email: instructor.email } : null
+            cloned.profiles = instructor ? { id: instructor.id, full_name: instructor.full_name, email: instructor.email } : null
+            cloned.partner = partner ? { id: partner.id, full_name: partner.full_name, email: partner.email } : null
           }
           return cloned
         })

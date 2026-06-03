@@ -114,7 +114,7 @@ export default function AdminDashboard() {
   }
 
   // Admin User Actions (Approving, Suspending, Editing Roles)
-  const updateUserRole = async (userId: string, newRole: 'student' | 'instructor' | 'industry' | 'admin') => {
+  const updateUserRole = async (userId: string, newRole: 'student' | 'instructor' | 'industry' | 'admin' | 'supervisor') => {
     const { data } = await supabase
       .from('profiles')
       .update({ role: newRole })
@@ -339,6 +339,7 @@ export default function AdminDashboard() {
                           >
                             <option value="student">Student</option>
                             <option value="instructor">Instructor</option>
+                            <option value="supervisor">Supervisor</option>
                             <option value="industry">Industry Partner</option>
                             <option value="admin">Admin</option>
                           </select>

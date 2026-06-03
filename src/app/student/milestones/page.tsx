@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { createClient } from '@/lib/supabase/client'
 import { useTrack } from '@/components/providers/TrackProvider'
+import { seedDeliverables, addCustomMilestone } from './actions'
 import { 
   Calendar, 
   Check, 
@@ -24,6 +25,20 @@ import {
   Trash2,
   X
 } from 'lucide-react'
+
+const getMilestoneDescription = (title: string): string => {
+  const descMap: Record<string, string> = {
+    'Project Proposal': 'Detailed research scope, timeline, risk mitigation plans, and software architecture diagrams.',
+    'Initial Architecture & Schema': 'Define the application database modeling, entity relationship diagram, and API interface specifications.',
+    'Mid-Term Presentation': 'Status report on baseline execution, initial results telemetry, and frontend/backend integration status.',
+    'Final Execution & Thesis': 'Final code repository release, user evaluation validation reports, and the printed thesis defense draft.',
+    'Project Pitch & Scoping': 'Aligning with the industry mentor on team expectations, technical stack requirements, and MVP objectives.',
+    'System Architecture Diagram': 'Documenting application infrastructure, cloud service endpoints, data schemas, and API routes.',
+    'Beta Demo & Testing': 'Deploying the interactive application build, executing end-to-end integration tests, and collecting partner telemetry.',
+    'Final Client Deliverables': 'Handing over administrative control settings, final production build artifacts, and client handover presentations.'
+  }
+  return descMap[title] || 'No description provided.'
+}
 
 export default function StudentMilestonesPage() {
   const [project, setProject] = useState<any>(null)
@@ -46,9 +61,86 @@ export default function StudentMilestonesPage() {
   const [newDescription, setNewDescription] = useState('')
   const [newDueDate, setNewDueDate] = useState('')
 
+  // Proposal Submission inline state
+  const [newProjTitle, setNewProjTitle] = useState('')
+  const [newProjDesc, setNewProjDesc] = useState('')
+  const [submittingProposal, setSubmittingProposal] = useState(false)
+  const [proposalError, setProposalError] = useState<string | null>(null)
+
+  const handleCreateProposal = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!newProjTitle.trim() || !newProjDesc.trim()) return
+
+    setSubmittingProposal(true)
+    setProposalError(null)
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) throw new Error('You must be logged in.')
+
+      const { error: insertError } = await supabase.from('projects').insert({
+        title: newProjTitle.trim(),
+        description: newProjDesc.trim(),
+        status: 'pending',
+        student_id: user.id,
+        origin: 'student'
+      })
+
+      if (insertError) throw insertError
+
+      showToast('Proposal submitted successfully! Initializing default deliverables...')
+      setNewProjTitle('')
+      setNewProjDesc('')
+      
+      // Reload projects & deliverables
+      await fetchDeliverables()
+    } catch (err: any) {
+      console.error(err)
+      setProposalError(err.message || 'Failed to submit proposal.')
+    } finally {
+      setSubmittingProposal(false)
+    }
+  }
+
+  const handleResubmitProposal = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!newProjTitle.trim() || !newProjDesc.trim() || !project) return
+
+    setSubmittingProposal(true)
+    setProposalError(null)
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) throw new Error('You must be logged in.')
+
+      const { error: updateError } = await supabase
+        .from('projects')
+        .update({
+          title: newProjTitle.trim(),
+          description: newProjDesc.trim(),
+          status: 'pending'
+        })
+        .eq('id', project.id)
+
+      if (updateError) throw updateError
+
+      showToast('Proposal resubmitted successfully!')
+      
+      // Reload projects & deliverables
+      await fetchDeliverables()
+    } catch (err: any) {
+      console.error(err)
+      setProposalError(err.message || 'Failed to resubmit proposal.')
+    } finally {
+      setSubmittingProposal(false)
+    }
+  }
+
   // Track Label from TrackProvider
   const { trackMode } = useTrack()
   const trackLabel = trackMode === 'thesis' ? 'CAPSTONE THESIS TRACK' : 'INDUSTRY TRACK'
+  const isThesis = trackMode === 'thesis'
+  const isFullyActive = !!project && (!isThesis || (project.status === 'approved' && project.instructor_id !== null))
 
   const supabase = createClient()
 
@@ -90,13 +182,94 @@ export default function StudentMilestonesPage() {
 
       if (activeProj) {
         setProject(activeProj)
+        if (activeProj.status === 'rejected') {
+          setNewProjTitle(activeProj.title)
+          setNewProjDesc(activeProj.description)
+        } else {
+          setNewProjTitle('')
+          setNewProjDesc('')
+        }
         const { data: delivs } = await supabase
           .from('deliverables')
           .select('*')
           .eq('project_id', activeProj.id)
           .order('due_date', { ascending: true })
 
-        const formattedDelivs = delivs || []
+        let formattedDelivs = delivs || []
+        // Enrich retrieved database deliverables with client-side descriptions
+        formattedDelivs = formattedDelivs.map((d: any) => ({
+          ...d,
+          description: d.description || getMilestoneDescription(d.title)
+        }))
+
+        if (formattedDelivs.length === 0) {
+          const isThesis = expectedOrigin === 'student'
+          const defaultDelivs = isThesis ? [
+            {
+              project_id: activeProj.id,
+              title: 'Project Proposal',
+              due_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+              status: 'todo'
+            },
+            {
+              project_id: activeProj.id,
+              title: 'Initial Architecture & Schema',
+              due_date: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000).toISOString(),
+              status: 'todo'
+            },
+            {
+              project_id: activeProj.id,
+              title: 'Mid-Term Presentation',
+              due_date: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString(),
+              status: 'todo'
+            },
+            {
+              project_id: activeProj.id,
+              title: 'Final Execution & Thesis',
+              due_date: new Date(Date.now() + 120 * 24 * 60 * 60 * 1000).toISOString(),
+              status: 'todo'
+            }
+          ] : [
+            {
+              project_id: activeProj.id,
+              title: 'Project Pitch & Scoping',
+              due_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+              status: 'todo'
+            },
+            {
+              project_id: activeProj.id,
+              title: 'System Architecture Diagram',
+              due_date: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000).toISOString(),
+              status: 'todo'
+            },
+            {
+              project_id: activeProj.id,
+              title: 'Beta Demo & Testing',
+              due_date: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString(),
+              status: 'todo'
+            },
+            {
+              project_id: activeProj.id,
+              title: 'Final Client Deliverables',
+              due_date: new Date(Date.now() + 120 * 24 * 60 * 60 * 1000).toISOString(),
+              status: 'todo'
+            }
+          ]
+
+          // Call the server action to bypass RLS restrictions
+          const res = await seedDeliverables(activeProj.id, defaultDelivs)
+
+          if (res.success && res.data) {
+            const enriched = res.data.map((d: any) => ({
+              ...d,
+              description: getMilestoneDescription(d.title)
+            }))
+            formattedDelivs = enriched.sort((a: any, b: any) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime())
+          } else {
+            console.error("Failed to seed deliverables database:", res.error)
+          }
+        }
+
         setDeliverables(formattedDelivs)
         if (formattedDelivs.length > 0) {
           const active = formattedDelivs.find(d => d.status === 'todo' || d.status === 'submitted') || formattedDelivs[0]
@@ -270,10 +443,18 @@ export default function StudentMilestonesPage() {
     }
 
     let saveError = null
+    let finalMilestone = { ...newMilestone }
     try {
-      const { error } = await supabase.from('deliverables').insert([newMilestone])
-      if (error) throw new Error(error.message)
-    } catch (err) {
+      // Call the server action to bypass RLS restrictions
+      const res = await addCustomMilestone(project?.id || 'demo-project-id', newTitle, newDueDate)
+      if (!res.success) throw new Error(res.error)
+      if (res.data) {
+        finalMilestone = {
+          ...res.data,
+          description: newDescription || 'No description provided.'
+        }
+      }
+    } catch (err: any) {
       console.warn("Supabase insert failed, falling back to mock database insertion:", err)
       if (typeof window !== 'undefined') {
         const storageKey = 'seniorproj_sandbox_db'
@@ -297,9 +478,9 @@ export default function StudentMilestonesPage() {
     }
 
     if (!saveError) {
-      const updatedList = [...deliverables, newMilestone].sort((a, b) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime())
+      const updatedList = [...deliverables, finalMilestone].sort((a, b) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime())
       setDeliverables(updatedList)
-      setSelectedMilestone(newMilestone)
+      setSelectedMilestone(finalMilestone)
       setIsAddModalOpen(false)
       setNewTitle('')
       setNewDescription('')
@@ -408,51 +589,270 @@ export default function StudentMilestonesPage() {
           </div>
 
           <div className="flex items-center gap-2.5">
-            <button 
-              onClick={handleExportSchedule}
-              className="flex items-center gap-2 px-5 py-3 border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-extrabold text-xs uppercase tracking-wider rounded-2xl transition-all shadow-sm cursor-pointer select-none active:scale-[0.98]"
-            >
-              <Download className="w-3.5 h-3.5" />
-              Export Schedule
-            </button>
-            <button 
-              onClick={() => setIsAddModalOpen(true)}
-              className="flex items-center gap-2 px-5 py-3 bg-[#a75d24] hover:bg-[#8f4f1d] text-white font-extrabold text-xs uppercase tracking-wider rounded-2xl transition-all shadow-md shadow-[#a75d24]/10 cursor-pointer select-none active:scale-[0.98]"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              New Milestone
-            </button>
+            {isFullyActive && (
+              <button 
+                onClick={handleExportSchedule}
+                className="flex items-center gap-2 px-5 py-3 border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-extrabold text-xs uppercase tracking-wider rounded-2xl transition-all shadow-sm cursor-pointer select-none active:scale-[0.98]"
+              >
+                <Download className="w-3.5 h-3.5" />
+                Export Schedule
+              </button>
+            )}
+            {isFullyActive && (
+              <button 
+                onClick={() => setIsAddModalOpen(true)}
+                className="flex items-center gap-2 px-5 py-3 bg-[#a75d24] hover:bg-[#8f4f1d] text-white font-extrabold text-xs uppercase tracking-wider rounded-2xl transition-all shadow-md shadow-[#a75d24]/10 cursor-pointer select-none active:scale-[0.98]"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                New Milestone
+              </button>
+            )}
           </div>
         </div>
 
         {/* TRACK EMPTY STATE WARNING DISPLAY */}
         {!project ? (
-          <div className="bg-white border border-slate-200 rounded-[2.5rem] p-12 text-center shadow-sm max-w-2xl mx-auto space-y-6 my-12">
-            <div className="w-16 h-16 bg-[#fdf5f0] text-[#a75d24] rounded-3xl flex items-center justify-center mx-auto shadow-md">
-              <AlertCircle className="w-8 h-8" />
+          trackMode === 'thesis' ? (
+            <div className="bg-white border border-slate-200 rounded-[2.5rem] p-8 md:p-12 shadow-sm max-w-2xl mx-auto space-y-6 my-12">
+              <div>
+                <h2 className="text-xl font-black text-slate-900 tracking-tight">Start Capstone Project Proposal</h2>
+                <p className="text-xs text-slate-500 font-semibold mt-1">Submit your academic thesis proposal directly here to initialize your milestone timeline.</p>
+              </div>
+
+              <form onSubmit={handleCreateProposal} className="space-y-5">
+                {proposalError && (
+                  <div className="p-4 bg-red-50 text-red-600 text-xs font-bold rounded-xl border border-red-200">
+                    {proposalError}
+                  </div>
+                )}
+                
+                <div>
+                  <label className="block text-[10px] uppercase tracking-[0.2em] font-black text-slate-450 mb-2">Project Title</label>
+                  <input
+                    required
+                    type="text"
+                    value={newProjTitle}
+                    onChange={(e) => setNewProjTitle(e.target.value)}
+                    placeholder="e.g. Advanced Machine Learning for Dialect Datasets"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-xs font-bold text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#a75d24]/20 focus:border-[#a75d24]"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[10px] uppercase tracking-[0.2em] font-black text-slate-450 mb-2">Abstract & Description</label>
+                  <textarea
+                    required
+                    rows={5}
+                    value={newProjDesc}
+                    onChange={(e) => setNewProjDesc(e.target.value)}
+                    placeholder="Describe your methodology, goals, and intended research outcome..."
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-xs font-semibold text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#a75d24]/20 focus:border-[#a75d24] resize-none"
+                  />
+                </div>
+
+                <div className="pt-4 border-t border-slate-100 flex justify-end">
+                  <button
+                    type="submit"
+                    disabled={submittingProposal || !newProjTitle.trim() || !newProjDesc.trim()}
+                    className="px-6 py-3 bg-[#a75d24] hover:bg-[#8f4f1d] disabled:opacity-50 text-white text-[10px] font-black uppercase tracking-widest rounded-xl transition-all flex items-center gap-2 cursor-pointer shadow-md animate-in fade-in zoom-in duration-300"
+                  >
+                    {submittingProposal ? <Clock className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}
+                    Submit Proposal & Seed Milestones
+                  </button>
+                </div>
+              </form>
             </div>
-            <div className="space-y-2">
-              <h2 className="text-xl font-black text-slate-900 tracking-tight">No Active Project in {trackLabel}</h2>
-              <p className="text-sm text-slate-500 font-semibold leading-relaxed max-w-md mx-auto">
-                You don't have an active proposal or assigned project in this track yet. 
-                {trackMode === 'thesis' 
-                  ? " Visit your Student Dashboard to submit a Capstone Thesis proposal!" 
-                  : " Your supervisor will assign you to an Industry Partner project shortly."}
-              </p>
+          ) : (
+            <div className="bg-white border border-slate-200 rounded-[2.5rem] p-12 text-center shadow-sm max-w-2xl mx-auto space-y-6 my-12">
+              <div className="w-16 h-16 bg-slate-50 border border-slate-100 text-slate-400 rounded-3xl flex items-center justify-center mx-auto shadow-md">
+                <FileText className="w-8 h-8" />
+              </div>
+              <div className="space-y-2">
+                <h2 className="text-xl font-black text-slate-900 tracking-tight">Waiting for Industry Allocation</h2>
+                <p className="text-sm text-slate-500 font-semibold leading-relaxed max-w-md mx-auto">
+                  Your supervisor will assign you to an Industry Partner project shortly. Once allocated, your milestones timeline and deliverable uploads will activate here.
+                </p>
+              </div>
             </div>
-            {trackMode === 'thesis' && (
-              <a 
-                href="/student/projects/new" 
-                className="inline-flex items-center gap-2 px-6 py-3.5 bg-[#a75d24] hover:bg-[#8f4f1d] text-white font-extrabold text-xs uppercase tracking-wider rounded-2xl transition-all shadow-md shadow-[#a75d24]/10 cursor-pointer active:scale-[0.98] select-none"
-              >
-                <Plus className="w-4 h-4" />
-                Start Capstone Project
-              </a>
-            )}
-          </div>
+          )
         ) : (
-          /* TWO-COLUMN GRID WORKSPACE */
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+          (() => {
+            const isRejected = isThesis && project.status === 'rejected'
+
+            if (isRejected) {
+              return (
+                <div className="bg-white border border-slate-200 rounded-[2.5rem] p-8 md:p-12 shadow-sm max-w-2xl mx-auto space-y-6 my-12">
+                  <div className="flex items-center gap-3 text-red-600">
+                    <AlertCircle className="w-8 h-8 shrink-0" />
+                    <h2 className="text-xl font-black text-slate-900 tracking-tight">Proposal Rejected</h2>
+                  </div>
+                  
+                  <div className="p-5 bg-red-50 border border-red-100 rounded-2xl text-xs text-red-700 font-semibold space-y-2">
+                    <span className="font-black uppercase tracking-wider block text-[10px] text-red-700">FEEDBACK FROM COORDINATOR:</span>
+                    <p className="italic text-slate-700">"{project.recommendation || 'Please refine the scope and technical architecture details to align with capstone standards.'}"</p>
+                  </div>
+
+                  <div className="border-t border-slate-100 pt-6">
+                    <h3 className="text-sm font-black uppercase tracking-widest text-slate-400 mb-4 block">Edit & Resubmit Proposal</h3>
+                    <form onSubmit={handleResubmitProposal} className="space-y-5">
+                      {proposalError && (
+                        <div className="p-4 bg-red-50 text-red-600 text-xs font-bold rounded-xl border border-red-200">
+                          {proposalError}
+                        </div>
+                      )}
+                      
+                      <div>
+                        <label className="block text-[10px] uppercase tracking-[0.2em] font-black text-slate-450 mb-2">Project Title</label>
+                        <input
+                          required
+                          type="text"
+                          value={newProjTitle}
+                          onChange={(e) => setNewProjTitle(e.target.value)}
+                          placeholder="e.g. Advanced Machine Learning for Dialect Datasets"
+                          className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-xs font-bold text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#a75d24]/20 focus:border-[#a75d24]"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-[10px] uppercase tracking-[0.2em] font-black text-slate-450 mb-2">Abstract & Description</label>
+                        <textarea
+                          required
+                          rows={5}
+                          value={newProjDesc}
+                          onChange={(e) => setNewProjDesc(e.target.value)}
+                          placeholder="Describe your methodology, goals, and intended research outcome..."
+                          className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-xs font-semibold text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#a75d24]/20 focus:border-[#a75d24] resize-none"
+                        />
+                      </div>
+
+                      <div className="pt-4 border-t border-slate-100 flex justify-end">
+                        <button
+                          type="submit"
+                          disabled={submittingProposal || !newProjTitle.trim() || !newProjDesc.trim()}
+                          className="px-6 py-3 bg-[#a75d24] hover:bg-[#8f4f1d] disabled:opacity-50 text-white text-[10px] font-black uppercase tracking-widest rounded-xl transition-all flex items-center gap-2 cursor-pointer shadow-md"
+                        >
+                          {submittingProposal ? <Clock className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}
+                          Resubmit Proposal
+                        </button>
+                      </div>
+                    </form>
+                  </div>
+                </div>
+              )
+            }
+
+            if (!isFullyActive) {
+              const isPendingVetting = project.status === 'pending'
+              const currentStep = isPendingVetting ? 1 : 2
+
+              return (
+                <div className="bg-white border border-slate-200 rounded-[2.5rem] p-8 md:p-12 shadow-sm max-w-3xl mx-auto space-y-8 my-12">
+                  <div className="border-b border-slate-100 pb-5">
+                    <span className="text-[9px] font-black uppercase tracking-widest text-[#a75d24] bg-[#fdf5f0] px-3 py-1 rounded-full">
+                      LIFECYCLE STATUS
+                    </span>
+                    <h2 className="text-2xl font-black text-slate-900 tracking-tight mt-3">Proposal Review & Setup</h2>
+                    <p className="text-xs text-slate-500 font-semibold mt-1">Your Capstone Project proposal has been received. Track its vetting and supervisor matching progress below.</p>
+                  </div>
+
+                  {/* Visual Tracker */}
+                  <div className="relative flex flex-col md:flex-row justify-between items-start md:items-center gap-8 md:gap-4 py-4">
+                    {/* Background connector line */}
+                    <div className="absolute left-12 top-1/2 -translate-y-1/2 right-12 h-0.5 bg-slate-150 hidden md:block z-0" />
+                    
+                    {/* Step 1: Submitted */}
+                    <div className="relative z-10 flex md:flex-col items-center gap-4 md:gap-2 md:text-center flex-1">
+                      <div className="w-10 h-10 rounded-full bg-emerald-50 border-2 border-emerald-500 flex items-center justify-center text-emerald-600 shadow-md shrink-0">
+                        <Check className="w-5 h-5 stroke-[3]" />
+                      </div>
+                      <div>
+                        <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 block">Step 1</span>
+                        <span className="text-xs font-bold text-slate-900 block mt-0.5">Proposal Submitted</span>
+                        <span className="text-[9px] text-slate-450 font-bold block mt-0.5">{new Date(project.created_at).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                      </div>
+                    </div>
+
+                    {/* Step 2: Vetting */}
+                    <div className="relative z-10 flex md:flex-col items-center gap-4 md:gap-2 md:text-center flex-1">
+                      {currentStep > 1 ? (
+                        <div className="w-10 h-10 rounded-full bg-emerald-50 border-2 border-emerald-500 flex items-center justify-center text-emerald-600 shadow-md shrink-0">
+                          <Check className="w-5 h-5 stroke-[3]" />
+                        </div>
+                      ) : (
+                        <div className="w-10 h-10 rounded-full bg-[#fdf5f0] border-2 border-[#a75d24] flex items-center justify-center text-[#a75d24] shadow-md relative shrink-0">
+                          <span className="w-2.5 h-2.5 rounded-full bg-[#a75d24] animate-ping absolute" />
+                          <span className="w-1.5 h-1.5 rounded-full bg-[#a75d24]" />
+                        </div>
+                      )}
+                      <div>
+                        <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 block">Step 2</span>
+                        <span className="text-xs font-bold text-slate-900 block mt-0.5">Department Vetting</span>
+                        <span className="text-[9px] text-[#a75d24] font-bold block mt-0.5">
+                          {currentStep > 1 ? 'Approved by Board' : 'Pending Board Review'}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Step 3: Allocation */}
+                    <div className="relative z-10 flex md:flex-col items-center gap-4 md:gap-2 md:text-center flex-1">
+                      {currentStep === 2 ? (
+                        <div className="w-10 h-10 rounded-full bg-[#fdf5f0] border-2 border-[#a75d24] flex items-center justify-center text-[#a75d24] shadow-md relative shrink-0">
+                          <span className="w-2.5 h-2.5 rounded-full bg-[#a75d24] animate-ping absolute" />
+                          <span className="w-1.5 h-1.5 rounded-full bg-[#a75d24]" />
+                        </div>
+                      ) : (
+                        <div className="w-10 h-10 rounded-full bg-slate-50 border-2 border-slate-200 flex items-center justify-center text-slate-400 shadow-sm shrink-0">
+                          <Lock className="w-4 h-4" />
+                        </div>
+                      )}
+                      <div>
+                        <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 block">Step 3</span>
+                        <span className="text-xs font-bold text-slate-900 block mt-0.5">Supervisor Matching</span>
+                        <span className="text-[9px] text-slate-455 font-bold block mt-0.5">
+                          {currentStep === 2 ? 'Matching in progress' : 'Locked — Pending Vetting'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Project Details Panel */}
+                  <div className="mt-8 p-6 bg-slate-50 border border-slate-150 rounded-[2rem] space-y-4">
+                    <div>
+                      <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">PROPOSAL TITLE</span>
+                      <h4 className="text-base font-black text-slate-800 leading-snug mt-1">{project.title}</h4>
+                    </div>
+                    <div>
+                      <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">ABSTRACT & METHODOLOGY</span>
+                      <p className="text-xs text-slate-600 font-semibold leading-relaxed mt-1.5">{project.description}</p>
+                    </div>
+                  </div>
+
+                  <div className="p-5 bg-amber-50 border border-amber-100 rounded-2xl flex gap-3 text-amber-800">
+                    <Clock className="w-5 h-5 shrink-0 mt-0.5" />
+                    <div className="text-xs font-semibold leading-relaxed">
+                      <p className="font-bold">Next Steps for Verification</p>
+                      <p className="mt-1">Once the department approves this proposal and assigns your academic supervisor, your deliverables milestone timeline (with report uploads and repository sync actions) will activate here.</p>
+                    </div>
+                  </div>
+                </div>
+              )
+            }
+
+            return (
+              <div className="space-y-6">
+                {/* Approved Project Banner */}
+                {project && project.status === 'approved' && (
+                  <div className="bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-100 rounded-[2.25rem] p-6 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div className="space-y-1">
+                      <span className="text-[9px] font-black text-emerald-800 uppercase tracking-widest block">Approved Capstone Project Topic</span>
+                      <h2 className="text-lg font-black text-slate-900">{project.title}</h2>
+                      <p className="text-xs font-semibold text-slate-500 max-w-3xl mt-1.5 leading-relaxed">{project.description}</p>
+                    </div>
+                  </div>
+                )}
+
+                {/* TWO-COLUMN GRID WORKSPACE */}
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
             
             {/* LEFT COLUMN: TIMELINE (Takes 8 cols) */}
             <div className="lg:col-span-8 relative space-y-6">
@@ -705,34 +1105,10 @@ export default function StudentMilestonesPage() {
                   </button>
                 )}
 
-                {/* GITHUB REPOSITORY PORTAL */}
-                <div className="border-t border-slate-100 pt-4 space-y-2">
-                  <label className="text-[10px] text-slate-400 font-black uppercase tracking-wider block ml-1">GitHub Repository</label>
-                  <div className="flex items-center gap-2">
-                    <div className="relative flex-1">
-                      <input 
-                        type="url"
-                        value={repoUrl}
-                        onChange={(e) => setRepoUrl(e.target.value)}
-                        placeholder="https://github.com/..."
-                        className="w-full bg-slate-50 border border-slate-200 focus:border-[#a75d24] rounded-xl py-2.5 pl-9 pr-3 text-slate-800 text-xs font-mono font-medium focus:outline-none focus:ring-2 focus:ring-[#a75d24]/10 transition-all"
-                      />
-                      <GitBranch className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                    </div>
-                    <button 
-                      onClick={handleSyncRepository}
-                      disabled={isSyncingRepo}
-                      className="p-2.5 border border-slate-200 rounded-xl bg-white hover:bg-slate-50 text-slate-500 hover:text-slate-800 transition-colors shadow-sm cursor-pointer select-none active:scale-[0.97]"
-                      title="Sync repo"
-                    >
-                      <RefreshCw className={`w-4 h-4 ${isSyncingRepo ? 'animate-spin text-[#a75d24]' : ''}`} />
-                    </button>
-                  </div>
-                </div>
               </div>
 
-              {/* DYNAMIC PARTNER / ADVISOR FEEDBACK CARD */}
-              {selectedMilestone && (
+              {/* DYNAMIC PARTNER / ADVISOR FEEDBACK CARD (Only show if actual feedback exists) */}
+              {selectedMilestone && selectedMilestone.feedback && (
                 <div className="bg-[#a75d24] text-white rounded-[2.25rem] p-6 shadow-lg shadow-[#a75d24]/10 relative overflow-hidden select-none">
                   
                   {/* Opacity large quote mark */}
@@ -746,7 +1122,7 @@ export default function StudentMilestonesPage() {
                     </h3>
                     
                     <p className="text-xs text-orange-50/90 leading-relaxed font-semibold italic">
-                      &ldquo;{getFeedbackQuote()}&rdquo;
+                      &ldquo;{selectedMilestone.feedback}&rdquo;
                     </p>
 
                     <div className="flex items-center gap-3 pt-2">
@@ -762,27 +1138,12 @@ export default function StudentMilestonesPage() {
                 </div>
               )}
 
-              {/* MILESTONE STATS CARD */}
-              <div className="bg-white border border-slate-200 rounded-[2.25rem] p-6 shadow-sm space-y-4 select-none">
-                <h2 className="text-xs font-black uppercase tracking-widest text-slate-400 mb-1">Workspace Status</h2>
-                
-                <div className="grid grid-cols-2 gap-3.5">
-                  <div className="p-3 bg-slate-50 border border-slate-100 rounded-xl">
-                    <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider block mb-1">Delivered</span>
-                    <span className="text-lg font-black text-slate-800 leading-none">
-                      {deliverables.filter(d => d.status === 'graded' || d.status === 'submitted').length} / {deliverables.length}
-                    </span>
-                  </div>
-                  <div className="p-3 bg-slate-50 border border-slate-100 rounded-xl">
-                    <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider block mb-1">Grade Average</span>
-                    <span className="text-lg font-black text-slate-800 leading-none">A (95.0)</span>
-                  </div>
-                </div>
-              </div>
-
             </div>
 
           </div>
+          </div>
+            )
+          })()
         )}
 
       </div>
