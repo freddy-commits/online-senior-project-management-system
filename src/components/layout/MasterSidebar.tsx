@@ -66,7 +66,9 @@ export default function MasterSidebar({ role = 'student' }: { role?: string }) {
         ? 'Student Lead' 
         : profile?.role === 'industry' 
           ? 'Industry Partner' 
-          : profile?.role || role
+          : profile?.role === 'admin'
+            ? 'Panel Member'
+            : profile?.role || role
   const initials = fullName
     .split(' ')
     .map((n) => n[0])

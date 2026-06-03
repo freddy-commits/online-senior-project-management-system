@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import Link from 'next/link'
 import { 
   Building2, 
   User, 
@@ -9,7 +10,9 @@ import {
   ShieldCheck, 
   Loader2,
   Globe,
-  Briefcase
+  Briefcase,
+  MessageSquare,
+  Settings as SettingsIcon
 } from 'lucide-react'
 
 export default function PartnerSettingsPage() {
@@ -64,7 +67,43 @@ export default function PartnerSettingsPage() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto pb-20">
+    <div className="max-w-6xl mx-auto pb-20 space-y-6">
+      {/* Dynamic Tab Navigation */}
+      <div className="flex border-b border-slate-200 mb-8 text-sm font-black uppercase tracking-wider items-center flex-wrap">
+        <Link 
+          href="/partner/dashboard"
+          className="pb-4 px-6 relative transition-all text-slate-400 hover:text-slate-700"
+        >
+          Overview
+        </Link>
+        <Link 
+          href="/partner/dashboard"
+          className="pb-4 px-6 relative transition-all text-slate-400 hover:text-slate-700"
+        >
+          My Problems
+        </Link>
+        <Link 
+          href="/partner/dashboard"
+          className="pb-4 px-6 relative transition-all text-slate-400 hover:text-slate-700"
+        >
+          Submit New Problem
+        </Link>
+        <Link 
+          href="/messages"
+          className="pb-4 px-6 relative transition-all text-slate-400 hover:text-slate-700 flex items-center gap-1.5"
+        >
+          <MessageSquare className="w-4 h-4" />
+          Messages
+        </Link>
+        <Link 
+          href="/partner/settings"
+          className="pb-4 px-6 relative transition-all text-indigo-600 border-b-2 border-indigo-600 flex items-center gap-1.5"
+        >
+          <SettingsIcon className="w-4 h-4" />
+          Settings
+        </Link>
+      </div>
+
       {/* Header */}
       <div className="mb-10">
         <h1 className="text-3xl font-black text-slate-900 mb-2">Partner Settings</h1>
