@@ -155,6 +155,12 @@ export default function StudentMilestonesPage() {
     }
   }, [trackMode]) // Re-run fetch whenever the user switches track modes in the header!
 
+  useEffect(() => {
+    setUploadedFile(null)
+    setUploadedFileName('')
+    setUploadedFileSize('')
+  }, [selectedMilestone?.id])
+
   async function fetchDeliverables() {
     setLoading(true)
     try {
@@ -167,11 +173,25 @@ export default function StudentMilestonesPage() {
       // Filter by project origin corresponding to selected track mode
       const expectedOrigin = trackMode === 'thesis' ? 'student' : 'industry'
 
-      // Find user's project for active track mode
-      const { data: rawProjects } = await supabase
+      // Fetch teams the student is part of
+      const { data: myTeams } = await supabase
+        .from('team_members')
+        .select('team_id')
+        .eq('user_id', user.id)
+
+      const myTeamIds = (myTeams || []).map(m => m.team_id)
+
+      let query = supabase
         .from('projects')
         .select('*, student:student_id(full_name, email), instructor:instructor_id(full_name, email)')
-        .eq('student_id', user.id)
+
+      if (myTeamIds.length > 0) {
+        query = query.or(`student_id.eq.${user.id},team_id.in.(${myTeamIds.join(',')})`)
+      } else {
+        query = query.eq('student_id', user.id)
+      }
+
+      const { data: rawProjects } = await query
 
       const projects = rawProjects?.map(p => ({
         ...p,
@@ -350,10 +370,15 @@ export default function StudentMilestonesPage() {
 
   async function handleSubmissionDirect() {
     if (!selectedMilestone) return
+    if (!uploadedFileName) {
+      showToast('Please upload a report or document in the Submission Portal sidebar first.')
+      return
+    }
 
     setSubmitting(true)
-    const staticUrl = uploadedFileName || 'Submitted Document'
+    const staticUrl = uploadedFileName
     
+    let saveError = null
     try {
       const { error } = await supabase
         .from('deliverables')
@@ -363,11 +388,48 @@ export default function StudentMilestonesPage() {
         })
         .eq('id', selectedMilestone.id)
       if (error) throw new Error(error.message)
+    } catch (dbErr: any) {
+      console.warn('Supabase milestone submission failed, falling back to sandbox/mock DB:', dbErr)
+      
+      // Sandbox/Mock DB fallback
+      if (typeof window !== 'undefined') {
+        const storageKey = 'seniorproj_sandbox_db'
+        const data = localStorage.getItem(storageKey)
+        if (data) {
+          try {
+            const parsed = JSON.parse(data)
+            const idx = parsed.deliverables.findIndex((d: any) => d.id === selectedMilestone.id)
+            if (idx !== -1) {
+              parsed.deliverables[idx].submission_url = staticUrl
+              parsed.deliverables[idx].status = 'submitted'
+              localStorage.setItem(storageKey, JSON.stringify(parsed))
+              
+              await fetch('/api/sandbox/sync', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(parsed)
+              }).catch(() => {})
+            } else {
+              saveError = new Error('Milestone not found in sandbox DB')
+            }
+          } catch (jsonErr: any) {
+            saveError = jsonErr
+          }
+        } else {
+          saveError = new Error('No sandbox DB found')
+        }
+      } else {
+        saveError = dbErr
+      }
+    }
 
+    if (!saveError) {
       setDeliverables(deliverables.map(d => d.id === selectedMilestone.id ? { ...d, submission_url: staticUrl, status: 'submitted' } : d))
       setSelectedMilestone({ ...selectedMilestone, submission_url: staticUrl, status: 'submitted' })
       showToast('Milestone submitted successfully!')
       setUploadedFile(null)
+      setUploadedFileName('')
+      setUploadedFileSize('')
 
       try {
         if (project) {
@@ -389,12 +451,10 @@ export default function StudentMilestonesPage() {
       } catch (err) {
         console.error('Email notify error:', err)
       }
-    } catch (dbErr: any) {
-      console.error('Supabase milestone submission failed:', dbErr)
-      showToast(`Submission failed: ${dbErr.message || 'database error'}`)
-    } finally {
-      setSubmitting(false)
+    } else {
+      showToast(`Submission failed: ${saveError.message || 'database error'}`)
     }
+    setSubmitting(false)
   }
 
   const handleExportSchedule = () => {
@@ -946,7 +1006,13 @@ export default function StudentMilestonesPage() {
                               {deliv.status === 'todo' ? (
                                 <>
                                   <button 
-                                    onClick={() => handleSubmissionDirect()}
+                                    onClick={() => {
+                                      if (!uploadedFileName) {
+                                        showToast('Please upload a report or document in the Submission Portal sidebar first.')
+                                        return
+                                      }
+                                      handleSubmissionDirect()
+                                    }}
                                     disabled={submitting}
                                     className="px-5 py-2.5 bg-[#a75d24] hover:bg-[#8f4f1d] text-white font-extrabold text-[10px] uppercase tracking-widest rounded-xl transition-all shadow-sm cursor-pointer select-none active:scale-[0.98] flex items-center gap-1.5"
                                   >

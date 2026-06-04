@@ -66,45 +66,65 @@ export default function InstructorMilestonesClient({
     if (!selectedProjectForApproval || !selectedSupervisorId) return
     setProcessing(selectedProjectForApproval.id)
 
-    const { error } = await supabase
-      .from('projects')
-      .update({
-        status: 'approved',
-        instructor_id: selectedSupervisorId
+    try {
+      const res = await fetch('/api/projects/approve', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          projectId: selectedProjectForApproval.id,
+          supervisorId: selectedSupervisorId,
+          action: 'approve'
+        })
       })
-      .eq('id', selectedProjectForApproval.id)
 
-    if (!error) {
+      const result = await res.json()
+
+      if (!res.ok) {
+        throw new Error(result.error || 'Failed to approve project.')
+      }
+
       setSuccessMessage(`Project "${selectedProjectForApproval.title}" approved and supervisor assigned!`)
       setTimeout(() => setSuccessMessage(''), 5000)
       await refreshProjects()
       setSelectedProjectForApproval(null)
-    } else {
-      console.error(error)
+    } catch (err: any) {
+      console.error(err)
+      alert(err.message || 'An error occurred during project approval.')
+    } finally {
+      setProcessing(null)
     }
-    setProcessing(null)
   }
 
   async function handleRejectProject() {
     if (!selectedProjectForApproval) return
     setProcessing(selectedProjectForApproval.id)
 
-    const { error } = await supabase
-      .from('projects')
-      .update({
-        status: 'rejected'
+    try {
+      const res = await fetch('/api/projects/approve', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          projectId: selectedProjectForApproval.id,
+          action: 'reject'
+        })
       })
-      .eq('id', selectedProjectForApproval.id)
 
-    if (!error) {
+      const result = await res.json()
+
+      if (!res.ok) {
+        throw new Error(result.error || 'Failed to reject project.')
+      }
+
       setSuccessMessage(`Project "${selectedProjectForApproval.title}" was rejected.`)
       setTimeout(() => setSuccessMessage(''), 5000)
       await refreshProjects()
       setSelectedProjectForApproval(null)
-    } else {
-      console.error(error)
+    } catch (err: any) {
+      console.error(err)
+      alert(err.message || 'An error occurred during project rejection.')
+    } finally {
+      setProcessing(null)
     }
-    setProcessing(null)
   }
 
   return (

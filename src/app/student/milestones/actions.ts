@@ -32,10 +32,10 @@ export async function seedDeliverables(projectId: string, defaultDelivs: any[]) 
       return { success: false, error: 'Unauthorized user session.' }
     }
 
-    // Verify project belongs to user
+    // Verify project belongs to user (or their assigned team)
     const { data: proj, error: projError } = await userClient
       .from('projects')
-      .select('id, student_id')
+      .select('id, student_id, team_id')
       .eq('id', projectId)
       .single()
 
@@ -43,7 +43,21 @@ export async function seedDeliverables(projectId: string, defaultDelivs: any[]) 
       return { success: false, error: 'Associated project not found or access denied.' }
     }
 
-    if (proj.student_id !== user.id) {
+    let isOwner = proj.student_id === user.id
+    if (!isOwner && proj.team_id) {
+      const { data: membership } = await userClient
+        .from('team_members')
+        .select('team_id')
+        .eq('team_id', proj.team_id)
+        .eq('user_id', user.id)
+        .maybeSingle()
+      
+      if (membership) {
+        isOwner = true
+      }
+    }
+
+    if (!isOwner) {
       return { success: false, error: 'Access denied. Project ownership check failed.' }
     }
 
@@ -85,10 +99,10 @@ export async function addCustomMilestone(projectId: string, title: string, dueDa
       return { success: false, error: 'Unauthorized user session.' }
     }
 
-    // Verify project belongs to user
+    // Verify project belongs to user (or their assigned team)
     const { data: proj, error: projError } = await userClient
       .from('projects')
-      .select('id, student_id')
+      .select('id, student_id, team_id')
       .eq('id', projectId)
       .single()
 
@@ -96,7 +110,21 @@ export async function addCustomMilestone(projectId: string, title: string, dueDa
       return { success: false, error: 'Associated project not found or access denied.' }
     }
 
-    if (proj.student_id !== user.id) {
+    let isOwner = proj.student_id === user.id
+    if (!isOwner && proj.team_id) {
+      const { data: membership } = await userClient
+        .from('team_members')
+        .select('team_id')
+        .eq('team_id', proj.team_id)
+        .eq('user_id', user.id)
+        .maybeSingle()
+      
+      if (membership) {
+        isOwner = true
+      }
+    }
+
+    if (!isOwner) {
       return { success: false, error: 'Access denied. Project ownership check failed.' }
     }
 

@@ -403,15 +403,6 @@ export default function InstructorTeamsClient({
               className="w-full bg-white border border-slate-200 rounded-xl py-2.5 pl-10 pr-4 text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#5c3e1c]/20 placeholder-slate-400"
             />
           </div>
-
-          {/* Blue Create Project Button */}
-          <button 
-            onClick={() => setShowCreateProjectModal(true)}
-            className="px-6 py-2.5 bg-[#0c59db] hover:bg-blue-700 text-white rounded-xl text-xs font-black uppercase tracking-wider transition-all shadow-md cursor-pointer flex items-center gap-1.5"
-          >
-            <Plus className="w-4 h-4" />
-            Create Project
-          </button>
         </div>
       </div>
 
@@ -748,7 +739,7 @@ export default function InstructorTeamsClient({
                                 <span className="block text-[9px] uppercase tracking-wider font-extrabold text-slate-400 mb-2">Team Roster</span>
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                   {members.map(member => (
-                                    <div key={member.id} className="p-3 bg-white border border-slate-200/60 rounded-xl flex items-center justify-between gap-3 shadow-inner">
+                                    <div key={`${member.team_id}-${member.user_id}`} className="p-3 bg-white border border-slate-200/60 rounded-xl flex items-center justify-between gap-3 shadow-inner">
                                       <div>
                                         <div className="font-bold text-slate-800">{member.profiles?.full_name}</div>
                                         <div className="text-[9px] text-slate-400 mt-0.5">{member.profiles?.email}</div>

@@ -16,11 +16,25 @@ export default async function OverviewPage() {
     .eq('id', user.id)
     .single()
 
-  const { data: projects } = await supabase
+  // Fetch teams the student is part of
+  const { data: myTeams } = await supabase
+    .from('team_members')
+    .select('team_id')
+    .eq('user_id', user.id)
+
+  const myTeamIds = (myTeams || []).map(m => m.team_id)
+
+  let query = supabase
     .from('projects')
     .select('*, supervisor:instructor_id(full_name, email), partner:industry_partner_id(full_name, email)')
-    .eq('student_id', user.id)
-    .order('created_at', { ascending: false })
+
+  if (myTeamIds.length > 0) {
+    query = query.or(`student_id.eq.${user.id},team_id.in.(${myTeamIds.join(',')})`)
+  } else {
+    query = query.eq('student_id', user.id)
+  }
+
+  const { data: projects } = await query.order('created_at', { ascending: false })
 
   const enrichedProjects = await Promise.all((projects || []).map(async p => {
     const { data: delivs } = await supabase
