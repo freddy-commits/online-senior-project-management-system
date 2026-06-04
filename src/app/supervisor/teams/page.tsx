@@ -20,11 +20,43 @@ export default function SupervisorTeamsPage() {
 
         const { data: projs } = await supabase
           .from('projects')
-          .select('*, student:student_id(full_name, email), partner:industry_partner_id(full_name, email)')
+          .select('*, student:student_id(full_name, email), partner:industry_partner_id(full_name, email), teams:team_id(id, name)')
           .eq('instructor_id', targetUserId)
           .not('industry_partner_id', 'is', null)
 
-        setTeams(projs || [])
+        if (projs && projs.length > 0) {
+          const teamIds = projs.map(p => p.team_id).filter(Boolean)
+          let membersMap: Record<string, any[]> = {}
+
+          if (teamIds.length > 0) {
+            const { data: members, error: membersError } = await supabase
+              .from('team_members')
+              .select('*, profiles:user_id(id, full_name, email, avatar_url)')
+              .in('team_id', teamIds)
+
+            if (membersError) {
+              console.error("Error fetching team members for supervisor:", membersError)
+            }
+
+            if (members) {
+              members.forEach(m => {
+                if (!membersMap[m.team_id]) {
+                  membersMap[m.team_id] = []
+                }
+                membersMap[m.team_id].push(m)
+              })
+            }
+          }
+
+          const enrichedProjs = projs.map(p => ({
+            ...p,
+            members: p.team_id ? (membersMap[p.team_id] || []) : []
+          }))
+
+          setTeams(enrichedProjs)
+        } else {
+          setTeams([])
+        }
       } catch (e) {
         console.error("Teams fetch error:", e)
       }
@@ -78,15 +110,36 @@ export default function SupervisorTeamsPage() {
                 </div>
 
                 <div className="space-y-3 pt-3 border-t border-slate-50">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 font-bold text-xs flex items-center justify-center">
-                      {team.student?.full_name?.split(' ').map((n: string) => n[0]).slice(0, 2).join('') || 'ST'}
+                  {team.members && team.members.length > 0 ? (
+                    <div className="space-y-2">
+                      <span className="block text-[9px] uppercase tracking-wider font-extrabold text-slate-400">
+                        Team Roster ({team.teams?.name || 'Assigned Team'})
+                      </span>
+                      <div className="space-y-2">
+                        {team.members.map((member: any) => (
+                          <div key={member.user_id} className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 font-bold text-xs flex items-center justify-center uppercase shadow-inner">
+                              {member.profiles?.full_name?.split(' ').map((n: string) => n[0]).slice(0, 2).join('') || '?'}
+                            </div>
+                            <div>
+                              <span className="text-xs font-black text-slate-900 block">{member.profiles?.full_name}</span>
+                              <span className="text-[9.5px] text-slate-400 font-semibold block">{member.profiles?.email}</span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
                     </div>
-                    <div>
-                      <span className="text-xs font-black text-slate-900 block">{team.student?.full_name}</span>
-                      <span className="text-[9.5px] text-slate-400 font-semibold block">{team.student?.email}</span>
+                  ) : (
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 font-bold text-xs flex items-center justify-center">
+                        {team.student?.full_name?.split(' ').map((n: string) => n[0]).slice(0, 2).join('') || 'ST'}
+                      </div>
+                      <div>
+                        <span className="text-xs font-black text-slate-900 block">{team.student?.full_name || 'Unassigned Lead'}</span>
+                        <span className="text-[9.5px] text-slate-400 font-semibold block">{team.student?.email || 'No email'}</span>
+                      </div>
                     </div>
-                  </div>
+                  )}
 
                   {team.partner && (
                     <div className="flex items-center gap-3">

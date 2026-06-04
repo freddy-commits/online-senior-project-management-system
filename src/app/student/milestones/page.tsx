@@ -60,6 +60,39 @@ export default function StudentMilestonesPage() {
   const [newTitle, setNewTitle] = useState('')
   const [newDescription, setNewDescription] = useState('')
   const [newDueDate, setNewDueDate] = useState('')
+  const [hasLocalDraft, setHasLocalDraft] = useState(false)
+
+  useEffect(() => {
+    if (isAddModalOpen && typeof window !== 'undefined') {
+      const saved = localStorage.getItem('seniorproj_milestone_draft')
+      setHasLocalDraft(!!saved)
+    }
+  }, [isAddModalOpen])
+
+  const loadLocalDraft = () => {
+    const saved = localStorage.getItem('seniorproj_milestone_draft')
+    if (saved) {
+      try {
+        const { title, description, dueDate } = JSON.parse(saved)
+        setNewTitle(title || '')
+        setNewDescription(description || '')
+        setNewDueDate(dueDate || '')
+        showToast('Draft milestone loaded from local storage!')
+      } catch (e) {
+        console.error(e)
+      }
+    }
+  }
+
+  const saveLocalDraft = () => {
+    localStorage.setItem('seniorproj_milestone_draft', JSON.stringify({
+      title: newTitle,
+      description: newDescription,
+      dueDate: newDueDate
+    }))
+    setHasLocalDraft(true)
+    showToast('Milestone draft saved locally!')
+  }
 
   // Proposal Submission inline state
   const [newProjTitle, setNewProjTitle] = useState('')
@@ -222,73 +255,8 @@ export default function StudentMilestonesPage() {
           description: d.description || getMilestoneDescription(d.title)
         }))
 
-        if (formattedDelivs.length === 0) {
-          const isThesis = expectedOrigin === 'student'
-          const defaultDelivs = isThesis ? [
-            {
-              project_id: activeProj.id,
-              title: 'Project Proposal',
-              due_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-              status: 'todo'
-            },
-            {
-              project_id: activeProj.id,
-              title: 'Initial Architecture & Schema',
-              due_date: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000).toISOString(),
-              status: 'todo'
-            },
-            {
-              project_id: activeProj.id,
-              title: 'Mid-Term Presentation',
-              due_date: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString(),
-              status: 'todo'
-            },
-            {
-              project_id: activeProj.id,
-              title: 'Final Execution & Thesis',
-              due_date: new Date(Date.now() + 120 * 24 * 60 * 60 * 1000).toISOString(),
-              status: 'todo'
-            }
-          ] : [
-            {
-              project_id: activeProj.id,
-              title: 'Project Pitch & Scoping',
-              due_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-              status: 'todo'
-            },
-            {
-              project_id: activeProj.id,
-              title: 'System Architecture Diagram',
-              due_date: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000).toISOString(),
-              status: 'todo'
-            },
-            {
-              project_id: activeProj.id,
-              title: 'Beta Demo & Testing',
-              due_date: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString(),
-              status: 'todo'
-            },
-            {
-              project_id: activeProj.id,
-              title: 'Final Client Deliverables',
-              due_date: new Date(Date.now() + 120 * 24 * 60 * 60 * 1000).toISOString(),
-              status: 'todo'
-            }
-          ]
-
-          // Call the server action to bypass RLS restrictions
-          const res = await seedDeliverables(activeProj.id, defaultDelivs)
-
-          if (res.success && res.data) {
-            const enriched = res.data.map((d: any) => ({
-              ...d,
-              description: getMilestoneDescription(d.title)
-            }))
-            formattedDelivs = enriched.sort((a: any, b: any) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime())
-          } else {
-            console.error("Failed to seed deliverables database:", res.error)
-          }
-        }
+        // Do not auto-seed default milestones if none exist, as requested by the user.
+        // Let the student upload/create milestones manually.
 
         setDeliverables(formattedDelivs)
         if (formattedDelivs.length > 0) {
@@ -1241,6 +1209,19 @@ export default function StudentMilestonesPage() {
 
               {/* Modal Form */}
               <form onSubmit={handleAddMilestone} className="p-8 space-y-5">
+                {hasLocalDraft && (
+                  <div className="p-4 bg-[#fdf5f0] border border-[#a75d24]/20 rounded-2xl flex items-center justify-between text-xs text-[#a75d24] font-bold">
+                    <span>You have a locally saved milestone draft.</span>
+                    <button
+                      type="button"
+                      onClick={loadLocalDraft}
+                      className="px-3 py-1.5 bg-[#a75d24] text-white rounded-xl font-bold hover:bg-[#8f4f1d] transition-all cursor-pointer text-[10px] uppercase tracking-wider"
+                    >
+                      Load Draft
+                    </button>
+                  </div>
+                )}
+
                 <div className="space-y-1">
                   <label className="text-[10px] text-slate-500 font-black uppercase tracking-wider block ml-1">Milestone Title</label>
                   <input 
@@ -1275,7 +1256,14 @@ export default function StudentMilestonesPage() {
                   />
                 </div>
 
-                <div className="flex items-center gap-3 justify-end pt-3 border-t border-slate-100 mt-6">
+                <div className="flex items-center gap-3 justify-end pt-3 border-t border-slate-100 mt-6 flex-wrap">
+                  <button 
+                    type="button"
+                    onClick={saveLocalDraft}
+                    className="px-4 py-3 border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 font-extrabold text-xs uppercase tracking-wider rounded-xl transition-all cursor-pointer select-none"
+                  >
+                    Save Local Draft
+                  </button>
                   <button 
                     type="button"
                     onClick={() => setIsAddModalOpen(false)}
