@@ -4,6 +4,15 @@ import { NextRequest, NextResponse } from 'next/server'
 // This route uses the service role to create users server-side,
 // completely bypassing any broken database trigger issues.
 export async function POST(request: NextRequest) {
+  // Guard: ensure required env vars are present on the server
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    console.error('Missing Supabase environment variables on the server.')
+    return NextResponse.json(
+      { error: 'Server configuration error: missing environment variables. Please contact the administrator.' },
+      { status: 500 }
+    )
+  }
+
   try {
     const { email, password, fullName, role } = await request.json()
 
