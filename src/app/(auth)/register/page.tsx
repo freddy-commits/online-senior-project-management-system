@@ -36,25 +36,47 @@ export default function RegisterPage() {
     const fullName = formData.get('fullName') as string
 
     try {
-      // Step 1: Create the user via server-side admin API (bypasses broken trigger)
-      const res = await fetch('/api/auth/signup', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password, fullName, role: selectedRole }),
+      const supabase = createClient()
+
+      // Step 1: Sign up directly using client-side Supabase (no server API needed)
+      const { data, error: signUpError } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            full_name: fullName,
+            role: selectedRole,
+          },
+        },
       })
 
-      const result = await res.json()
-
-      if (!res.ok) {
-        throw new Error(result.error || 'Registration failed.')
+      if (signUpError) {
+        throw new Error(signUpError.message)
       }
 
-      // Step 2: Sign in with the newly created credentials to establish session
-      const supabase = createClient()
-      const { error: signInError } = await supabase.auth.signInWithPassword({ email, password })
+      if (!data.user) {
+        throw new Error('Registration failed. Please try again.')
+      }
 
-      if (signInError) {
-        throw new Error('Account created but sign-in failed. Please go to login page.')
+      // Step 2: Create/update profile row
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .upsert({
+          id: data.user.id,
+          email: email,
+          full_name: fullName,
+          role: selectedRole,
+        }, { onConflict: 'id' })
+
+      if (profileError) {
+        console.warn('Profile upsert warning (non-fatal):', profileError.message)
+      }
+
+      // Step 3: If email confirmation is required, show message
+      if (data.user && !data.session) {
+        setError('Please check your email to confirm your account, then log in.')
+        setLoading(false)
+        return
       }
 
       // Clear any leftover sandbox cookies
@@ -64,7 +86,7 @@ export default function RegisterPage() {
       }
       document.cookie = `demo_role=${selectedRole}; path=/`
 
-      // Step 3: Redirect to the right dashboard
+      // Step 4: Redirect to the right dashboard
       if (selectedRole === 'student') {
         router.push('/student/dashboard')
       } else if (selectedRole === 'instructor') {
