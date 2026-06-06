@@ -89,87 +89,18 @@ export default function DashboardLayout({ children, role, userName }: DashboardL
         <div className="absolute bottom-[-10%] left-[-10%] w-[40%] h-[40%] bg-indigo-100/50 blur-[120px] rounded-full" />
       </div>
 
-      {/* Sidebar - Matching Landing Page Branding #0b192f */}
-      <motion.aside 
-        initial={false}
-        animate={{ width: isSidebarOpen ? 280 : 80 }}
-        className={`relative z-50 flex flex-col transition-all duration-300 bg-[#0b192f] shadow-xl`}
-      >
-        <div className={`h-20 flex items-center px-6 border-b border-white/10`}>
-          <Link href="/" className="flex items-center gap-3">
-            <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 bg-[#e37b2d]`}>
-              <span className="text-white font-bold text-lg">P</span>
-            </div>
-            {isSidebarOpen && (
-              <motion.span 
-                initial={{ opacity: 0 }} 
-                animate={{ opacity: 1 }} 
-                className={`font-bold text-lg tracking-tight text-white`}
-              >
-                Project Station
-              </motion.span>
-            )}
-          </Link>
-        </div>
-
-        <nav className="flex-1 py-8 px-4 space-y-2">
-          {menuItems.map((item) => {
-            const isActive = pathname === item.path
-            return (
-              <Link 
-                key={item.name} 
-                href={item.path}
-                className={`flex items-center gap-4 px-4 py-3 rounded-2xl transition-all group relative ${
-                  isActive 
-                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' 
-                    : 'text-slate-400 hover:bg-white/5 hover:text-white'
-                }`}
-              >
-                <div className="shrink-0">{item.icon}</div>
-                {isSidebarOpen && (
-                  <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="font-medium text-sm">
-                    {item.name}
-                  </motion.span>
-                )}
-              </Link>
-            )
-          })}
-        </nav>
-
-        <div className={`p-4 border-t border-white/10`}>
-          <div className={`rounded-2xl p-3 flex items-center gap-3 overflow-hidden bg-white/5 border border-white/10`}>
-            <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold text-lg shrink-0 text-white bg-gradient-to-br from-blue-500 to-indigo-600`}>
-              {userName[0]}
-            </div>
-            {isSidebarOpen && (
-              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex-1 min-w-0">
-                <div className={`font-bold text-sm truncate text-white`}>{userName}</div>
-                <div className={`text-[10px] uppercase font-black tracking-widest text-slate-400`}>{role}</div>
-              </motion.div>
-            )}
-            {isSidebarOpen && (
-              <button onClick={async () => {
-                await supabase.auth.signOut()
-                window.location.href = '/'
-              }} className={`p-2 rounded-lg transition-colors hover:bg-white/10`}>
-                <LogOut className="w-4 h-4 text-slate-400" />
-              </button>
-            )}
-          </div>
-        </div>
-      </motion.aside>
-
       {/* Main Area */}
       <main className="flex-1 flex flex-col h-screen overflow-hidden relative">
         <header className={`h-20 flex items-center justify-between px-8 bg-white/80 backdrop-blur-md shrink-0 z-40 border-b border-slate-200`}>
           <div className="flex items-center gap-4">
-            <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} className={`p-2 rounded-xl transition-colors hover:bg-slate-100`}>
-              {isSidebarOpen ? (
-                <X className={`w-5 h-5 text-slate-500`} />
-              ) : (
-                <Menu className={`w-5 h-5 text-slate-500`} />
-              )}
-            </button>
+            <Link href="/" className="flex items-center gap-3 mr-6 select-none shrink-0">
+              <div className="w-8 h-8 bg-gradient-to-br from-indigo-600 to-purple-700 rounded-xl flex items-center justify-center text-white shrink-0 shadow-sm">
+                <span className="text-white font-bold text-base">P</span>
+              </div>
+              <span className="font-extrabold text-sm text-slate-900 tracking-tight leading-tight hidden sm:block">
+                Project Station
+              </span>
+            </Link>
             <div className="relative hidden md:block">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
               <input 
@@ -245,6 +176,20 @@ export default function DashboardLayout({ children, role, userName }: DashboardL
               <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold text-white bg-blue-600`}>
                 {userName[0]}
               </div>
+              <button
+                onClick={async () => {
+                  await supabase.auth.signOut()
+                  if (typeof window !== 'undefined') {
+                    localStorage.removeItem('active_user_email')
+                    document.cookie = "demo_role=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC;"
+                  }
+                  window.location.href = '/login'
+                }}
+                title="Log Out"
+                className="p-2 text-slate-500 hover:text-red-650 hover:bg-red-50 rounded-xl transition-colors cursor-pointer border border-transparent hover:border-red-200"
+              >
+                <LogOut className="w-5 h-5" />
+              </button>
             </div>
           </div>
         </header>

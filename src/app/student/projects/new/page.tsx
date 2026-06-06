@@ -10,6 +10,8 @@ export default function NewProjectPage() {
   const { trackMode, setTrackMode } = useTrack()
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
+  const [supervisors, setSupervisors] = useState<any[]>([])
+  const [preferredSupervisor, setPreferredSupervisor] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   
@@ -24,6 +26,23 @@ export default function NewProjectPage() {
     }
   }, [trackMode, setTrackMode])
 
+  useEffect(() => {
+    async function loadSupervisors() {
+      try {
+        const { data } = await supabase
+          .from('profiles')
+          .select('id, full_name, role')
+          .in('role', ['supervisor', 'instructor'])
+        if (data) {
+          setSupervisors(data)
+        }
+      } catch (e) {
+        console.error("Failed to load supervisors:", e)
+      }
+    }
+    loadSupervisors()
+  }, [])
+
   if (trackMode !== 'thesis') {
     return null
   }
@@ -35,13 +54,17 @@ export default function NewProjectPage() {
     setSubmitting(true)
     setError(null)
 
+    const finalDescription = preferredSupervisor 
+      ? `${description}\n\n[Preferred Supervisor: ${preferredSupervisor}]` 
+      : description
+
     try {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) throw new Error('You must be logged in.')
 
       const { error: insertError } = await supabase.from('projects').insert({
         title,
-        description,
+        description: finalDescription,
         status: 'pending',
         student_id: user.id
       })
@@ -101,6 +124,22 @@ export default function NewProjectPage() {
             placeholder="Describe your methodology, goals, and intended research outcome..."
             className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-semibold text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 resize-none"
           />
+        </div>
+
+        <div>
+          <label className="block text-[10px] uppercase tracking-[0.2em] font-black text-slate-500 mb-2">Preferred Supervisor (Optional)</label>
+          <select
+            value={preferredSupervisor}
+            onChange={(e) => setPreferredSupervisor(e.target.value)}
+            className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 cursor-pointer"
+          >
+            <option value="">No Preference / Assign Automatically</option>
+            {supervisors.map(s => (
+              <option key={s.id} value={s.full_name} className="bg-white text-slate-900 font-bold">
+                {s.full_name} ({s.role === 'instructor' ? 'Lead Coordinator' : 'Academic Supervisor'})
+              </option>
+            ))}
+          </select>
         </div>
 
         <div className="pt-4 border-t border-slate-100 flex justify-end">

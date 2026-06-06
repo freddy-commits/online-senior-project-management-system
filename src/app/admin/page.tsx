@@ -3,44 +3,45 @@
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import DashboardLayout from '@/components/dashboard/DashboardLayout'
-import { createAnnouncementNotifications } from '@/lib/notifications/notificationService'
 import { 
   Users, 
-  Activity, 
-  Database,
-  Lock,
-  Globe,
-  Settings2,
-  AlertTriangle,
-  Megaphone,
-  Pin,
-  Clock,
-  Check,
-  UserCheck,
-  UserX,
-  ShieldCheck,
-  Plus
+  Clock, 
+  Check, 
+  Eye, 
+  Award, 
+  Calendar, 
+  FileText, 
+  ChevronRight, 
+  Loader2, 
+  AlertCircle,
+  HelpCircle,
+  TrendingUp,
+  CheckCircle2,
+  X,
+  ExternalLink,
+  LayoutDashboard
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 
 export default function AdminDashboard() {
   const [profile, setProfile] = useState<any>(null)
-  const [usersList, setUsersList] = useState<any[]>([])
-  const [announcements, setAnnouncements] = useState<any[]>([])
+  const [projects, setProjects] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   
-  // Announcement form state
-  const [annTitle, setAnnTitle] = useState('')
-  const [annContent, setAnnContent] = useState('')
-  const [annPinned, setAnnPinned] = useState(false)
-  const [annRole, setAnnRole] = useState<'all' | 'student' | 'instructor' | 'industry'>('all')
-  const [publishing, setPublishing] = useState(false)
-  const [pubSuccess, setPubSuccess] = useState(false)
+  // Tab Management
+  const [activeTab, setActiveTab] = useState<'overview' | 'projects' | 'evaluations' | 'presentations'>('overview')
+
+  // Evaluation details dialog
+  const [evaluatingProject, setEvaluatingProject] = useState<any>(null)
+  const [evalNotes, setEvalNotes] = useState('')
+  const [questions, setQuestions] = useState('')
+  const [processing, setProcessing] = useState<string | null>(null)
+  const [successMessage, setSuccessMessage] = useState('')
 
   const supabase = createClient()
 
   useEffect(() => {
-    async function initAdmin() {
+    async function initPanelDashboard() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) {
         window.location.href = '/login'
@@ -60,383 +61,592 @@ export default function AdminDashboard() {
       }
       setProfile(prof)
 
-      // Fetch all users
-      const { data: allUsers } = await supabase
-        .from('profiles')
-        .select('*')
-      setUsersList(allUsers || [])
-
-      // Fetch announcements
-      fetchAnnouncementsList()
-
+      await fetchDashboardData()
       setLoading(false)
     }
 
-    initAdmin()
+    initPanelDashboard()
   }, [])
 
-  async function fetchAnnouncementsList() {
-    const { data: anns } = await supabase
-      .from('announcements')
-      .select('*')
-      .order('is_pinned', { ascending: false })
-      .order('created_at', { ascending: false })
-    setAnnouncements(anns || [])
+  async function fetchDashboardData() {
+    let projs: any[] = []
+    let allDeliverables: any[] = []
+    try {
+      const { data, error } = await supabase
+        .from('projects')
+        .select('*, student:student_id(full_name, email), instructor:instructor_id(full_name, email)')
+        .order('created_at', { ascending: false })
+      if (error) throw error
+      projs = data || []
+      
+      const { data: delivs, error: delivError } = await supabase
+        .from('deliverables')
+        .select('*')
+      if (!delivError) {
+        allDeliverables = delivs || []
+      }
+    } catch (err) {
+      console.warn("Live Supabase fetch failed, reading from Sandbox db:", err)
+    }
+
+    // Always fallback/merge if we are in sandbox environment or Supabase is empty
+    if (typeof window !== 'undefined') {
+      const storageKey = 'seniorproj_sandbox_db'
+      const data = localStorage.getItem(storageKey)
+      if (data) {
+        try {
+          const parsed = JSON.parse(data)
+          if ((projs.length === 0 || !projs.some(p => p.student)) && parsed.projects) {
+            projs = parsed.projects.map((p: any) => {
+              const student = parsed.profiles.find((pr: any) => pr.id === p.student_id)
+              const instructor = parsed.profiles.find((pr: any) => pr.id === p.instructor_id)
+              return {
+                ...p,
+                student: student ? { full_name: student.full_name, email: student.email } : null,
+                instructor: instructor ? { full_name: instructor.full_name, email: instructor.email } : null
+              }
+            })
+          }
+          if (allDeliverables.length === 0 && parsed.deliverables) {
+            allDeliverables = parsed.deliverables
+          }
+        } catch (e) {
+          console.error("Error parsing sandbox db:", e)
+        }
+      }
+    }
+
+    // Filter out industry projects: keep only academic/capstone projects
+    const capstoneOnly = projs.filter((p: any) => !p.industry_partner_id)
+    
+    // Attach deliverables to projects
+    const enriched = capstoneOnly.map((p: any) => {
+      return {
+        ...p,
+        deliverables: allDeliverables.filter((d: any) => d.project_id === p.id)
+      }
+    })
+    
+    setProjects(enriched)
   }
 
-  const handlePublishAnnouncement = async (e: React.FormEvent) => {
+  async function syncLocalDb(updatedState: any) {
+    if (typeof window !== 'undefined') {
+      const storageKey = 'seniorproj_sandbox_db'
+      localStorage.setItem(storageKey, JSON.stringify(updatedState))
+      await fetch('/api/sandbox/sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updatedState)
+      }).catch(() => {})
+    }
+  }
+
+  // Handle final review and questions submission
+  async function handleSubmitEvaluation(e: React.FormEvent) {
     e.preventDefault()
-    if (!annTitle || !annContent) return
+    if (!evaluatingProject) return
+    setProcessing(evaluatingProject.id)
 
-    setPublishing(true)
-    const newAnn = {
-      title: annTitle,
-      content: annContent,
-      is_pinned: annPinned,
-      target_role: annRole,
-      created_at: new Date().toISOString()
+    try {
+      const { error } = await supabase
+        .from('projects')
+        .update({ 
+          review_notes: evalNotes,
+          review_questions: questions,
+          review_completed: true
+        })
+        .eq('id', evaluatingProject.id)
+      if (error) throw error
+    } catch (err) {
+      console.warn("Live Supabase write failed, writing to fallback Sandbox:", err)
+      // Fallback
+      if (typeof window !== 'undefined') {
+        const storageKey = 'seniorproj_sandbox_db'
+        const data = localStorage.getItem(storageKey)
+        if (data) {
+          const parsed = JSON.parse(data)
+          parsed.projects = parsed.projects.map((p: any) => 
+            p.id === evaluatingProject.id 
+              ? { ...p, review_notes: evalNotes, review_questions: questions, review_completed: true }
+              : p
+          )
+          await syncLocalDb(parsed)
+        }
+      }
     }
 
-    const { data, error } = await supabase
-      .from('announcements')
-      .insert(newAnn)
-
-    setPublishing(false)
-    if (!error) {
-      setPubSuccess(true)
-      setAnnTitle('')
-      setAnnContent('')
-      setAnnPinned(false)
-      setAnnRole('all')
-      fetchAnnouncementsList()
-      setTimeout(() => setPubSuccess(false), 3000)
-    }
-  }
-
-  // Admin User Actions (Approving, Suspending, Editing Roles)
-  const updateUserRole = async (userId: string, newRole: 'student' | 'instructor' | 'industry' | 'admin' | 'supervisor') => {
-    const { data } = await supabase
-      .from('profiles')
-      .update({ role: newRole })
-      .eq('id', userId)
-
-    // Update local state
-    setUsersList(prev => prev.map(u => u.id === userId ? { ...u, role: newRole } : u))
-  }
-
-  const toggleUserStatus = async (userId: string, currentStatus: string) => {
-    const newStatus = currentStatus === 'suspended' ? 'active' : 'suspended'
-    const { data } = await supabase
-      .from('profiles')
-      .update({ status: newStatus }) // Mock client dynamically handles custom keys
-      .eq('id', userId)
-
-    setUsersList(prev => prev.map(u => u.id === userId ? { ...u, status: newStatus } : u))
+    setSuccessMessage(`Committee review and questions submitted for "${evaluatingProject.title}"!`)
+    setTimeout(() => setSuccessMessage(''), 5000)
+    await fetchDashboardData()
+    setEvaluatingProject(null)
+    setEvalNotes('')
+    setQuestions('')
+    setProcessing(null)
   }
 
   if (loading || !profile) {
     return (
       <div className="min-h-screen bg-[#f8fafc] flex items-center justify-center">
-        <div className="w-16 h-16 border-4 border-violet-600 border-t-transparent rounded-full animate-spin" />
+        <Loader2 className="w-10 h-10 text-indigo-600 animate-spin" />
       </div>
     )
   }
 
-  const stats = [
-    { label: 'Total Users', value: usersList.length.toString(), icon: <Users className="w-5 h-5 text-violet-600" /> },
-    { label: 'Active Projects', value: '142', icon: <Activity className="w-5 h-5 text-emerald-600" /> },
-    { label: 'Storage Used', value: '42.8 GB', icon: <Database className="w-5 h-5 text-indigo-600" /> },
-    { label: 'System Health', value: '100%', icon: <ShieldCheck className="w-5 h-5 text-purple-600" /> },
-  ]
+  // Core Statistics Calculation
+  const pendingReviews = projects.filter(p => p.status === 'approved' && !p.review_completed).length
+  const underReview = projects.filter(p => p.status === 'pending').length
+  const reviewedCount = projects.filter(p => p.review_completed).length
+
+  // Calculate Average Grade from instructor-assigned grades if they exist
+  const scoresMap: Record<string, number> = { 'A': 95, 'B': 85, 'C': 75, 'D': 65, 'F': 50 }
+  const gradedProjects = projects.filter(p => p.grade)
+  const averageScore = gradedProjects.length > 0 
+    ? (gradedProjects.reduce((sum, p) => sum + (scoresMap[p.grade] || 85), 0) / gradedProjects.length).toFixed(1)
+    : '89.5'
 
   return (
-    <DashboardLayout role="admin" userName={profile.full_name || 'Administrator'}>
-      <div className="max-w-6xl mx-auto space-y-10">
+    <DashboardLayout role="admin" userName={profile.full_name || 'Dr. Sarah Johnson'}>
+      
+      {successMessage && (
+        <div className="fixed top-8 right-8 bg-emerald-600 text-white px-6 py-4 rounded-2xl shadow-xl font-bold flex items-center gap-3 z-50 animate-in slide-in-from-top-4">
+          <CheckCircle2 className="w-5 h-5" />
+          {successMessage}
+        </div>
+      )}
+
+      <div className="max-w-6xl mx-auto space-y-8 pb-16 text-slate-800 font-sans">
         
-        {/* Header Section */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 pb-6 border-b border-slate-200">
-          <div>
-            <h1 className="text-4xl font-black text-slate-900 tracking-tight flex items-center gap-3">
-              Admin Control Center
-            </h1>
-            <p className="text-slate-500 font-medium mt-1">
-              Publish university communications, audit platform security, and manage user portfolios.
-            </p>
-          </div>
-          <div className="flex gap-3">
-            <button className="px-5 py-3 bg-red-50 hover:bg-red-100 text-red-700 rounded-2xl border border-red-200 font-bold text-xs transition-all flex items-center gap-2 tracking-widest uppercase">
-              <Lock className="w-4 h-4" />
-              Security Audit
-            </button>
-            <button className="px-5 py-3 bg-slate-900 hover:bg-slate-800 text-white rounded-2xl font-bold text-xs shadow-lg transition-all flex items-center gap-2 tracking-widest uppercase">
-              <Settings2 className="w-4 h-4" />
-              System Config
-            </button>
+        {/* Mockup Header Row */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 pb-4">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 bg-blue-600 rounded-xl flex items-center justify-center text-white shrink-0 shadow-lg shadow-blue-500/20">
+              <FileText className="w-6 h-6" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-black text-slate-900 tracking-tight leading-tight">
+                Capstone Evaluation Panel
+              </h1>
+              <p className="text-xs font-semibold text-slate-400 mt-1">
+                {profile.full_name || 'Dr. Sarah Johnson'} - Senior Capstone Evaluator
+              </p>
+            </div>
           </div>
         </div>
 
-        {/* Stats Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {stats.map((stat, i) => (
-            <div key={i} className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm hover:shadow-md transition-all">
-              <div className="flex items-center justify-between mb-4">
-                <div className="w-10 h-10 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-center">
-                  {stat.icon}
-                </div>
-                <div className="flex items-center gap-1.5 px-2 py-0.5 bg-emerald-50 text-emerald-700 border border-emerald-100 rounded text-[9px] font-bold uppercase tracking-wider">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" />
-                  Live
-                </div>
-              </div>
-              <div className="text-3xl font-black text-slate-900">{stat.value}</div>
-              <div className="text-[10px] text-slate-400 font-black uppercase tracking-widest mt-1">{stat.label}</div>
-            </div>
+        {/* Tab Sub-menu Menu */}
+        <div className="flex border-b border-slate-200 overflow-x-auto gap-6 no-scrollbar">
+          {[
+            { id: 'overview', label: 'Overview', icon: <LayoutDashboard className="w-4 h-4" /> },
+            { id: 'projects', label: 'Senior Projects', icon: <Clock className="w-4 h-4" /> },
+            { id: 'evaluations', label: 'My Evaluations', icon: <Award className="w-4 h-4" /> },
+            { id: 'presentations', label: 'Presentations', icon: <Calendar className="w-4 h-4" /> }
+          ].map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id as any)}
+              className={`pb-4 px-2 font-bold text-sm tracking-wide transition-all flex items-center gap-2 border-b-2 outline-none shrink-0 cursor-pointer ${
+                activeTab === tab.id
+                  ? 'border-blue-600 text-blue-700 font-black'
+                  : 'border-transparent text-slate-400 hover:text-slate-650'
+              }`}
+            >
+              {tab.icon}
+              {tab.label}
+            </button>
           ))}
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          
-          {/* Left: User Management & University Communications */}
-          <div className="lg:col-span-2 space-y-8">
-            
-            {/* University Communications Panel */}
-            <div className="bg-white border border-slate-200 rounded-[2rem] p-8 shadow-sm relative overflow-hidden">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="w-10 h-10 bg-violet-50 text-violet-600 rounded-xl flex items-center justify-center border border-violet-100">
-                  <Megaphone className="w-5 h-5" />
-                </div>
-                <div>
-                  <h3 className="text-xl font-bold text-slate-900">University Communications</h3>
-                  <p className="text-xs text-slate-400 font-medium">Broadcast notices directly to student and supervisor dashboards</p>
-                </div>
-              </div>
-
-              <form onSubmit={handlePublishAnnouncement} className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Announcement Title</label>
-                    <input
-                      type="text"
-                      required
-                      placeholder="e.g. Milestone 2 Deadline Extended"
-                      value={annTitle}
-                      onChange={e => setAnnTitle(e.target.value)}
-                      className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-3 px-4 text-slate-900 placeholder:text-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-violet-400/40 focus:border-violet-400 transition-all font-semibold"
-                    />
+        {/* Tab Content Panels */}
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={activeTab}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.2 }}
+            className="space-y-8"
+          >
+            {/* TAB 1: OVERVIEW */}
+            {activeTab === 'overview' && (
+              <>
+                {/* Stats Cards Grid matching screenshot */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+                  
+                  {/* Card 1: Pending Reviews */}
+                  <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm flex items-center justify-between gap-4">
+                    <div className="space-y-1">
+                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Pending Reviews</span>
+                      <span className="text-3xl font-black text-slate-900">{pendingReviews}</span>
+                      <span className="text-[9px] font-extrabold text-amber-600 uppercase flex items-center gap-1 mt-1">
+                        <Clock className="w-3.5 h-3.5" /> Final submissions
+                      </span>
+                    </div>
+                    <div className="w-12 h-12 rounded-2xl bg-amber-50 flex items-center justify-center text-amber-500 shrink-0 shadow-inner">
+                      <Clock className="w-6 h-6" />
+                    </div>
                   </div>
-                  <div>
-                    <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Target Audience</label>
-                    <select
-                      value={annRole}
-                      onChange={e => setAnnRole(e.target.value as any)}
-                      className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-3 px-4 text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-violet-400/40 focus:border-violet-400 transition-all font-semibold"
-                    >
-                      <option value="all">Everyone (All Users)</option>
-                      <option value="student">Students Only</option>
-                      <option value="instructor">Supervisors &amp; Instructors</option>
-                      <option value="industry">Industry Partners Only</option>
-                    </select>
+
+                  {/* Card 2: Under Review */}
+                  <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm flex items-center justify-between gap-4">
+                    <div className="space-y-1">
+                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Under Review</span>
+                      <span className="text-3xl font-black text-slate-900">{underReview}</span>
+                      <span className="text-[9px] font-extrabold text-purple-600 uppercase flex items-center gap-1 mt-1">
+                        <Eye className="w-3.5 h-3.5" /> Currently evaluating
+                      </span>
+                    </div>
+                    <div className="w-12 h-12 rounded-2xl bg-purple-50 flex items-center justify-center text-purple-500 shrink-0 shadow-inner">
+                      <Eye className="w-6 h-6" />
+                    </div>
                   </div>
-                </div>
 
-                <div>
-                  <label className="block text-[10px] font-black uppercase tracking-widest text-slate-400 mb-2">Notice Content</label>
-                  <textarea
-                    required
-                    rows={4}
-                    placeholder="Write detailed announcements, links, or instructions..."
-                    value={annContent}
-                    onChange={e => setAnnContent(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-3 px-4 text-slate-900 placeholder:text-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-violet-400/40 focus:border-violet-400 transition-all resize-none font-medium leading-relaxed"
-                  />
-                </div>
-
-                <div className="flex items-center justify-between pt-2">
-                  <label className="flex items-center gap-2.5 cursor-pointer select-none">
-                    <input
-                      type="checkbox"
-                      checked={annPinned}
-                      onChange={e => setAnnPinned(e.target.checked)}
-                      className="w-4.5 h-4.5 text-violet-600 bg-slate-50 border-slate-300 rounded focus:ring-violet-500 focus:ring-2"
-                    />
-                    <span className="text-xs font-bold text-slate-600 flex items-center gap-1">
-                      <Pin className="w-3.5 h-3.5 text-violet-600" />
-                      Pin to top of feed
-                    </span>
-                  </label>
-
-                  <button
-                    type="submit"
-                    disabled={publishing}
-                    className="px-6 py-3 bg-violet-600 hover:bg-violet-700 disabled:bg-violet-400 text-white rounded-2xl font-bold text-xs transition-all flex items-center gap-2 shadow-lg shadow-violet-500/20 uppercase tracking-widest"
-                  >
-                    {publishing ? 'Publishing...' : 'Publish Announcement'}
-                    <Plus className="w-4 h-4" />
-                  </button>
-                </div>
-              </form>
-
-              <AnimatePresence>
-                {pubSuccess && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -10 }}
-                    className="absolute inset-0 bg-white/95 backdrop-blur-sm flex flex-col items-center justify-center text-center z-10"
-                  >
-                    <div className="w-12 h-12 bg-emerald-50 text-emerald-600 border border-emerald-200 rounded-full flex items-center justify-center mb-3">
+                  {/* Card 3: Reviewed */}
+                  <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm flex items-center justify-between gap-4">
+                    <div className="space-y-1">
+                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Reviewed</span>
+                      <span className="text-3xl font-black text-slate-900">{reviewedCount}</span>
+                      <span className="text-[9px] font-extrabold text-emerald-600 uppercase flex items-center gap-1 mt-1">
+                        <Check className="w-3.5 h-3.5" /> Approved Vettings
+                      </span>
+                    </div>
+                    <div className="w-12 h-12 rounded-2xl bg-emerald-50 flex items-center justify-center text-emerald-500 shrink-0 shadow-inner">
                       <Check className="w-6 h-6" />
                     </div>
-                    <h4 className="font-bold text-slate-950 text-lg">Broadcast Published!</h4>
-                    <p className="text-slate-400 text-xs mt-1">Students and supervisors will see this announcement instantly.</p>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
+                  </div>
 
-            {/* User Portfolio Management Table */}
-            <div className="bg-white border border-slate-200 rounded-[2rem] p-8 shadow-sm">
-              <div className="flex items-center justify-between mb-6">
-                <div>
-                  <h3 className="text-xl font-bold text-slate-900">User Directory</h3>
-                  <p className="text-xs text-slate-400 font-medium">Verify system registrations, suspend credentials, or adjust roles</p>
+                  {/* Card 4: Avg Project Grade */}
+                  <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm flex items-center justify-between gap-4">
+                    <div className="space-y-1">
+                      <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Avg Project Grade</span>
+                      <span className="text-3xl font-black text-slate-900">{averageScore}</span>
+                      <span className="text-[9px] font-extrabold text-blue-600 uppercase flex items-center gap-1 mt-1">
+                        <TrendingUp className="w-3.5 h-3.5" /> Gradings by Instructor
+                      </span>
+                    </div>
+                    <div className="w-12 h-12 rounded-2xl bg-blue-50 flex items-center justify-center text-blue-500 shrink-0 shadow-inner">
+                      <Award className="w-6 h-6" />
+                    </div>
+                  </div>
+
                 </div>
-                <span className="px-3 py-1 bg-slate-100 border border-slate-200 text-slate-600 text-xs rounded-full font-bold">
-                  {usersList.length} Active Accounts
-                </span>
-              </div>
 
-              <div className="space-y-3">
-                {usersList.map((u) => {
-                  const isSuspended = u.status === 'suspended'
-                  return (
-                    <div key={u.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-slate-50 border border-slate-200 rounded-2xl hover:border-slate-300 transition-all gap-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-100 to-indigo-100 text-slate-700 flex items-center justify-center font-bold border border-slate-200">
-                          {u.full_name ? u.full_name[0] : 'U'}
+                {/* Colored Shortcut Cards matching layout exactly */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  
+                  {/* Card 1: Review Capstone Projects (Blue) */}
+                  <div 
+                    onClick={() => setActiveTab('evaluations')}
+                    className="bg-blue-600 hover:bg-blue-700 text-white rounded-[2rem] p-6 shadow-lg shadow-blue-600/10 flex flex-col justify-between h-44 cursor-pointer select-none transition-all hover:scale-[1.01]"
+                  >
+                    <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center text-white">
+                      <Eye className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-black tracking-tight leading-tight">Review Capstone Projects</h3>
+                      <p className="text-[11px] text-blue-100 mt-1.5 font-bold uppercase tracking-wider">{pendingReviews} awaiting evaluation</p>
+                    </div>
+                  </div>
+
+                  {/* Card 2: Final Presentations (Purple) */}
+                  <div 
+                    onClick={() => setActiveTab('presentations')}
+                    className="bg-purple-650 hover:bg-purple-750 text-white rounded-[2rem] p-6 shadow-lg shadow-purple-600/10 flex flex-col justify-between h-44 cursor-pointer select-none transition-all hover:scale-[1.01]"
+                  >
+                    <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center text-white">
+                      <Calendar className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-black tracking-tight leading-tight">Final Presentations</h3>
+                      <p className="text-[11px] text-purple-100 mt-1.5 font-bold uppercase tracking-wider">Upcoming defenses</p>
+                    </div>
+                  </div>
+
+                  {/* Card 3: Outstanding Projects (Green) */}
+                  <div 
+                    onClick={() => setActiveTab('projects')}
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-[2rem] p-6 shadow-lg shadow-emerald-600/10 flex flex-col justify-between h-44 cursor-pointer select-none transition-all hover:scale-[1.01]"
+                  >
+                    <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center text-white">
+                      <Award className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-black tracking-tight leading-tight">Outstanding Projects</h3>
+                      <p className="text-[11px] text-emerald-100 mt-1.5 font-bold uppercase tracking-wider">Top capstone teams</p>
+                    </div>
+                  </div>
+
+                </div>
+
+                {/* Submissions Section */}
+                <div className="bg-white border border-slate-200 rounded-[2rem] p-8 shadow-sm space-y-6">
+                  <div className="flex justify-between items-center border-b border-slate-100 pb-4">
+                    <h3 className="text-lg font-black text-slate-900 tracking-tight">Recent Senior Capstone Submissions</h3>
+                  </div>
+
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left border-collapse">
+                      <thead>
+                        <tr className="border-b border-slate-100 text-[10px] font-black uppercase text-slate-400 tracking-wider">
+                          <th className="pb-3 px-2">Student</th>
+                          <th className="pb-3 px-2">Project Title</th>
+                          <th className="pb-3 px-2">Review Status</th>
+                          <th className="pb-3 px-2 text-right">Evaluation</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100 text-xs font-semibold text-slate-700">
+                        {projects.map((proj) => (
+                          <tr key={proj.id} className="hover:bg-slate-50/30 transition-colors">
+                            <td className="py-4 px-2">{proj.student?.full_name || 'Individual Student'}</td>
+                            <td className="py-4 px-2 max-w-xs truncate font-bold text-slate-900">{proj.title}</td>
+                            <td className="py-4 px-2">
+                              {proj.review_completed ? (
+                                <span className="px-2 py-0.5 bg-emerald-500 border border-emerald-600/20 text-white rounded text-[10px] font-extrabold uppercase">
+                                  Reviewed
+                                </span>
+                              ) : (
+                                <span className="px-2 py-0.5 bg-amber-50 text-amber-700 border border-amber-200/50 rounded text-[10px] font-extrabold uppercase tracking-wide">
+                                  Pending Review
+                                </span>
+                              )}
+                            </td>
+                            <td className="py-4 px-2 text-right">
+                              <button
+                                onClick={() => {
+                                  setEvaluatingProject(proj)
+                                  setEvalNotes(proj.review_notes || '')
+                                  setQuestions(proj.review_questions || '')
+                                }}
+                                className="px-3.5 py-1.5 bg-slate-900 hover:bg-slate-800 text-white font-extrabold rounded-xl text-[9px] uppercase tracking-wider transition-all cursor-pointer shadow-sm"
+                              >
+                                {proj.review_completed ? 'Revise Review' : 'Review'}
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </>
+            )}
+
+            {/* TAB 2: SENIOR PROJECTS */}
+            {activeTab === 'projects' && (
+              <div className="bg-white border border-slate-200 rounded-[2.5rem] p-8 shadow-sm space-y-6">
+                <div>
+                  <h3 className="text-xl font-bold text-slate-900">Senior Capstone Directory</h3>
+                  <p className="text-xs text-slate-500 font-semibold mt-1">Audit current cohort research papers, source configurations, and advisor alignments.</p>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {projects.map((p) => (
+                    <div key={p.id} className="border border-slate-200 p-5 rounded-2xl flex flex-col justify-between min-h-40">
+                      <div>
+                        <div className="flex justify-between items-start gap-2">
+                          <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest truncate max-w-[150px]">
+                            {p.student?.full_name || 'Solo Student'}
+                          </span>
+                          <span className="px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-wider bg-indigo-50 border border-indigo-100 text-indigo-700">
+                            CAPSTONE
+                          </span>
                         </div>
-                        <div>
-                          <div className="font-bold text-sm text-slate-900 flex items-center gap-2">
-                            {u.full_name || 'Anonymous User'}
-                            {isSuspended && (
-                              <span className="px-1.5 py-0.5 bg-red-50 border border-red-100 text-red-600 rounded text-[8px] font-black uppercase tracking-wider">
-                                Suspended
-                              </span>
+                        <h4 className="text-sm font-black text-slate-850 mt-2 leading-snug line-clamp-2">{p.title}</h4>
+                      </div>
+                      <div className="border-t border-slate-100 pt-3 mt-3 flex justify-between items-center text-[10px] font-bold text-slate-500">
+                        <span>Advisor: {p.instructor?.full_name || 'Pending assignment'}</span>
+                        <span className="uppercase font-black text-slate-700">{p.status}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* TAB 3: MY EVALUATIONS */}
+            {activeTab === 'evaluations' && (
+              <div className="bg-white border border-slate-200 rounded-[2.5rem] p-8 shadow-sm space-y-6">
+                <div>
+                  <h3 className="text-xl font-bold text-slate-900">Committee Vetting & Reviews</h3>
+                  <p className="text-xs text-slate-500 font-semibold mt-1">Submit presentation review feedback, raise vetting questions, and track capstone deliveries. Instructors record final grades.</p>
+                </div>
+                <div className="divide-y divide-slate-100">
+                  {projects.map((p) => (
+                    <div key={p.id} className="py-5 first:pt-0 last:pb-0 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                      <div>
+                        <h4 className="text-sm font-black text-slate-850">{p.title}</h4>
+                        <p className="text-xs text-slate-450 mt-0.5 font-bold uppercase">Student: {p.student?.full_name}</p>
+                      </div>
+                      <button
+                        onClick={() => {
+                          setEvaluatingProject(p)
+                          setEvalNotes(p.review_notes || '')
+                          setQuestions(p.review_questions || '')
+                        }}
+                        className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold rounded-xl text-[10px] uppercase tracking-widest transition-all cursor-pointer shadow-sm shrink-0"
+                      >
+                        {p.review_completed ? `Revise Review` : 'Submit Review'}
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* TAB 4: PRESENTATIONS */}
+            {activeTab === 'presentations' && (
+              <div className="bg-white border border-slate-200 rounded-[2.5rem] p-8 shadow-sm space-y-6">
+                <div>
+                  <h3 className="text-xl font-bold text-slate-900">Upcoming Capstone Defenses</h3>
+                  <p className="text-xs text-slate-500 font-semibold mt-1">Calendar schedule of thesis presentations, final prototype demonstrations, and examiner reviews.</p>
+                </div>
+                <div className="relative border-l border-slate-200 pl-8 space-y-6 ml-3 py-1">
+                  {projects.slice(0, 3).map((p, idx) => (
+                    <div key={p.id} className="relative">
+                      <div className="absolute -left-[41px] top-0.5 w-6 h-6 rounded-full bg-white border-4 border-indigo-650 shadow-sm flex items-center justify-center">
+                        <div className="w-1.5 h-1.5 rounded-full bg-indigo-650" />
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-black text-slate-850">{p.title}</h4>
+                        <p className="text-xs text-slate-500 font-semibold">Presentation defence by {p.student?.full_name || 'Cohort candidate'}</p>
+                        <span className="text-[10px] font-black text-indigo-700 bg-indigo-50 border border-indigo-100 rounded-lg px-2.5 py-1 inline-block mt-2 tracking-wide">
+                          Scheduled: June {12 + idx * 3}th, 2026 at {9 + idx}:00 AM
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+          </motion.div>
+        </AnimatePresence>
+
+        {/* Scoring Modal Dialog */}
+        <AnimatePresence>
+          {evaluatingProject && (
+            <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => setEvaluatingProject(null)}
+                className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm cursor-pointer"
+              />
+              
+              <motion.div
+                initial={{ scale: 0.95, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.95, opacity: 0 }}
+                className="relative bg-white rounded-3xl max-w-lg w-full shadow-2xl overflow-hidden border border-slate-200 flex flex-col z-10"
+              >
+                <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+                  <h3 className="text-base font-black text-slate-900">Capstone Review & Vetting</h3>
+                  <button 
+                    onClick={() => setEvaluatingProject(null)}
+                    className="p-1 hover:bg-slate-200 rounded-lg border border-slate-350"
+                  >
+                    <X className="w-4 h-4 text-slate-500" />
+                  </button>
+                </div>
+
+                <form onSubmit={handleSubmitEvaluation} className="p-6 space-y-4 max-h-[80vh] overflow-y-auto">
+                  <div className="space-y-1">
+                    <span className="text-[10px] font-black uppercase text-slate-450 tracking-wider">Project Selected</span>
+                    <p className="text-xs font-bold text-slate-900 leading-snug">{evaluatingProject.title}</p>
+                  </div>
+
+                  {/* Student final submissions / deliverables review */}
+                  <div className="space-y-2">
+                    <span className="block text-[10px] font-black uppercase text-slate-450 tracking-wider">Student Deliverable Submissions</span>
+                    {evaluatingProject.deliverables && evaluatingProject.deliverables.length > 0 ? (
+                      <div className="space-y-2 bg-slate-50 p-3 rounded-2xl border border-slate-150">
+                        {evaluatingProject.deliverables.map((d: any) => (
+                          <div key={d.id} className="bg-white border border-slate-100 p-2.5 rounded-xl flex items-center justify-between gap-3 shadow-sm text-xs">
+                            <div className="min-w-0 flex-1">
+                              <p className="font-bold text-slate-800 truncate">{d.title}</p>
+                              <span className="text-[9px] text-slate-450 uppercase font-black">Status: {d.status}</span>
+                            </div>
+                            {d.submission_url ? (
+                              <a
+                                href={d.submission_url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 font-extrabold rounded-lg text-[10px] transition-colors shrink-0"
+                              >
+                                <span>View URL</span>
+                                <ExternalLink className="w-3 h-3" />
+                              </a>
+                            ) : (
+                              <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider bg-slate-50 px-2 py-1 rounded">Not Uploaded</span>
                             )}
                           </div>
-                          <div className="text-[10px] text-slate-400 font-medium">{u.email}</div>
-                        </div>
+                        ))}
                       </div>
-
-                      <div className="flex items-center gap-4 justify-between sm:justify-end">
-                        {/* Role Selector dropdown */}
-                        <div className="flex items-center gap-1.5">
-                          <span className="text-[9px] font-black uppercase tracking-widest text-slate-400">Role:</span>
-                          <select
-                            value={u.role}
-                            onChange={(e) => updateUserRole(u.id, e.target.value as any)}
-                            className="bg-white border border-slate-200 rounded-lg text-xs font-bold text-slate-700 py-1 px-2 focus:outline-none focus:ring-1 focus:ring-violet-500"
-                          >
-                            <option value="student">Student</option>
-                            <option value="instructor">Instructor</option>
-                            <option value="supervisor">Supervisor</option>
-                            <option value="industry">Industry Partner</option>
-                            <option value="admin">Admin</option>
-                          </select>
-                        </div>
-
-                        {/* Suspend/Restore button */}
-                        <button
-                          onClick={() => toggleUserStatus(u.id, u.status || 'active')}
-                          className={`p-2 rounded-lg border transition-all ${
-                            isSuspended 
-                              ? 'bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-emerald-100' 
-                              : 'bg-red-50 border-red-200 text-red-700 hover:bg-red-100'
-                          }`}
-                          title={isSuspended ? 'Activate Account' : 'Suspend Account'}
-                        >
-                          {isSuspended ? <UserCheck className="w-4 h-4" /> : <UserX className="w-4 h-4" />}
-                        </button>
+                    ) : (
+                      <div className="bg-slate-50 border border-slate-150 rounded-2xl p-4 text-center text-xs text-slate-450 font-bold italic">
+                        No submissions uploaded yet by the student team.
                       </div>
-                    </div>
-                  )
-                })}
-              </div>
-            </div>
+                    )}
+                  </div>
 
-          </div>
-
-          {/* Right Panel: Recent Broadcasts & System Health */}
-          <div className="space-y-8">
-            
-            {/* Live Announcements Log */}
-            <div className="bg-white border border-slate-200 rounded-[2rem] p-8 shadow-sm">
-              <h3 className="text-xl font-bold text-slate-900 mb-6">Recent Broadcasts</h3>
-              <div className="space-y-4">
-                {announcements.length > 0 ? announcements.map((ann) => (
-                  <div key={ann.id} className="border-b border-slate-100 pb-4 last:border-0 last:pb-0 relative">
-                    <div className="flex items-start justify-between gap-4">
-                      <h4 className="font-bold text-sm text-slate-900 leading-tight pr-6">{ann.title}</h4>
-                      {ann.is_pinned && <Pin className="w-3.5 h-3.5 text-violet-600 fill-violet-600 shrink-0 mt-0.5" />}
-                    </div>
-                    <p className="text-xs text-slate-500 line-clamp-2 mt-1 leading-relaxed">{ann.content}</p>
-                    <div className="flex items-center gap-3 mt-3">
-                      <span className="px-1.5 py-0.5 bg-violet-50 text-violet-700 rounded text-[8px] font-bold uppercase tracking-wider border border-violet-100">
-                        {ann.target_role}
-                      </span>
-                      <span className="text-[9px] text-slate-400 font-bold flex items-center gap-1">
-                        <Clock className="w-3 h-3" />
-                        {new Date(ann.created_at).toLocaleDateString()}
-                      </span>
+                  <div className="bg-blue-50 border border-blue-100 p-3.5 rounded-2xl flex items-start gap-2.5 text-blue-800 text-xs">
+                    <AlertCircle className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
+                    <div>
+                      <p className="font-bold">Committee Advisory Role</p>
+                      <p className="text-[11px] text-blue-750 font-medium mt-0.5">
+                        Panel members formulate vetting reviews and ask questions. The final letter grade will be assigned by the instructor.
+                      </p>
                     </div>
                   </div>
-                )) : (
-                  <div className="text-center py-8">
-                    <Megaphone className="w-8 h-8 text-slate-200 mx-auto mb-2" />
-                    <p className="text-xs text-slate-400">No announcements published yet.</p>
+
+                  <div className="space-y-2">
+                    <label className="block text-[10px] font-black uppercase text-slate-450 tracking-wider">Vetting Review Comments / Notes</label>
+                    <textarea
+                      rows={3}
+                      value={evalNotes}
+                      onChange={(e) => setEvalNotes(e.target.value)}
+                      placeholder="Enter review committee feedback notes here..."
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 px-4 text-slate-800 text-xs font-semibold focus:outline-none resize-none"
+                    />
                   </div>
-                )}
-              </div>
+
+                  <div className="space-y-2">
+                    <label className="block text-[10px] font-black uppercase text-slate-450 tracking-wider">Questions for Students</label>
+                    <textarea
+                      rows={3}
+                      value={questions}
+                      onChange={(e) => setQuestions(e.target.value)}
+                      placeholder="Enter review questions for the candidate to address..."
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 px-4 text-slate-800 text-xs font-semibold focus:outline-none resize-none"
+                    />
+                  </div>
+
+                  <div className="flex gap-3 pt-4 justify-end">
+                    <button
+                      type="button"
+                      onClick={() => setEvaluatingProject(null)}
+                      className="px-4 py-2.5 border border-slate-250 rounded-xl text-xs font-black uppercase text-slate-500 hover:bg-slate-50 cursor-pointer"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={processing === evaluatingProject.id}
+                      className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-750 text-white text-xs font-black uppercase rounded-xl shadow-md cursor-pointer flex items-center gap-1.5"
+                    >
+                      {processing === evaluatingProject.id ? (
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      ) : (
+                        <Check className="w-3.5 h-3.5" />
+                      )}
+                      Submit Review
+                    </button>
+                  </div>
+                </form>
+              </motion.div>
             </div>
-
-            {/* Server Statistics & Health */}
-            <div className="bg-white border border-slate-200 rounded-[2rem] p-8 shadow-sm">
-              <h3 className="text-xl font-bold text-slate-900 mb-6">Platform Resource Health</h3>
-              <div className="space-y-6">
-                <div>
-                  <div className="flex justify-between text-xs font-bold mb-2">
-                    <span className="text-slate-400 uppercase tracking-widest">CPU Engine</span>
-                    <span className="text-slate-900">14% Load</span>
-                  </div>
-                  <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden border border-slate-200">
-                    <div className="bg-violet-600 h-full w-[14%] rounded-full" />
-                  </div>
-                </div>
-                <div>
-                  <div className="flex justify-between text-xs font-bold mb-2">
-                    <span className="text-slate-400 uppercase tracking-widest">Database Sync latency</span>
-                    <span className="text-slate-900">0.08ms</span>
-                  </div>
-                  <div className="w-full bg-slate-100 h-2 rounded-full overflow-hidden border border-slate-200">
-                    <div className="bg-emerald-500 h-full w-[8%] rounded-full" />
-                  </div>
-                </div>
-                <div className="pt-4 border-t border-slate-100 space-y-4">
-                  <div className="flex items-center gap-3 text-xs font-semibold text-slate-600">
-                    <Globe className="w-4.5 h-4.5 text-slate-400" />
-                    <span>Global CDN: Operational</span>
-                  </div>
-                  <div className="flex items-center gap-3 text-xs font-semibold text-slate-600">
-                    <ShieldCheck className="w-4.5 h-4.5 text-slate-400" />
-                    <span>Firewall Integrity: 100% Active</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-          </div>
-
-        </div>
+          )}
+        </AnimatePresence>
 
       </div>
     </DashboardLayout>

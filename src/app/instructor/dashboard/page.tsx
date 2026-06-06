@@ -36,14 +36,27 @@ export default async function InstructorDashboardPage() {
   // Fetch supervisors
   const { data: supervisors } = await supabase
     .from('profiles')
-    .select('id, full_name')
-    .eq('role', 'supervisor')
+    .select('id, full_name, role, email')
+    .in('role', ['supervisor', 'instructor'])
+
+  // Fetch industry partners
+  const { data: industryPartners } = await supabase
+    .from('profiles')
+    .select('id, full_name, role, email, phone')
+    .eq('role', 'industry')
+
+  // Fetch deliverables
+  const { data: deliverables } = await supabase
+    .from('deliverables')
+    .select('*')
 
   return (
     <div className="p-8 pb-20">
       <InstructorDashboardClient 
         initialProjects={enrichedProjects} 
         supervisors={supervisors || []} 
+        industryPartners={industryPartners || []}
+        initialDeliverables={deliverables || []}
       />
     </div>
   )
