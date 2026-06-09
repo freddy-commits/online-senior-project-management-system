@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { createClient } from '@/lib/supabase/client'
 import { useTrack } from '@/components/providers/TrackProvider'
-import { seedDeliverables, addCustomMilestone } from './actions'
+import { seedDeliverables, addCustomMilestone, submitDeliverable, getDeliverables, getStudentProjects } from './actions'
 import { 
   Calendar, 
   Check, 
@@ -115,8 +115,7 @@ export default function StudentMilestonesPage() {
         title: newProjTitle.trim(),
         description: newProjDesc.trim(),
         status: 'pending',
-        student_id: user.id,
-        origin: 'student'
+        student_id: user.id
       })
 
       if (insertError) throw insertError
@@ -197,41 +196,20 @@ export default function StudentMilestonesPage() {
   async function fetchDeliverables() {
     setLoading(true)
     try {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) {
-        loadMockData()
-        return
-      }
+      const projRes = await getStudentProjects()
+      if (!projRes.success) throw new Error(projRes.error)
 
-      // Filter by project origin corresponding to selected track mode
       const expectedOrigin = trackMode === 'thesis' ? 'student' : 'industry'
-
-      // Fetch teams the student is part of
-      const { data: myTeams } = await supabase
-        .from('team_members')
-        .select('team_id')
-        .eq('user_id', user.id)
-
-      const myTeamIds = (myTeams || []).map(m => m.team_id)
-
-      let query = supabase
-        .from('projects')
-        .select('*, student:student_id(full_name, email), instructor:instructor_id(full_name, email)')
-
-      if (myTeamIds.length > 0) {
-        query = query.or(`student_id.eq.${user.id},team_id.in.(${myTeamIds.join(',')})`)
-      } else {
-        query = query.eq('student_id', user.id)
-      }
-
-      const { data: rawProjects } = await query
-
-      const projects = rawProjects?.map(p => ({
+      const projects = (projRes.data || []).map(p => ({
         ...p,
-        origin: p.industry_partner_id ? 'industry' : 'student'
-      })) || []
+        origin: p.origin || (p.industry_partner_id ? 'industry' : 'student')
+      }))
 
-      const activeProj = projects?.find(p => p.origin === expectedOrigin || (expectedOrigin === 'student' && p.origin === 'academic'))
+      // Match track, fall back to first project if no exact origin match
+      const activeProj =
+        projects.find(p => p.origin === expectedOrigin || (expectedOrigin === 'student' && p.origin === 'academic'))
+        || projects[0]
+        || null
 
       if (activeProj) {
         setProject(activeProj)
@@ -242,21 +220,14 @@ export default function StudentMilestonesPage() {
           setNewProjTitle('')
           setNewProjDesc('')
         }
-        const { data: delivs } = await supabase
-          .from('deliverables')
-          .select('*')
-          .eq('project_id', activeProj.id)
-          .order('due_date', { ascending: true })
 
-        let formattedDelivs = delivs || []
-        // Enrich retrieved database deliverables with client-side descriptions
-        formattedDelivs = formattedDelivs.map((d: any) => ({
+        const delivRes = await getDeliverables(activeProj.id)
+        if (!delivRes.success) throw new Error(delivRes.error)
+
+        const formattedDelivs = (delivRes.data || []).map((d: any) => ({
           ...d,
           description: d.description || getMilestoneDescription(d.title)
         }))
-
-        // Do not auto-seed default milestones if none exist, as requested by the user.
-        // Let the student upload/create milestones manually.
 
         setDeliverables(formattedDelivs)
         if (formattedDelivs.length > 0) {
@@ -266,72 +237,13 @@ export default function StudentMilestonesPage() {
           setSelectedMilestone(null)
         }
       } else {
-        // Clear active states if no project matches the track mode in the real database
         setProject(null)
         setDeliverables([])
         setSelectedMilestone(null)
       }
-      setLoading(false)
-    } catch (e) {
-      console.warn("Milestones fetch failed, falling back to mock database:", e)
-      loadMockData()
-    }
-  }
-
-  function loadMockData() {
-    if (typeof window !== 'undefined') {
-      const storageKey = 'seniorproj_sandbox_db'
-      const data = localStorage.getItem(storageKey)
-      if (data) {
-        try {
-          const parsed = JSON.parse(data)
-          const activeProfile = parsed.profiles.find((p: any) => p.role === 'student') || parsed.profiles[0]
-          
-          // Filter by origin matching track mode (thesis is academic/student, industry is industry)
-          const expectedOrigin = trackMode === 'thesis' ? 'student' : 'industry'
-          const activeProj = parsed.projects.find((p: any) => 
-            (p.student_id === activeProfile?.id || p.team_members.includes(activeProfile?.id)) &&
-            (p.origin === expectedOrigin || (expectedOrigin === 'student' && p.origin === 'academic'))
-          )
-          
-          if (activeProj) {
-            const instructor = parsed.profiles.find((p: any) => p.id === activeProj.instructor_id)
-            const student = parsed.profiles.find((p: any) => p.id === activeProj.student_id)
-            activeProj.instructor = instructor ? { full_name: instructor.full_name, email: instructor.email } : null
-            activeProj.student = student ? { full_name: student.full_name, email: student.email } : null
-            setProject(activeProj)
-
-            const delivs = parsed.deliverables.filter((d: any) => d.project_id === activeProj.id)
-            delivs.sort((a: any, b: any) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime())
-            
-            // Seed mock feedback text to graded items for highly realistic dynamic reviews
-            const mockFeedbacks: Record<string, string> = {
-              'Project Proposal': 'The scope of this proposal is well-defined, and the risk mitigation strategy is exceptionally structured. Excited to see this implementation!',
-              'Initial Architecture': 'Database schema modeling is sound. Ensure WebSocket concurrency telemetry details are refined during the prototype phase.'
-            }
-
-            const mappedDelivs = delivs.map((d: any) => ({
-              ...d,
-              feedback: d.feedback || mockFeedbacks[d.title] || ''
-            }))
-
-            setDeliverables(mappedDelivs)
-            
-            if (mappedDelivs.length > 0) {
-              const active = mappedDelivs.find((d: any) => d.status === 'todo' || d.status === 'submitted') || mappedDelivs[0]
-              setSelectedMilestone(active)
-            } else {
-              setSelectedMilestone(null)
-            }
-          } else {
-            setProject(null)
-            setDeliverables([])
-            setSelectedMilestone(null)
-          }
-        } catch (jsonErr) {
-          console.error("Error parsing mock DB for milestones:", jsonErr)
-        }
-      }
+    } catch (e: any) {
+      console.error('Milestones fetch failed:', e)
+      showToast('Failed to load milestones. Check your connection.')
     }
     setLoading(false)
   }
@@ -345,53 +257,34 @@ export default function StudentMilestonesPage() {
 
     setSubmitting(true)
     const staticUrl = uploadedFileName
-    
-    let saveError = null
+
     try {
-      const { error } = await supabase
-        .from('deliverables')
-        .update({ 
-          submission_url: staticUrl,
-          status: 'submitted'
-        })
-        .eq('id', selectedMilestone.id)
-      if (error) throw new Error(error.message)
-    } catch (dbErr: any) {
-      console.warn('Supabase milestone submission failed, falling back to sandbox/mock DB:', dbErr)
-      
-      // Sandbox/Mock DB fallback
+      const res = await submitDeliverable(selectedMilestone.id, staticUrl)
+      if (!res.success) throw new Error(res.error)
+
+      // Sync submission with local sandbox database
       if (typeof window !== 'undefined') {
         const storageKey = 'seniorproj_sandbox_db'
-        const data = localStorage.getItem(storageKey)
-        if (data) {
+        const dbData = localStorage.getItem(storageKey)
+        if (dbData) {
           try {
-            const parsed = JSON.parse(data)
-            const idx = parsed.deliverables.findIndex((d: any) => d.id === selectedMilestone.id)
-            if (idx !== -1) {
-              parsed.deliverables[idx].submission_url = staticUrl
-              parsed.deliverables[idx].status = 'submitted'
-              localStorage.setItem(storageKey, JSON.stringify(parsed))
-              
-              await fetch('/api/sandbox/sync', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(parsed)
-              }).catch(() => {})
-            } else {
-              saveError = new Error('Milestone not found in sandbox DB')
-            }
-          } catch (jsonErr: any) {
-            saveError = jsonErr
+            const parsed = JSON.parse(dbData)
+            parsed.deliverables = (parsed.deliverables || []).map((d: any) =>
+              d.id === selectedMilestone.id ? { ...d, submission_url: staticUrl, status: 'submitted', updated_at: new Date().toISOString() } : d
+            )
+            localStorage.setItem(storageKey, JSON.stringify(parsed))
+            // Sync to backend endpoint
+            await fetch('/api/sandbox/sync', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(parsed)
+            }).catch(() => {})
+          } catch (e) {
+            console.error('Failed to sync milestone submission to local storage:', e)
           }
-        } else {
-          saveError = new Error('No sandbox DB found')
         }
-      } else {
-        saveError = dbErr
       }
-    }
 
-    if (!saveError) {
       setDeliverables(deliverables.map(d => d.id === selectedMilestone.id ? { ...d, submission_url: staticUrl, status: 'submitted' } : d))
       setSelectedMilestone({ ...selectedMilestone, submission_url: staticUrl, status: 'submitted' })
       showToast('Milestone submitted successfully!')
@@ -404,23 +297,20 @@ export default function StudentMilestonesPage() {
           const instructorEmail = project.instructor?.email
           const instructorName = project.instructor?.full_name
           const studentName = project.student?.full_name || 'A student'
-          
           if (instructorEmail) {
             const { notifyInstructorMilestoneSubmission } = await import('@/lib/email/emailService')
             await notifyInstructorMilestoneSubmission(
-              studentName,
-              instructorEmail,
-              instructorName || 'Advisor',
-              project.title,
-              selectedMilestone.title
+              studentName, instructorEmail, instructorName || 'Advisor',
+              project.title, selectedMilestone.title
             )
           }
         }
       } catch (err) {
         console.error('Email notify error:', err)
       }
-    } else {
-      showToast(`Submission failed: ${saveError.message || 'database error'}`)
+    } catch (dbErr: any) {
+      console.error('Submission failed:', dbErr.message)
+      showToast(`Submission failed: ${dbErr.message || 'Database error. Check your Supabase RLS policies.'}`)
     }
     setSubmitting(false)
   }
@@ -458,62 +348,30 @@ export default function StudentMilestonesPage() {
 
   const handleAddMilestone = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!newTitle || !newDueDate) return
+    if (!newTitle || !newDueDate || !project) return
 
-    const newMilestone = {
-      id: `custom-deliv-${Math.random().toString(36).substring(2, 9)}`,
-      project_id: project?.id || 'demo-project-id',
-      title: newTitle,
-      description: newDescription || 'No description provided.',
-      due_date: new Date(newDueDate).toISOString(),
-      status: 'todo',
-      created_at: new Date().toISOString()
-    }
-
-    let saveError = null
-    let finalMilestone = { ...newMilestone }
     try {
-      // Call the server action to bypass RLS restrictions
-      const res = await addCustomMilestone(project?.id || 'demo-project-id', newTitle, newDueDate)
+      const res = await addCustomMilestone(project.id, newTitle, newDueDate)
       if (!res.success) throw new Error(res.error)
-      if (res.data) {
-        finalMilestone = {
-          ...res.data,
-          description: newDescription || 'No description provided.'
-        }
-      }
-    } catch (err: any) {
-      console.warn("Supabase insert failed, falling back to mock database insertion:", err)
-      if (typeof window !== 'undefined') {
-        const storageKey = 'seniorproj_sandbox_db'
-        const data = localStorage.getItem(storageKey)
-        if (data) {
-          try {
-            const parsed = JSON.parse(data)
-            parsed.deliverables.push(newMilestone)
-            localStorage.setItem(storageKey, JSON.stringify(parsed))
-            
-            await fetch('/api/sandbox/sync', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(parsed)
-            }).catch(() => {})
-          } catch (jsonErr) {
-            saveError = jsonErr
-          }
-        }
-      }
-    }
 
-    if (!saveError) {
-      const updatedList = [...deliverables, finalMilestone].sort((a, b) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime())
+      const savedMilestone = {
+        ...res.data,
+        description: newDescription || 'No description provided.',
+      }
+
+      const updatedList = [...deliverables, savedMilestone].sort(
+        (a, b) => new Date(a.due_date).getTime() - new Date(b.due_date).getTime()
+      )
       setDeliverables(updatedList)
-      setSelectedMilestone(finalMilestone)
+      setSelectedMilestone(savedMilestone)
       setIsAddModalOpen(false)
       setNewTitle('')
       setNewDescription('')
       setNewDueDate('')
       showToast('New milestone added successfully!')
+    } catch (err: any) {
+      console.error('Add milestone failed:', err.message)
+      showToast(`Failed to add milestone: ${err.message || 'Check your Supabase RLS policies.'}`)
     }
   }
 

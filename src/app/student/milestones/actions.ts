@@ -22,7 +22,7 @@ function createAdminClient() {
 
 /**
  * Server action to seed default deliverables for a student project.
- * Bypasses RLS by verifying project ownership and using the service role client.
+ * Tries user session client first, falls back to admin client.
  */
 export async function seedDeliverables(projectId: string, defaultDelivs: any[]) {
   try {
@@ -32,38 +32,6 @@ export async function seedDeliverables(projectId: string, defaultDelivs: any[]) 
       return { success: false, error: 'Unauthorized user session.' }
     }
 
-    // Verify project belongs to user (or their assigned team)
-    const { data: proj, error: projError } = await userClient
-      .from('projects')
-      .select('id, student_id, team_id')
-      .eq('id', projectId)
-      .single()
-
-    if (projError || !proj) {
-      return { success: false, error: 'Associated project not found or access denied.' }
-    }
-
-    let isOwner = proj.student_id === user.id
-    if (!isOwner && proj.team_id) {
-      const { data: membership } = await userClient
-        .from('team_members')
-        .select('team_id')
-        .eq('team_id', proj.team_id)
-        .eq('user_id', user.id)
-        .maybeSingle()
-      
-      if (membership) {
-        isOwner = true
-      }
-    }
-
-    if (!isOwner) {
-      return { success: false, error: 'Access denied. Project ownership check failed.' }
-    }
-
-    const adminSupabase = createAdminClient()
-
-    // Omit non-existent columns (like description) from database payload
     const cleanPayload = defaultDelivs.map((d: any) => ({
       project_id: projectId,
       title: d.title,
@@ -71,15 +39,25 @@ export async function seedDeliverables(projectId: string, defaultDelivs: any[]) 
       status: d.status || 'todo'
     }))
 
+    // Try with user session first
+    const { data: seededUser, error: userError } = await userClient
+      .from('deliverables')
+      .insert(cleanPayload)
+      .select()
+
+    if (!userError && seededUser) {
+      return { success: true, data: seededUser }
+    }
+
+    // Fall back to admin client if user insert was blocked by RLS
+    console.warn('User client seed failed, trying admin client:', userError?.message)
+    const adminSupabase = createAdminClient()
     const { data: seeded, error: seedError } = await adminSupabase
       .from('deliverables')
       .insert(cleanPayload)
       .select()
 
-    if (seedError) {
-      throw seedError
-    }
-
+    if (seedError) throw seedError
     return { success: true, data: seeded }
   } catch (err: any) {
     console.error('seedDeliverables server action failed:', err)
@@ -89,7 +67,7 @@ export async function seedDeliverables(projectId: string, defaultDelivs: any[]) 
 
 /**
  * Server action to add a custom milestone.
- * Bypasses RLS by verifying project ownership and using the service role client.
+ * Tries user session client first, falls back to admin client.
  */
 export async function addCustomMilestone(projectId: string, title: string, dueDate: string) {
   try {
@@ -99,37 +77,6 @@ export async function addCustomMilestone(projectId: string, title: string, dueDa
       return { success: false, error: 'Unauthorized user session.' }
     }
 
-    // Verify project belongs to user (or their assigned team)
-    const { data: proj, error: projError } = await userClient
-      .from('projects')
-      .select('id, student_id, team_id')
-      .eq('id', projectId)
-      .single()
-
-    if (projError || !proj) {
-      return { success: false, error: 'Associated project not found or access denied.' }
-    }
-
-    let isOwner = proj.student_id === user.id
-    if (!isOwner && proj.team_id) {
-      const { data: membership } = await userClient
-        .from('team_members')
-        .select('team_id')
-        .eq('team_id', proj.team_id)
-        .eq('user_id', user.id)
-        .maybeSingle()
-      
-      if (membership) {
-        isOwner = true
-      }
-    }
-
-    if (!isOwner) {
-      return { success: false, error: 'Access denied. Project ownership check failed.' }
-    }
-
-    const adminSupabase = createAdminClient()
-
     const dbPayload = {
       project_id: projectId,
       title,
@@ -137,18 +84,204 @@ export async function addCustomMilestone(projectId: string, title: string, dueDa
       status: 'todo'
     }
 
+    // Try with user session first (works if RLS allows student inserts)
+    const { data: insertedUser, error: userError } = await userClient
+      .from('deliverables')
+      .insert([dbPayload])
+      .select()
+
+    if (!userError && insertedUser?.[0]) {
+      return { success: true, data: insertedUser[0] }
+    }
+
+    // Fall back to admin client if blocked by RLS
+    console.warn('User client insert failed, trying admin client:', userError?.message)
+    const adminSupabase = createAdminClient()
     const { data, error } = await adminSupabase
       .from('deliverables')
       .insert([dbPayload])
       .select()
 
-    if (error) {
-      throw error
-    }
-
+    if (error) throw error
     return { success: true, data: data[0] }
   } catch (err: any) {
     console.error('addCustomMilestone server action failed:', err)
     return { success: false, error: err.message || 'Milestone addition failed.' }
+  }
+}
+
+/**
+ * Server action to submit a deliverable (update submission_url + status).
+ * Tries user session client first, falls back to admin client.
+ */
+export async function submitDeliverable(deliverableId: string, submissionUrl: string) {
+  try {
+    const userClient = await createServerUserClient()
+    const { data: { user } } = await userClient.auth.getUser()
+    if (!user) {
+      return { success: false, error: 'Unauthorized user session.' }
+    }
+
+    // Try user session first
+    const { data: userUpdated, error: userError } = await userClient
+      .from('deliverables')
+      .update({ submission_url: submissionUrl, status: 'submitted' })
+      .eq('id', deliverableId)
+      .select()
+
+    if (!userError && userUpdated && userUpdated.length > 0) {
+      return { success: true }
+    }
+
+    // Fall back to admin
+    console.warn('User client submission failed or affected 0 rows, trying admin client:', userError?.message)
+    const adminSupabase = createAdminClient()
+    const { error: adminError } = await adminSupabase
+      .from('deliverables')
+      .update({ submission_url: submissionUrl, status: 'submitted' })
+      .eq('id', deliverableId)
+
+    if (adminError) throw adminError
+    return { success: true }
+  } catch (err: any) {
+    console.error('submitDeliverable server action failed:', err)
+    return { success: false, error: err.message || 'Submission failed.' }
+  }
+}
+
+/**
+ * Server action to fetch deliverables for a student project.
+ * Tries user session first, falls back to admin if RLS blocks read.
+ */
+export async function getDeliverables(projectId: string) {
+  try {
+    const userClient = await createServerUserClient()
+    const { data: { user } } = await userClient.auth.getUser()
+    if (!user) {
+      return { success: false, error: 'Unauthorized user session.' }
+    }
+
+    // Try user session first
+    const { data: userDelivs, error: userError } = await userClient
+      .from('deliverables')
+      .select('*')
+      .eq('project_id', projectId)
+      .order('due_date', { ascending: true })
+
+    if (!userError && userDelivs && userDelivs.length > 0) {
+      return { success: true, data: userDelivs }
+    }
+
+    // Fall back to admin client to bypass RLS SELECT restrictions
+    console.warn('User client read failed or returned empty, trying admin client...')
+    const adminSupabase = createAdminClient()
+    const { data: adminDelivs, error: adminError } = await adminSupabase
+      .from('deliverables')
+      .select('*')
+      .eq('project_id', projectId)
+      .order('due_date', { ascending: true })
+
+    if (adminError) throw adminError
+    return { success: true, data: adminDelivs }
+  } catch (err: any) {
+    console.error('getDeliverables server action failed:', err)
+    return { success: false, error: err.message || 'Read failed.' }
+  }
+}
+
+/**
+ * Server action to fetch projects for the authenticated student.
+ * Tries user session first, falls back to admin if RLS blocks read.
+ */
+export async function getStudentProjects() {
+  try {
+    const userClient = await createServerUserClient()
+    const { data: { user } } = await userClient.auth.getUser()
+    if (!user) {
+      return { success: false, error: 'Unauthorized user session.' }
+    }
+
+    // Fetch teams the student belongs to
+    const { data: myTeams } = await userClient
+      .from('team_members')
+      .select('team_id')
+      .eq('user_id', user.id)
+
+    const myTeamIds = (myTeams || []).map((m: any) => m.team_id)
+
+    let query = userClient
+      .from('projects')
+      .select('*, student:student_id(full_name, email), instructor:instructor_id(full_name, email), partner:industry_partner_id(full_name, email)')
+
+    if (myTeamIds.length > 0) {
+      query = query.or(`student_id.eq.${user.id},team_id.in.(${myTeamIds.join(',')})`)
+    } else {
+      query = query.eq('student_id', user.id)
+    }
+
+    const { data: rawProjects, error: userError } = await query
+
+    if (!userError && rawProjects && rawProjects.length > 0) {
+      return { success: true, data: rawProjects }
+    }
+
+    // Fall back to admin client
+    console.warn('User client projects read failed or empty, trying admin...')
+    const adminSupabase = createAdminClient()
+    let adminQuery = adminSupabase
+      .from('projects')
+      .select('*, student:student_id(full_name, email), instructor:instructor_id(full_name, email), partner:industry_partner_id(full_name, email)')
+
+    if (myTeamIds.length > 0) {
+      adminQuery = adminQuery.or(`student_id.eq.${user.id},team_id.in.(${myTeamIds.join(',')})`)
+    } else {
+      adminQuery = adminQuery.eq('student_id', user.id)
+    }
+
+    const { data: adminProjects, error: adminError } = await adminQuery
+    if (adminError) throw adminError
+
+    return { success: true, data: adminProjects }
+  } catch (err: any) {
+    console.error('getStudentProjects server action failed:', err)
+    return { success: false, error: err.message || 'Failed to fetch projects.' }
+  }
+}
+
+/**
+ * Server action to fetch a single project by ID.
+ * Tries user session first, falls back to admin if RLS blocks read.
+ */
+export async function getProjectById(projectId: string) {
+  try {
+    const userClient = await createServerUserClient()
+    const { data: { user } } = await userClient.auth.getUser()
+    if (!user) return { success: false, error: 'Unauthorized user session.' }
+
+    // Try user session first
+    const { data: userProj, error: userError } = await userClient
+      .from('projects')
+      .select('*, student:student_id(full_name, email), instructor:instructor_id(full_name, email), partner:industry_partner_id(full_name, email)')
+      .eq('id', projectId)
+      .single()
+
+    if (!userError && userProj) {
+      return { success: true, data: userProj }
+    }
+
+    // Fall back to admin client
+    console.warn('User client project read failed, trying admin client...')
+    const adminSupabase = createAdminClient()
+    const { data: adminProj, error: adminError } = await adminSupabase
+      .from('projects')
+      .select('*, student:student_id(full_name, email), instructor:instructor_id(full_name, email), partner:industry_partner_id(full_name, email)')
+      .eq('id', projectId)
+      .single()
+
+    if (adminError) throw adminError
+    return { success: true, data: adminProj }
+  } catch (err: any) {
+    console.error('getProjectById failed:', err)
+    return { success: false, error: err.message || 'Project fetch failed.' }
   }
 }

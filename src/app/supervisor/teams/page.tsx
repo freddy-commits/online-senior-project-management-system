@@ -22,7 +22,6 @@ export default function SupervisorTeamsPage() {
           .from('projects')
           .select('*, student:student_id(full_name, email), partner:industry_partner_id(full_name, email), teams:team_id(id, name)')
           .eq('instructor_id', targetUserId)
-          .not('industry_partner_id', 'is', null)
 
         if (projs && projs.length > 0) {
           const teamIds = projs.map(p => p.team_id).filter(Boolean)

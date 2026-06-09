@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import StudentDashboardClient from '@/components/dashboard/StudentDashboardClient'
+import { getStudentProjects, getDeliverables } from '../../milestones/actions'
 
 export default async function OverviewPage() {
   const supabase = await createClient()
@@ -16,37 +17,26 @@ export default async function OverviewPage() {
     .eq('id', user.id)
     .single()
 
-  // Fetch teams the student is part of
-  const { data: myTeams } = await supabase
-    .from('team_members')
-    .select('team_id')
-    .eq('user_id', user.id)
-
-  const myTeamIds = (myTeams || []).map(m => m.team_id)
-
-  let query = supabase
-    .from('projects')
-    .select('*, supervisor:instructor_id(full_name, email), partner:industry_partner_id(full_name, email)')
-
-  if (myTeamIds.length > 0) {
-    query = query.or(`student_id.eq.${user.id},team_id.in.(${myTeamIds.join(',')})`)
-  } else {
-    query = query.eq('student_id', user.id)
+  const projRes = await getStudentProjects()
+  if (!projRes.success) {
+    console.error('Failed to fetch projects for overview:', projRes.error)
   }
 
-  const { data: projects } = await query.order('created_at', { ascending: false })
+  const projects = projRes.data || []
 
   const enrichedProjects = await Promise.all((projects || []).map(async p => {
-    const { data: delivs } = await supabase
-      .from('deliverables')
-      .select('*')
-      .eq('project_id', p.id)
-      .order('due_date', { ascending: true })
+    const delivRes = await getDeliverables(p.id)
+    if (!delivRes.success) {
+      console.error(`Failed to fetch deliverables for project ${p.id} on overview:`, delivRes.error)
+    }
+    const delivs = delivRes.data || []
 
     return {
       ...p,
       origin: p.industry_partner_id ? 'industry' : 'academic',
-      deliverables: delivs || []
+      deliverables: delivs,
+      supervisor: p.instructor || null,
+      partner: p.partner || null
     }
   }))
 

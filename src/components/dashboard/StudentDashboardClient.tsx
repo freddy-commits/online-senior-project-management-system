@@ -34,6 +34,7 @@ import {
   Sliders,
   AlertTriangle
 } from 'lucide-react'
+import { seedDeliverables } from '@/app/student/milestones/actions'
 
 import { useTrack } from '@/components/providers/TrackProvider'
 
@@ -121,6 +122,90 @@ export default function StudentDashboardClient({
   const activeProject = trackMode === 'thesis' 
     ? (projectList.find(p => p.origin === 'student' || p.origin === 'academic') || null)
     : (projectList.find(p => p.origin === 'industry') || null)
+
+  useEffect(() => {
+    async function autoSeed() {
+      if (!activeProject) return
+      
+      const delivs = activeProject.deliverables || []
+      if (delivs.length < 3) {
+        console.log("Auto-seeding default milestones/deliverables for active project...")
+        const isThesis = activeProject.origin === 'student' || activeProject.origin === 'academic'
+        
+        const defaultDelivs = isThesis ? [
+          { title: 'Project Proposal', due_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString() },
+          { title: 'Initial Architecture & Schema', due_date: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000).toISOString() },
+          { title: 'Mid-Term Presentation', due_date: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString() },
+          { title: 'Final Execution & Thesis', due_date: new Date(Date.now() + 120 * 24 * 60 * 60 * 1000).toISOString() }
+        ] : [
+          { title: 'Project Pitch & Scoping', due_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString() },
+          { title: 'System Architecture Diagram', due_date: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000).toISOString() },
+          { title: 'Beta Demo & Testing', due_date: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString() },
+          { title: 'Final Client Deliverables', due_date: new Date(Date.now() + 120 * 24 * 60 * 60 * 1000).toISOString() }
+        ]
+
+        // 1. Call server action to seed Supabase
+        const res = await seedDeliverables(activeProject.id, defaultDelivs)
+
+        // 2. Sync to local sandbox DB in localStorage if needed
+        if (typeof window !== 'undefined') {
+          const storageKey = 'seniorproj_sandbox_db'
+          const localData = localStorage.getItem(storageKey)
+          if (localData) {
+            try {
+              const parsed = JSON.parse(localData)
+              const otherDelivs = (parsed.deliverables || []).filter((d: any) => d.project_id !== activeProject.id)
+              
+              const newDelivsMapped = defaultDelivs.map((d, index) => ({
+                id: `deliv-${activeProject.id}-${index}-${Math.random().toString(36).substring(2, 6)}`,
+                project_id: activeProject.id,
+                title: d.title,
+                due_date: d.due_date,
+                status: 'todo',
+                created_at: new Date().toISOString()
+              }))
+              parsed.deliverables = [...otherDelivs, ...newDelivsMapped]
+              localStorage.setItem(storageKey, JSON.stringify(parsed))
+              
+              await fetch('/api/sandbox/sync', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(parsed)
+              }).catch(() => {})
+            } catch (err) {
+              console.error("Failed to sync auto-seeded deliverables to local storage:", err)
+            }
+          }
+        }
+
+        // 3. Update react state
+        if (res.success && res.data) {
+          setProjectList(prev => prev.map(p => 
+            p.id === activeProject.id 
+              ? { ...p, deliverables: res.data }
+              : p
+          ))
+        } else {
+          const storageKey = 'seniorproj_sandbox_db'
+          const localData = localStorage.getItem(storageKey)
+          if (localData) {
+            try {
+              const parsed = JSON.parse(localData)
+              const projectDelivs = parsed.deliverables.filter((d: any) => d.project_id === activeProject.id)
+              setProjectList(prev => prev.map(p => 
+                p.id === activeProject.id 
+                  ? { ...p, deliverables: projectDelivs }
+                  : p
+              ))
+            } catch (err) {
+              console.error(err)
+            }
+          }
+        }
+      }
+    }
+    autoSeed()
+  }, [activeProject?.id])
 
   const hasActiveProject = activeProject !== null && activeProject.status !== 'rejected'
 

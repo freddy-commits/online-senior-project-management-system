@@ -20,16 +20,28 @@ export async function login(formData: FormData) {
   }
 
   // Get user profile to determine role
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('role')
-    .single()
+  const { data: { user } } = await supabase.auth.getUser()
+  let role = null
+  if (user) {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .single()
+    role = profile?.role
 
-  console.log('User logged in. Role:', profile?.role)
+    // Fallback to user metadata role if database profile has a null role
+    if (!role && user.user_metadata?.role) {
+      role = user.user_metadata.role
+      await supabase.from('profiles').update({ role }).eq('id', user.id)
+    }
+  }
+
+  console.log('User logged in. Role:', role)
   revalidatePath('/', 'layout')
   
-  if (profile?.role) {
-    return redirect(`/${profile.role}`)
+  if (role) {
+    return redirect(`/${role}`)
   }
 
   return redirect('/')

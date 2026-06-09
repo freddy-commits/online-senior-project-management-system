@@ -1,9 +1,9 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
-import SupervisorDocumentsClient from '@/components/dashboard/SupervisorDocumentsClient'
-import { fetchSupervisorDocumentsData } from './actions'
+import InstructorDocumentsClient from '@/components/dashboard/InstructorDocumentsClient'
+import { fetchInstructorDocumentsData } from './actions'
 
-export default async function SupervisorDocumentsPage() {
+export default async function InstructorDocumentsPage() {
   const supabase = await createClient()
   
   const { data: { user }, error: authError } = await supabase.auth.getUser()
@@ -12,28 +12,27 @@ export default async function SupervisorDocumentsPage() {
     redirect('/login')
   }
 
-  // Verify the user is a supervisor
+  // Verify the user is an instructor
   const { data: profile } = await supabase
     .from('profiles')
     .select('*')
     .eq('id', user.id)
     .single()
 
-  if (!profile || profile.role !== 'supervisor') {
+  if (!profile || profile.role !== 'instructor') {
     redirect('/login')
   }
 
-  // Fetch supervisor projects, deliverables and team members via server-side action bypassing RLS
-  const res = await fetchSupervisorDocumentsData(user.id)
+  // Fetch all projects, deliverables and team members via server-side action bypassing RLS
+  const res = await fetchInstructorDocumentsData()
 
   if (!res.success) {
-    console.error("Failed to load supervisor documents data:", res.error)
+    console.error("Failed to load instructor documents data:", res.error)
   }
 
   return (
     <div className="p-8 pb-20">
-      <SupervisorDocumentsClient 
-        supervisorId={user.id}
+      <InstructorDocumentsClient 
         initialProjects={res.projects || []}
         initialDeliverables={res.deliverables || []}
         initialTeamMembers={res.teamMembers || []}

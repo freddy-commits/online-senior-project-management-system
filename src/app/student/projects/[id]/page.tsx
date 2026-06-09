@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { createClient } from '@/lib/supabase/client'
+import { submitDeliverable, getDeliverables, getProjectById } from '../../milestones/actions'
 import { useParams, useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
 import { 
@@ -30,28 +30,25 @@ export default function ProjectDetailsPage() {
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState<string | null>(null)
   
-  const supabase = createClient()
-
   useEffect(() => {
     async function fetchData() {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return router.push('/login')
+      if (!id) return
+      const projectId = Array.isArray(id) ? id[0] : id
 
-      const { data: proj } = await supabase
-        .from('projects')
-        .select('*, student:student_id(full_name, email), instructor:instructor_id(full_name, email)')
-        .eq('id', id)
-        .single()
-      
-      setProject(proj)
+      const projRes = await getProjectById(projectId)
+      if (!projRes.success) {
+        console.error('Failed to load project details:', projRes.error)
+        setLoading(false)
+        return
+      }
+      setProject(projRes.data)
 
-      const { data: deliv } = await supabase
-        .from('deliverables')
-        .select('*')
-        .eq('project_id', id)
-        .order('created_at', { ascending: true })
-      
-      setDeliverables(deliv || [])
+      const delivRes = await getDeliverables(projectId)
+      if (!delivRes.success) {
+        console.error('Failed to load deliverables:', delivRes.error)
+      } else {
+        setDeliverables(delivRes.data || [])
+      }
       setLoading(false)
     }
     fetchData()
@@ -61,51 +58,33 @@ export default function ProjectDetailsPage() {
     if (!url) return
     setSubmitting(deliverableId)
 
-    let submitError = null
     try {
-      const { error } = await supabase
-        .from('deliverables')
-        .update({ 
-          submission_url: url,
-          status: 'submitted'
-        })
-        .eq('id', deliverableId)
-      if (error) throw new Error(error.message)
-    } catch (dbErr: any) {
-      console.warn('Supabase milestone submission failed, performing local database sync fallback:', dbErr)
-      
-      // Fallback: Sync with LocalStorage Mock Database so the UI stays 100% functional
+      const res = await submitDeliverable(deliverableId, url)
+      if (!res.success) throw new Error(res.error)
+
+      // Sync submission with local sandbox database
       if (typeof window !== 'undefined') {
         const storageKey = 'seniorproj_sandbox_db'
-        const data = localStorage.getItem(storageKey)
-        if (data) {
+        const dbData = localStorage.getItem(storageKey)
+        if (dbData) {
           try {
-            const parsed = JSON.parse(data)
-            if (parsed.deliverables) {
-              parsed.deliverables = parsed.deliverables.map((d: any) => 
-                d.id === deliverableId ? { ...d, submission_url: url, status: 'submitted' } : d
-              )
-              localStorage.setItem(storageKey, JSON.stringify(parsed))
-              
-              // Sync to server mock global state
-              await fetch('/api/sandbox/sync', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(parsed)
-              }).catch(() => {})
-            }
-          } catch (jsonErr) {
-            submitError = jsonErr
+            const parsed = JSON.parse(dbData)
+            parsed.deliverables = (parsed.deliverables || []).map((d: any) =>
+              d.id === deliverableId ? { ...d, submission_url: url, status: 'submitted', updated_at: new Date().toISOString() } : d
+            )
+            localStorage.setItem(storageKey, JSON.stringify(parsed))
+            // Sync to backend endpoint
+            await fetch('/api/sandbox/sync', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(parsed)
+            }).catch(() => {})
+          } catch (e) {
+            console.error('Failed to sync project deliverable submission to local storage:', e)
           }
-        } else {
-          submitError = dbErr
         }
-      } else {
-        submitError = dbErr
       }
-    }
 
-    if (!submitError) {
       setDeliverables(deliverables.map(d => d.id === deliverableId ? { ...d, submission_url: url, status: 'submitted' } : d))
       
       try {
@@ -129,8 +108,8 @@ export default function ProjectDetailsPage() {
       } catch (err) {
         console.error('Email notification error:', err)
       }
-    } else {
-      setDeliverables(deliverables.map(d => d.id === deliverableId ? { ...d, submission_url: url, status: 'submitted' } : d))
+    } catch (err: any) {
+      console.error('Milestone submission failed:', err)
     }
     setSubmitting(null)
   }

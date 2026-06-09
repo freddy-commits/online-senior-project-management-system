@@ -46,10 +46,16 @@ export default function LandingContent() {
               >
                 Platform
               </Link>
-              <button className="hover:text-white transition-colors cursor-pointer bg-transparent border-none">
+              <button
+                onClick={() => document.getElementById('methodology')?.scrollIntoView({ behavior: 'smooth' })}
+                className="hover:text-white transition-colors cursor-pointer bg-transparent border-none"
+              >
                 Methodology
               </button>
-              <button className="hover:text-white transition-colors cursor-pointer bg-transparent border-none">
+              <button
+                onClick={() => document.getElementById('partners')?.scrollIntoView({ behavior: 'smooth' })}
+                className="hover:text-white transition-colors cursor-pointer bg-transparent border-none"
+              >
                 Partners
               </button>
             </div>
@@ -237,7 +243,7 @@ export default function LandingContent() {
         </section>
 
         {/* ================== SECTION 3: PATHWAY CHOOSE YOUR PORTAL ================== */}
-        <section className="py-20 lg:py-28 px-6 lg:px-12 relative overflow-hidden">
+        <section id="methodology" className="py-20 lg:py-28 px-6 lg:px-12 relative overflow-hidden">
           <div className="max-w-7xl mx-auto space-y-16">
             
             {/* Centered Headers with Viewport Fade-In */}
@@ -409,6 +415,140 @@ export default function LandingContent() {
                   </span>
                 </div>
               ))}
+            </motion.div>
+
+          </div>
+        </section>
+
+        {/* ================== SECTION 4: INDUSTRY PARTNERS ================== */}
+        <section id="partners" className="border-t border-white/5 py-20 lg:py-28 px-6 lg:px-12 relative overflow-hidden">
+          <div className="max-w-7xl mx-auto space-y-16">
+
+            {/* Section Header */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5 }}
+              className="text-center space-y-3"
+            >
+              <span className="text-[10px] font-black text-indigo-400 tracking-widest uppercase block">
+                Industry Collaboration
+              </span>
+              <h2 className="text-3xl lg:text-4xl font-extrabold text-white tracking-tight">
+                Built With Real Industry Partners
+              </h2>
+              <p className="text-xs font-semibold text-slate-400 max-w-xl mx-auto leading-relaxed">
+                Companies and institutions collaborate directly on the platform — submitting challenges, mentoring teams, and evaluating final deliverables.
+              </p>
+            </motion.div>
+
+            {/* Partner Benefits Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 max-w-6xl mx-auto">
+              {[
+                {
+                  icon: '🎯',
+                  title: 'Submit Challenges',
+                  desc: 'Post real-world problems for student teams to solve. Define scope, deliverables, and evaluation criteria.'
+                },
+                {
+                  icon: '🤝',
+                  title: 'Mentor Teams',
+                  desc: 'Assign industry mentors to student groups. Provide guidance through milestones and check-ins.'
+                },
+                {
+                  icon: '📋',
+                  title: 'Evaluate Projects',
+                  desc: 'Review final deliverables directly in the platform. Score, comment, and approve student submissions.'
+                },
+                {
+                  icon: '🚀',
+                  title: 'Source Talent',
+                  desc: 'Identify top performers early. Build your talent pipeline before students even graduate.'
+                }
+              ].map((benefit, i) => (
+                <motion.div
+                  key={i}
+                  initial={{ opacity: 0, y: 24 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true, amount: 0.1 }}
+                  transition={{ duration: 0.5, delay: i * 0.08 }}
+                  whileHover={{ y: -6, boxShadow: '0 16px 32px -12px rgba(99,102,241,0.2)', borderColor: 'rgba(255,255,255,0.18)' }}
+                  className="bg-white/5 border border-white/10 rounded-3xl p-6 space-y-4 backdrop-blur-md transition-all duration-300 cursor-default"
+                >
+                  <div className="w-11 h-11 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-2xl">
+                    {benefit.icon}
+                  </div>
+                  <div className="space-y-1.5">
+                    <h3 className="text-sm font-extrabold text-white">{benefit.title}</h3>
+                    <p className="text-xs text-slate-400 font-semibold leading-relaxed">{benefit.desc}</p>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+
+            {/* Partner Logo Strip */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5, delay: 0.1 }}
+              className="space-y-6"
+            >
+              <p className="text-center text-[10px] font-black text-slate-500 uppercase tracking-widest">
+                Trusted by leading organizations
+              </p>
+              <div className="flex flex-wrap justify-center gap-4">
+                {[
+                  { name: 'TechCorp', abbr: 'TC', color: 'from-blue-500/20 to-indigo-500/20 border-blue-500/20' },
+                  { name: 'InnovateLab', abbr: 'IL', color: 'from-purple-500/20 to-pink-500/20 border-purple-500/20' },
+                  { name: 'DataSystems', abbr: 'DS', color: 'from-emerald-500/20 to-teal-500/20 border-emerald-500/20' },
+                  { name: 'FutureBuild', abbr: 'FB', color: 'from-amber-500/20 to-orange-500/20 border-amber-500/20' },
+                  { name: 'CloudBase', abbr: 'CB', color: 'from-sky-500/20 to-cyan-500/20 border-sky-500/20' },
+                  { name: 'NexGen', abbr: 'NG', color: 'from-rose-500/20 to-red-500/20 border-rose-500/20' },
+                ].map((partner, i) => (
+                  <motion.div
+                    key={i}
+                    whileHover={{ scale: 1.05, y: -2 }}
+                    className={`flex items-center gap-3 px-5 py-3 rounded-2xl bg-gradient-to-r ${partner.color} border backdrop-blur-sm transition-all duration-200 cursor-default`}
+                  >
+                    <div className="w-7 h-7 rounded-lg bg-white/10 flex items-center justify-center">
+                      <span className="text-[10px] font-black text-white">{partner.abbr}</span>
+                    </div>
+                    <span className="text-xs font-bold text-white/80">{partner.name}</span>
+                  </motion.div>
+                ))}
+              </div>
+            </motion.div>
+
+            {/* Partner CTA */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.97 }}
+              whileInView={{ opacity: 1, scale: 1 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5, delay: 0.15 }}
+              className="bg-gradient-to-r from-indigo-500/10 via-purple-500/10 to-indigo-500/10 border border-indigo-500/20 rounded-3xl p-10 text-center space-y-6 max-w-3xl mx-auto backdrop-blur-md"
+            >
+              <div className="space-y-2">
+                <h3 className="text-2xl font-extrabold text-white">Become a Partner Organization</h3>
+                <p className="text-xs font-semibold text-slate-400 max-w-md mx-auto leading-relaxed">
+                  Join 50+ companies already shaping the next generation of professionals. Register your organization and start submitting challenges today.
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-4 justify-center">
+                <Link
+                  href="/register"
+                  className="px-8 py-3.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-black tracking-wider uppercase transition-all shadow-lg shadow-indigo-600/30 hover:shadow-indigo-600/40 active:scale-95"
+                >
+                  Register as Partner
+                </Link>
+                <Link
+                  href="/login"
+                  className="px-8 py-3.5 bg-white/10 hover:bg-white/15 border border-white/20 text-white rounded-xl text-xs font-black tracking-wider uppercase transition-all active:scale-95 backdrop-blur-sm"
+                >
+                  Partner Login
+                </Link>
+              </div>
             </motion.div>
 
           </div>
