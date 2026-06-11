@@ -413,16 +413,16 @@ export default function StudentMilestonesPage() {
     }
   }
 
-  const activeMilestoneIndex = deliverables.findIndex(d => d.status === 'todo' || d.status === 'submitted')
+  const firstTodoIndex = deliverables.findIndex(d => d.status === 'todo')
   const getMilestoneState = (index: number, deliv: any) => {
     if (deliv.status === 'graded') {
       return 'completed'
     }
-    if (index === (activeMilestoneIndex !== -1 ? activeMilestoneIndex : 0)) {
+    if (deliv.status === 'submitted') {
       return 'active'
     }
-    if (index < activeMilestoneIndex && activeMilestoneIndex !== -1) {
-      return 'completed'
+    if (index === firstTodoIndex) {
+      return 'active'
     }
     return 'locked'
   }
