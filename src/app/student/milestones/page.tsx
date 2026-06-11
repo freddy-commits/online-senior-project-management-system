@@ -250,15 +250,35 @@ export default function StudentMilestonesPage() {
 
   async function handleSubmissionDirect() {
     if (!selectedMilestone) return
-    if (!uploadedFileName) {
+    if (!uploadedFile) {
       showToast('Please upload a report or document in the Submission Portal sidebar first.')
       return
     }
 
     setSubmitting(true)
-    const staticUrl = uploadedFileName
 
     try {
+      // 1. Upload the file to the local API upload endpoint
+      const formData = new FormData()
+      formData.append('file', uploadedFile)
+      
+      const uploadRes = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData
+      })
+      
+      if (!uploadRes.ok) {
+        throw new Error('Failed to upload file to the server uploads folder.')
+      }
+      
+      const uploadData = await uploadRes.json()
+      if (!uploadData.success) {
+        throw new Error(uploadData.error || 'Upload failed.')
+      }
+
+      const staticUrl = uploadData.url
+
+      // 2. Submit the deliverable in the database with the static file URL
       const res = await submitDeliverable(selectedMilestone.id, staticUrl)
       if (!res.success) throw new Error(res.error)
 
