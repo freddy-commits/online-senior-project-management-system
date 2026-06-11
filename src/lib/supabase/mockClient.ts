@@ -7,9 +7,10 @@ class MockQueryBuilder {
   private orderAsc: boolean = true
   private limitCount: number | null = null
   private isSingle: boolean = false
-  private action: 'select' | 'insert' | 'update' = 'select'
+  private action: 'select' | 'insert' | 'update' | 'upsert' = 'select'
   private insertData: any = null
   private updateData: any = null
+  private onConflictKey: string = 'id'
 
   constructor(tableName: string) {
     this.tableName = tableName
@@ -73,6 +74,15 @@ class MockQueryBuilder {
   update(data: any) {
     this.action = 'update'
     this.updateData = data
+    return this
+  }
+
+  upsert(data: any, options?: { onConflict?: string }) {
+    this.action = 'upsert'
+    this.insertData = data
+    if (options?.onConflict) {
+      this.onConflictKey = options.onConflict
+    }
     return this
   }
 
@@ -154,6 +164,37 @@ class MockQueryBuilder {
 
         const updatedRows = updatedTable.filter((item: any) => this.filters.every(f => f(item)))
         resolve({ data: this.isSingle ? updatedRows[0] || null : updatedRows, error: null })
+
+      } else if (this.action === 'upsert') {
+        const rowsToUpsert = Array.isArray(this.insertData) ? this.insertData : [this.insertData]
+        let updatedTable = [...table]
+        const newRows: any[] = []
+
+        rowsToUpsert.forEach((row: any) => {
+          const conflictVal = row[this.onConflictKey]
+          const existingIdx = updatedTable.findIndex((item: any) => item[this.onConflictKey] === conflictVal)
+
+          if (existingIdx > -1) {
+            // Update
+            updatedTable[existingIdx] = { ...updatedTable[existingIdx], ...row }
+            newRows.push(updatedTable[existingIdx])
+          } else {
+            // Insert
+            const newRow = {
+              id: row.id || `mock-${Math.random().toString(36).substring(2, 11)}`,
+              created_at: new Date().toISOString(),
+              ...row
+            }
+            updatedTable.push(newRow)
+            newRows.push(newRow)
+          }
+        })
+
+        ;(state as any)[this.tableName] = updatedTable
+        saveDbState(state)
+
+        const returnedData = Array.isArray(this.insertData) ? newRows : newRows[0]
+        resolve({ data: returnedData, error: null })
       }
     } catch (e: any) {
       resolve({ data: null, error: { message: e.message } })
@@ -161,7 +202,7 @@ class MockQueryBuilder {
   }
 }
 
-export function createMockClient() {
+export function createMockClient(demoRole?: string, demoEmail?: string) {
   return {
     from(tableName: string) {
       return new MockQueryBuilder(tableName)
@@ -185,7 +226,7 @@ export function createMockClient() {
 
     auth: {
       async getUser() {
-        const user = getActiveMockUser()
+        const user = getActiveMockUser(demoRole, demoEmail)
         if (!user) return { data: { user: null }, error: null }
         return {
           data: {

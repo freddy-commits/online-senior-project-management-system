@@ -55,13 +55,20 @@ export default function MasterSidebar({ role = 'student' }: { role?: string }) {
     router.push('/login')
   }
 
-  const menuItems = [
-    { name: 'Dashboard', path: `/${role}/dashboard`, match: `/${role}/dashboard`, icon: <LayoutDashboard className="w-5 h-5" /> },
-    { name: 'Milestones', path: `/${role}/milestones`, match: `/${role}/milestones`, icon: <Target className="w-5 h-5" /> },
-    { name: 'Team', path: `/${role}/teams`, match: `/${role}/teams`, icon: <Users className="w-5 h-5" /> },
-    { name: 'Documents', path: `/${role}/documents`, match: `/${role}/documents`, icon: <FileText className="w-5 h-5" /> },
-    { name: 'Archive', path: `/student/archive`, match: `/student/archive`, icon: <Archive className="w-5 h-5" /> },
-  ]
+  const activeRole = profile?.role || role
+  const menuItems = activeRole === 'admin'
+    ? [
+        { name: 'Dashboard', path: `/admin`, match: `/admin`, icon: <LayoutDashboard className="w-5 h-5" /> },
+        { name: 'Allocations', path: `/admin/projects`, match: `/admin/projects`, icon: <Users className="w-5 h-5" /> },
+        { name: 'Archive', path: `/student/archive`, match: `/student/archive`, icon: <Archive className="w-5 h-5" /> },
+      ]
+    : [
+        { name: 'Dashboard', path: `/${activeRole}/dashboard`, match: `/${activeRole}/dashboard`, icon: <LayoutDashboard className="w-5 h-5" /> },
+        { name: 'Milestones', path: `/${activeRole}/milestones`, match: `/${activeRole}/milestones`, icon: <Target className="w-5 h-5" /> },
+        { name: 'Team', path: `/${activeRole}/teams`, match: `/${activeRole}/teams`, icon: <Users className="w-5 h-5" /> },
+        { name: 'Documents', path: `/${activeRole}/documents`, match: `/${activeRole}/documents`, icon: <FileText className="w-5 h-5" /> },
+        { name: 'Archive', path: `/student/archive`, match: `/student/archive`, icon: <Archive className="w-5 h-5" /> },
+      ]
 
   const fullName = profile?.full_name || 'User'
   const displayRole = profile?.role === 'instructor' 
@@ -109,7 +116,7 @@ export default function MasterSidebar({ role = 'student' }: { role?: string }) {
                   Project Station
                 </span>
                 <span className="text-[9px] text-slate-500 font-extrabold tracking-wider uppercase mt-0.5 leading-tight">
-                  {role.toUpperCase()} WORKSPACE
+                  {activeRole.toUpperCase()} WORKSPACE
                 </span>
               </div>
             )}
@@ -171,9 +178,9 @@ export default function MasterSidebar({ role = 'student' }: { role?: string }) {
         <div className={`p-4 border-t border-slate-200 shrink-0 space-y-3 ${isCollapsed ? 'px-2' : 'px-4'}`}>
           <div className="space-y-1">
           <Link 
-            href={`/${role}/settings`} 
+            href={`/${activeRole}/settings`} 
             className={`flex items-center gap-3 py-2.5 rounded-xl transition-all font-bold text-sm ${isCollapsed ? 'justify-center px-0' : 'px-3'} ${
-              pathname.startsWith(`/${role}/settings`)
+              pathname.startsWith(`/${activeRole}/settings`)
                 ? 'bg-indigo-700 text-white shadow-md shadow-indigo-700/20' 
                 : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'
             }`}

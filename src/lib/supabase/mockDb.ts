@@ -20,6 +20,7 @@ export interface MockProject {
   origin: 'student' | 'industry'
   team_members: string[]
   created_at: string
+  examiner_panel?: string[]
 }
 
 export interface MockDeliverable {
@@ -95,7 +96,8 @@ const DEFAULT_PROJECTS: MockProject[] = [
     is_recommended: false,
     origin: 'industry',
     team_members: ['demo-student-id'],
-    created_at: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString() // 1 day ago
+    created_at: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(), // 1 day ago
+    examiner_panel: ['demo-admin-id']
   },
   {
     id: 'demo-solo-project',
@@ -108,7 +110,8 @@ const DEFAULT_PROJECTS: MockProject[] = [
     is_recommended: false,
     origin: 'student',
     team_members: ['demo-student-2'],
-    created_at: new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString()
+    created_at: new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString(),
+    examiner_panel: ['demo-admin-id']
   }
 ]
 
@@ -304,15 +307,13 @@ export function getActiveMockRole(): 'student' | 'instructor' | 'industry' | 'ad
   return (match ? match[2] : 'student') as any
 }
 
-export function getActiveMockUser(): MockProfile {
-  if (isClient) {
-    const activeEmail = localStorage.getItem('active_user_email')
-    if (activeEmail) {
-      const profile = getDbState().profiles.find(p => p.email.toLowerCase() === activeEmail.toLowerCase())
-      if (profile) return profile
-    }
+export function getActiveMockUser(customRole?: string, customEmail?: string): MockProfile {
+  const activeEmail = customEmail || (isClient ? localStorage.getItem('active_user_email') : undefined)
+  if (activeEmail) {
+    const profile = getDbState().profiles.find(p => p.email.toLowerCase() === activeEmail.toLowerCase())
+    if (profile) return profile
   }
-  const role = getActiveMockRole()
+  const role = customRole || (isClient ? getActiveMockRole() : 'student')
   const profiles = getDbState().profiles
   return profiles.find(p => p.role === role) || profiles[0]
 }

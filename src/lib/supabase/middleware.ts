@@ -1,6 +1,8 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
+const VALID_DEMO_ROLES = ['student', 'instructor', 'supervisor', 'industry', 'admin']
+
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({
     request,
@@ -27,46 +29,39 @@ export async function updateSession(request: NextRequest) {
     }
   )
 
-  const isDemo = false
+  const path = request.nextUrl.pathname
 
-  if (isDemo) {
-    const demoRole = request.cookies.get('demo_role')?.value
-    const path = request.nextUrl.pathname
-    
-    const isPublicPath = 
-      path === '/' || 
-      path.startsWith('/login') || 
-      path.startsWith('/register') || 
-      path.startsWith('/auth') || 
-      path.startsWith('/debug') || 
-      path.startsWith('/api')
+  const isPublicPath =
+    path === '/' ||
+    path.startsWith('/login') ||
+    path.startsWith('/register') ||
+    path.startsWith('/auth') ||
+    path.startsWith('/debug') ||
+    path.startsWith('/sandbox') ||
+    path.startsWith('/api') ||
+    path.startsWith('/preview')
 
-    if (!demoRole && !isPublicPath) {
-      const url = request.nextUrl.clone()
-      url.pathname = '/login'
-      return NextResponse.redirect(url)
-    }
+  // ── Demo / OAuth-mock mode ─────────────────────────────────────────────────
+  // If the request carries a valid demo_role cookie (set by the Google/GitHub
+  // mock OAuth handler), let the user through without requiring a real Supabase
+  // session. This makes the "Continue with Google" / "Continue with GitHub"
+  // buttons fully functional in the local-dev / demo environment.
+  const demoRole = request.cookies.get('demo_role')?.value
+  if (demoRole && VALID_DEMO_ROLES.includes(demoRole)) {
+    // Already authenticated via demo — allow through
     return supabaseResponse
   }
 
-  // IMPORTANT: Avoid writing any logic between createServerClient and
-  // supabase.auth.getUser(). A simple mistake can make it very hard to debug
-  // issues with users being logged out.
-
+  // ── Real Supabase session check ────────────────────────────────────────────
   const {
     data: { user },
   } = await supabase.auth.getUser()
 
   if (
     !user &&
-    !request.nextUrl.pathname.startsWith('/login') &&
-    !request.nextUrl.pathname.startsWith('/register') &&
-    !request.nextUrl.pathname.startsWith('/auth') &&
-    !request.nextUrl.pathname.startsWith('/debug') &&
-    !request.nextUrl.pathname.startsWith('/api/debug') &&
-    request.nextUrl.pathname !== '/'
+    !isPublicPath
   ) {
-    // no user, potentially respond by redirecting the user to the login page
+    // No real session and no demo cookie — redirect to login
     const url = request.nextUrl.clone()
     url.pathname = '/login'
     return NextResponse.redirect(url)

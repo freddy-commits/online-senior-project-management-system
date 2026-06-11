@@ -223,7 +223,11 @@ export default function SupervisorReviewPage() {
 
                   {item.submission_url && (
                     <a 
-                      href={item.submission_url} 
+                      href={
+                        (item.submission_url.startsWith('http') || item.submission_url.startsWith('/'))
+                          ? item.submission_url
+                          : `/preview/document?file=${encodeURIComponent(item.submission_url)}&title=${encodeURIComponent(item.title)}`
+                      } 
                       target="_blank" 
                       rel="noopener noreferrer"
                       className="px-4 py-2 border border-slate-200 bg-white hover:bg-slate-50 rounded-xl font-extrabold text-xs flex items-center gap-1.5 transition-all text-slate-700 shadow-sm shrink-0 cursor-pointer self-start"

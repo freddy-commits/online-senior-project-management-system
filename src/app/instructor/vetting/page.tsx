@@ -209,7 +209,7 @@ export default function InstructorVettingPage() {
       setProposals(newList)
       
       // Keep selecting the current project but updated, or fall back
-      const match = newList.find(p => p.id === projectId)
+      const match = newList.find((p: any) => p.id === projectId)
       if (match) {
         setSelectedProposal(match)
       } else if (newList.length > 0) {

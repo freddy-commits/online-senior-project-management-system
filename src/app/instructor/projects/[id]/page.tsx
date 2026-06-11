@@ -367,7 +367,11 @@ export default function InstructorReviewPage() {
                   </div>
                   {item.submission_url && (
                     <a 
-                      href={item.submission_url} 
+                      href={
+                        (item.submission_url.startsWith('http') || item.submission_url.startsWith('/'))
+                          ? item.submission_url
+                          : `/preview/document?file=${encodeURIComponent(item.submission_url)}&title=${encodeURIComponent(item.title)}`
+                      } 
                       target="_blank" 
                       className="px-4 py-2 bg-white/5 hover:bg-white/10 rounded-xl font-bold text-xs flex items-center gap-2 transition-all border border-white/10"
                     >

@@ -36,7 +36,7 @@ export async function createAnnouncementNotifications(announcement: Announcement
     }
 
     // 2. Prepare notifications to insert
-    const notificationsToInsert = users.map(user => ({
+    const notificationsToInsert = users.map((user: any) => ({
       user_id: user.id,
       title: `University Announcement: ${announcement.title}`,
       message: announcement.content.slice(0, 150) + (announcement.content.length > 150 ? '...' : ''),
@@ -59,8 +59,8 @@ export async function createAnnouncementNotifications(announcement: Announcement
 
     // 4. Send SMS to users with phone numbers
     const smsPromises = users
-      .filter(user => user.phone)
-      .map(user => 
+      .filter((user: any) => user.phone)
+      .map((user: any) => 
         sendSMS({
           recipientId: user.id,
           message: `📣 [Project Hub Announcement] ${announcement.title}: "${announcement.content.slice(0, 60)}..." Log in to view details.`

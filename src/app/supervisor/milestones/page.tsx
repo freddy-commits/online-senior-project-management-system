@@ -20,7 +20,7 @@ export default async function SupervisorMilestonesPage() {
   const projectsList = projs || []
 
   if (projectsList.length > 0) {
-    const deliverablesPromises = projectsList.map(async (proj) => {
+    const deliverablesPromises = projectsList.map(async (proj: any) => {
       const { data: delivs, error } = await supabase
         .from('deliverables')
         .select('*')
@@ -32,7 +32,7 @@ export default async function SupervisorMilestonesPage() {
         return []
       }
       
-      return (delivs || []).map(d => ({
+      return (delivs || []).map((d: any) => ({
         ...d,
         projectTitle: proj.title
       }))

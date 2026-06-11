@@ -58,15 +58,25 @@ export async function signup(formData: FormData) {
 
   console.log('Attempting signup for:', email, 'as', role)
 
-  const { data, error } = await supabase.auth.signUp({
+  // Guard: ensure required env vars are present on the server
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    console.error('Missing Supabase environment variables on the server.')
+    return redirect('/register?error=' + encodeURIComponent('Server configuration error: missing environment variables.'))
+  }
+
+  const { createClient: createAdminClient } = await import('@supabase/supabase-js')
+  const adminSupabase = createAdminClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    { auth: { autoRefreshToken: false, persistSession: false } }
+  )
+
+  // Create the auth user using admin API (email auto-confirmed)
+  const { data, error } = await adminSupabase.auth.admin.createUser({
     email,
     password,
-    options: {
-      data: {
-        role,
-        full_name,
-      }
-    }
+    email_confirm: true,
+    user_metadata: { full_name, role },
   })
 
   if (error) {
@@ -77,17 +87,27 @@ export async function signup(formData: FormData) {
   console.log('User created in Auth successfully:', data.user?.id)
 
   if (data.user) {
-    console.log('Updating profile in database...')
-    const { error: profileError } = await supabase
+    console.log('Creating/updating profile in database...')
+    const { error: profileError } = await adminSupabase
       .from('profiles')
-      .update({ full_name })
-      .eq('id', data.user.id)
+      .upsert({
+        id: data.user.id,
+        email: email,
+        full_name: full_name,
+        role: role,
+      }, { onConflict: 'id' })
 
     if (profileError) {
       console.error('Error updating profile:', profileError.message)
     } else {
-      console.log('Profile updated successfully.')
+      console.log('Profile created/updated successfully.')
     }
+  }
+
+  // Attempt to sign in on standard client-side/server-side
+  const { error: signInError } = await supabase.auth.signInWithPassword({ email, password })
+  if (signInError) {
+    console.error('SignIn error after signup:', signInError.message)
   }
 
   console.log('Redirecting to dashboard:', `/${role}`)

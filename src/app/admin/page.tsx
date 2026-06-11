@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import DashboardLayout from '@/components/dashboard/DashboardLayout'
 import { 
   Users, 
   Clock, 
@@ -61,14 +60,15 @@ export default function AdminDashboard() {
       }
       setProfile(prof)
 
-      await fetchDashboardData()
+      await fetchDashboardData(prof.id)
       setLoading(false)
     }
 
     initPanelDashboard()
   }, [])
 
-  async function fetchDashboardData() {
+  async function fetchDashboardData(userId?: string) {
+    const activeUserId = userId || profile?.id
     let projs: any[] = []
     let allDeliverables: any[] = []
     try {
@@ -119,8 +119,13 @@ export default function AdminDashboard() {
     // Filter out industry projects: keep only academic/capstone projects
     const capstoneOnly = projs.filter((p: any) => !p.industry_partner_id)
     
+    // Filter to keep ONLY projects where this panel member is assigned in examiner_panel
+    const assignedProjects = capstoneOnly.filter((p: any) => 
+      p.examiner_panel && Array.isArray(p.examiner_panel) && p.examiner_panel.includes(activeUserId)
+    )
+    
     // Attach deliverables to projects
-    const enriched = capstoneOnly.map((p: any) => {
+    const enriched = assignedProjects.map((p: any) => {
       return {
         ...p,
         deliverables: allDeliverables.filter((d: any) => d.project_id === p.id)
@@ -178,7 +183,7 @@ export default function AdminDashboard() {
 
     setSuccessMessage(`Committee review and questions submitted for "${evaluatingProject.title}"!`)
     setTimeout(() => setSuccessMessage(''), 5000)
-    await fetchDashboardData()
+    await fetchDashboardData(profile?.id)
     setEvaluatingProject(null)
     setEvalNotes('')
     setQuestions('')
@@ -206,7 +211,7 @@ export default function AdminDashboard() {
     : '89.5'
 
   return (
-    <DashboardLayout role="admin" userName={profile.full_name || 'Dr. Sarah Johnson'}>
+    <div className="p-8 pb-20 max-w-6xl mx-auto space-y-8 text-slate-800 font-sans">
       
       {successMessage && (
         <div className="fixed top-8 right-8 bg-emerald-600 text-white px-6 py-4 rounded-2xl shadow-xl font-bold flex items-center gap-3 z-50 animate-in slide-in-from-top-4">
@@ -215,7 +220,7 @@ export default function AdminDashboard() {
         </div>
       )}
 
-      <div className="max-w-6xl mx-auto space-y-8 pb-16 text-slate-800 font-sans">
+      <div className="space-y-8">
         
         {/* Mockup Header Row */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 pb-4">
@@ -334,10 +339,10 @@ export default function AdminDashboard() {
                 {/* Colored Shortcut Cards matching layout exactly */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   
-                  {/* Card 1: Review Capstone Projects (Blue) */}
+                  {/* Card 1: Review Capstone Projects (Blue Gradient) */}
                   <div 
                     onClick={() => setActiveTab('evaluations')}
-                    className="bg-blue-600 hover:bg-blue-700 text-white rounded-[2rem] p-6 shadow-lg shadow-blue-600/10 flex flex-col justify-between h-44 cursor-pointer select-none transition-all hover:scale-[1.01]"
+                    className="bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-800 text-white rounded-[2rem] p-6 shadow-lg shadow-blue-500/25 flex flex-col justify-between h-44 cursor-pointer select-none transition-all hover:scale-[1.01] hover:shadow-xl hover:shadow-blue-500/30 border border-blue-500/35"
                   >
                     <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center text-white">
                       <Eye className="w-5 h-5" />
@@ -348,10 +353,10 @@ export default function AdminDashboard() {
                     </div>
                   </div>
 
-                  {/* Card 2: Final Presentations (Purple) */}
+                  {/* Card 2: Final Presentations (Purple Gradient) */}
                   <div 
                     onClick={() => setActiveTab('presentations')}
-                    className="bg-purple-650 hover:bg-purple-750 text-white rounded-[2rem] p-6 shadow-lg shadow-purple-600/10 flex flex-col justify-between h-44 cursor-pointer select-none transition-all hover:scale-[1.01]"
+                    className="bg-gradient-to-br from-purple-600 via-purple-700 to-fuchsia-800 text-white rounded-[2rem] p-6 shadow-lg shadow-purple-500/25 flex flex-col justify-between h-44 cursor-pointer select-none transition-all hover:scale-[1.01] hover:shadow-xl hover:shadow-purple-500/30 border border-purple-500/35"
                   >
                     <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center text-white">
                       <Calendar className="w-5 h-5" />
@@ -362,10 +367,10 @@ export default function AdminDashboard() {
                     </div>
                   </div>
 
-                  {/* Card 3: Outstanding Projects (Green) */}
+                  {/* Card 3: Outstanding Projects (Green Gradient) */}
                   <div 
                     onClick={() => setActiveTab('projects')}
-                    className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-[2rem] p-6 shadow-lg shadow-emerald-600/10 flex flex-col justify-between h-44 cursor-pointer select-none transition-all hover:scale-[1.01]"
+                    className="bg-gradient-to-br from-emerald-600 via-emerald-700 to-teal-850 text-white rounded-[2rem] p-6 shadow-lg shadow-emerald-500/25 flex flex-col justify-between h-44 cursor-pointer select-none transition-all hover:scale-[1.01] hover:shadow-xl hover:shadow-emerald-500/30 border border-emerald-500/35"
                   >
                     <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center text-white">
                       <Award className="w-5 h-5" />
@@ -649,6 +654,6 @@ export default function AdminDashboard() {
         </AnimatePresence>
 
       </div>
-    </DashboardLayout>
+    </div>
   )
 }

@@ -24,7 +24,7 @@ export default async function OverviewPage() {
 
   const projects = projRes.data || []
 
-  const enrichedProjects = await Promise.all((projects || []).map(async p => {
+  const enrichedProjects = await Promise.all((projects || []).map(async (p: any) => {
     const delivRes = await getDeliverables(p.id)
     if (!delivRes.success) {
       console.error(`Failed to fetch deliverables for project ${p.id} on overview:`, delivRes.error)

@@ -24,7 +24,7 @@ export default async function SupervisorDashboardPage() {
         .eq('instructor_id', user.id)
         .order('created_at', { ascending: false })
 
-      enrichedProjects = await Promise.all((projects || []).map(async p => {
+      enrichedProjects = await Promise.all((projects || []).map(async (p: any) => {
         const { data: delivs } = await supabase
           .from('deliverables')
           .select('*')

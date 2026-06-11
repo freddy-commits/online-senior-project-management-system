@@ -28,7 +28,7 @@ export default async function InstructorMilestonesPage() {
     .select('*, student:student_id(full_name, email), instructor:instructor_id(full_name), supervisor:instructor_id(full_name), partner:industry_partner_id(full_name)')
     .order('created_at', { ascending: false })
 
-  const enrichedProjects = projects?.map(p => ({
+  const enrichedProjects = projects?.map((p: any) => ({
     ...p,
     origin: p.industry_partner_id ? 'industry' : 'academic'
   })) || []

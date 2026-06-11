@@ -24,7 +24,7 @@ export default function SupervisorTeamsPage() {
           .eq('instructor_id', targetUserId)
 
         if (projs && projs.length > 0) {
-          const teamIds = projs.map(p => p.team_id).filter(Boolean)
+          const teamIds = projs.map((p: any) => p.team_id).filter(Boolean)
           let membersMap: Record<string, any[]> = {}
 
           if (teamIds.length > 0) {
@@ -38,7 +38,7 @@ export default function SupervisorTeamsPage() {
             }
 
             if (members) {
-              members.forEach(m => {
+              members.forEach((m: any) => {
                 if (!membersMap[m.team_id]) {
                   membersMap[m.team_id] = []
                 }
@@ -47,7 +47,7 @@ export default function SupervisorTeamsPage() {
             }
           }
 
-          const enrichedProjs = projs.map(p => ({
+          const enrichedProjs = projs.map((p: any) => ({
             ...p,
             members: p.team_id ? (membersMap[p.team_id] || []) : []
           }))

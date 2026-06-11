@@ -351,11 +351,15 @@ export default function StudentDocumentsPage() {
                                 {/* Actions */}
                                 <div className="flex items-center gap-2 self-end sm:self-auto">
                                   <a
-                                    href={
-                                      doc.fileName.startsWith('http')
-                                        ? doc.fileName
-                                        : `/preview/document?file=${encodeURIComponent(doc.fileName)}&title=${encodeURIComponent(milestone.title)}`
-                                    }
+                                    href={(() => {
+                                      const raw = doc.fileName
+                                      // Build a proper URL: if it already has a scheme or leading /, use as-is
+                                      // If it's a bare filename (e.g. "receipt_(2).pdf"), prefix with /uploads/
+                                      const normalizedFile = raw.startsWith('http') || raw.startsWith('/')
+                                        ? raw
+                                        : `/uploads/${raw.replace(/\s+/g, '_')}`
+                                      return `/preview/document?file=${encodeURIComponent(normalizedFile)}&title=${encodeURIComponent(milestone.title)}`
+                                    })()}
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     title="Open Document"

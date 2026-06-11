@@ -843,11 +843,11 @@ export default function InstructorDocumentsClient({
                         )}
 
                         <a
-                          href={
-                            sub.submission_url?.startsWith('http')
-                              ? sub.submission_url
-                              : `/preview/document?file=${encodeURIComponent(sub.submission_url)}&title=${encodeURIComponent(sub.document_title || 'Submission')}`
-                          }
+                          href={(() => {
+                            const raw = sub.submission_url || ''
+                            const norm = (raw.startsWith('http') || raw.startsWith('/')) ? raw : `/uploads/${raw.replace(/\s+/g, '_')}`
+                            return `/preview/document?file=${encodeURIComponent(norm)}&title=${encodeURIComponent(sub.document_title || 'Submission')}`
+                          })()}
                           target="_blank"
                           rel="noopener noreferrer"
                           title="Open Document URL"
@@ -1044,11 +1044,11 @@ export default function InstructorDocumentsClient({
                     <span className="text-xs font-bold text-slate-700">Submission Attachment</span>
                   </div>
                   <a 
-                    href={
-                      selectedSub.submission_url?.startsWith('http')
-                        ? selectedSub.submission_url
-                        : `/preview/document?file=${encodeURIComponent(selectedSub.submission_url)}&title=${encodeURIComponent(selectedSub.document_title || 'Submission')}`
-                    }
+                    href={(() => {
+                      const raw = selectedSub.submission_url || ''
+                      const norm = (raw.startsWith('http') || raw.startsWith('/')) ? raw : `/uploads/${raw.replace(/\s+/g, '_')}`
+                      return `/preview/document?file=${encodeURIComponent(norm)}&title=${encodeURIComponent(selectedSub.document_title || 'Submission')}`
+                    })()}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-xs font-black text-[#4F46E5] hover:underline flex items-center gap-1.5"
@@ -1199,11 +1199,11 @@ export default function InstructorDocumentsClient({
                     <span className="text-xs font-bold text-slate-700">Student File Attachment</span>
                   </div>
                   <a 
-                    href={
-                      selectedSub.submission_url?.startsWith('http')
-                        ? selectedSub.submission_url
-                        : `/preview/document?file=${encodeURIComponent(selectedSub.submission_url)}&title=${encodeURIComponent(selectedSub.document_title || 'Submission')}`
-                    }
+                    href={(() => {
+                      const raw = selectedSub.submission_url || ''
+                      const norm = (raw.startsWith('http') || raw.startsWith('/')) ? raw : `/uploads/${raw.replace(/\s+/g, '_')}`
+                      return `/preview/document?file=${encodeURIComponent(norm)}&title=${encodeURIComponent(selectedSub.document_title || 'Submission')}`
+                    })()}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-xs font-black text-[#4F46E5] hover:underline flex items-center gap-1.5"
@@ -1309,11 +1309,11 @@ export default function InstructorDocumentsClient({
                     <span className="text-xs font-bold text-slate-700">Submitted File Link</span>
                   </div>
                   <a 
-                    href={
-                      selectedSub.submission_url?.startsWith('http')
-                        ? selectedSub.submission_url
-                        : `/preview/document?file=${encodeURIComponent(selectedSub.submission_url)}&title=${encodeURIComponent(selectedSub.document_title || 'Submission')}`
-                    }
+                    href={(() => {
+                      const raw = selectedSub.submission_url || ''
+                      const norm = (raw.startsWith('http') || raw.startsWith('/')) ? raw : `/uploads/${raw.replace(/\s+/g, '_')}`
+                      return `/preview/document?file=${encodeURIComponent(norm)}&title=${encodeURIComponent(selectedSub.document_title || 'Submission')}`
+                    })()}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-xs font-black text-[#4F46E5] hover:underline flex items-center gap-1.5"

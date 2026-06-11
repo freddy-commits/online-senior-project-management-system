@@ -200,14 +200,14 @@ export default function StudentMilestonesPage() {
       if (!projRes.success) throw new Error(projRes.error)
 
       const expectedOrigin = trackMode === 'thesis' ? 'student' : 'industry'
-      const projects = (projRes.data || []).map(p => ({
+      const projects = (projRes.data || []).map((p: any) => ({
         ...p,
         origin: p.origin || (p.industry_partner_id ? 'industry' : 'student')
       }))
 
       // Match track, fall back to first project if no exact origin match
       const activeProj =
-        projects.find(p => p.origin === expectedOrigin || (expectedOrigin === 'student' && p.origin === 'academic'))
+        projects.find((p: any) => p.origin === expectedOrigin || (expectedOrigin === 'student' && p.origin === 'academic'))
         || projects[0]
         || null
 
@@ -231,7 +231,7 @@ export default function StudentMilestonesPage() {
 
         setDeliverables(formattedDelivs)
         if (formattedDelivs.length > 0) {
-          const active = formattedDelivs.find(d => d.status === 'todo' || d.status === 'submitted') || formattedDelivs[0]
+          const active = formattedDelivs.find((d: any) => d.status === 'todo' || d.status === 'submitted') || formattedDelivs[0]
           setSelectedMilestone(active)
         } else {
           setSelectedMilestone(null)
@@ -941,33 +941,37 @@ export default function StudentMilestonesPage() {
                   </p>
                 </div>
 
-                {/* Upload drag and drop box */}
-                {selectedMilestone?.status === 'todo' ? (
-                  <div className="relative border-2 border-dashed border-slate-200 hover:border-[#a75d24] rounded-2xl p-5 text-center transition-all bg-slate-50/30 group">
-                    <input 
-                      type="file" 
-                      id="milestone-file"
-                      onChange={handleFileChange}
-                      className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
-                    />
-                    <div className="flex flex-col items-center gap-2">
-                      <div className="w-10 h-10 bg-slate-100 rounded-xl flex items-center justify-center text-slate-500 group-hover:bg-[#fdf5f0] group-hover:text-[#a75d24] transition-all">
-                        <CloudUpload className="w-5.5 h-5.5" />
+                {/* Upload drag and drop box — show for both 'todo' AND 'submitted' so student can replace file */}
+                {(selectedMilestone?.status === 'todo' || selectedMilestone?.status === 'submitted') ? (
+                  <>
+                    {selectedMilestone?.status === 'submitted' && (
+                      <div className="p-3 bg-yellow-50/80 border border-yellow-200 rounded-2xl flex items-center gap-2">
+                        <Clock className="w-4 h-4 text-yellow-600 shrink-0" />
+                        <div className="overflow-hidden">
+                          <span className="text-[9px] text-yellow-800 font-black uppercase block tracking-wider">Evaluation Pending</span>
+                          <span className="text-[10px] text-slate-600 font-bold block truncate">{selectedMilestone.submission_url?.split('/').pop() || 'Submitted Report'}</span>
+                        </div>
                       </div>
-                      <div>
-                        <span className="text-xs font-extrabold text-slate-800 block">Upload Phase Reports</span>
-                        <span className="text-[9.5px] text-slate-400 font-bold block pt-0.5">Drag and drop or click to browse files</span>
+                    )}
+                    <div className="relative border-2 border-dashed border-slate-200 hover:border-[#a75d24] rounded-2xl p-5 text-center transition-all bg-slate-50/30 group">
+                      <input 
+                        type="file" 
+                        id="milestone-file"
+                        accept=".pdf,.doc,.docx,.ppt,.pptx,.zip"
+                        onChange={handleFileChange}
+                        className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+                      />
+                      <div className="flex flex-col items-center gap-2">
+                        <div className="w-10 h-10 bg-slate-100 rounded-xl flex items-center justify-center text-slate-500 group-hover:bg-[#fdf5f0] group-hover:text-[#a75d24] transition-all">
+                          <CloudUpload className="w-5 h-5" />
+                        </div>
+                        <div>
+                          <span className="text-xs font-extrabold text-slate-800 block">{selectedMilestone?.status === 'submitted' ? 'Replace Submission' : 'Upload Phase Reports'}</span>
+                          <span className="text-[9.5px] text-slate-400 font-bold block pt-0.5">PDF, DOC, PPTX or ZIP · drag or click</span>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ) : selectedMilestone?.status === 'submitted' ? (
-                  <div className="p-4 bg-yellow-50/50 border border-yellow-200/80 rounded-2xl flex items-center gap-3">
-                    <Clock className="w-8 h-8 text-yellow-600 bg-yellow-100/50 rounded-xl flex items-center justify-center p-1.5 shrink-0" />
-                    <div className="overflow-hidden">
-                      <span className="text-[10px] text-yellow-800 font-black uppercase block tracking-wider leading-none mb-1">Evaluation Pending</span>
-                      <span className="text-[11px] text-slate-600 font-bold block truncate">{selectedMilestone.submission_url || 'Submitted Report'}</span>
-                    </div>
-                  </div>
+                  </>
                 ) : selectedMilestone?.status === 'graded' ? (
                   <div className="p-4 bg-emerald-50 border border-emerald-200/80 rounded-2xl flex items-center gap-3">
                     <CheckCircle2 className="w-8 h-8 text-emerald-600 bg-emerald-100 rounded-xl flex items-center justify-center p-1.5 shrink-0" />
@@ -1006,14 +1010,14 @@ export default function StudentMilestonesPage() {
                 )}
 
                 {/* Submit trigger button if file loaded */}
-                {uploadedFile && selectedMilestone?.status === 'todo' && (
+                {uploadedFile && (selectedMilestone?.status === 'todo' || selectedMilestone?.status === 'submitted') && (
                   <button
                     onClick={handleSubmissionDirect}
                     disabled={submitting}
                     className="w-full py-3 bg-[#a75d24] hover:bg-[#8f4f1d] text-white font-extrabold text-xs uppercase tracking-wider rounded-xl transition-all shadow-md shadow-[#a75d24]/10 cursor-pointer active:scale-[0.98] flex items-center justify-center gap-1.5"
                   >
-                    {submitting ? <Clock className="w-4.5 h-4.5 animate-spin" /> : <Upload className="w-4.5 h-4.5" />}
-                    Submit Report Now
+                    {submitting ? <Clock className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+                    {selectedMilestone?.status === 'submitted' ? 'Replace & Resubmit' : 'Submit Report Now'}
                   </button>
                 )}
 
