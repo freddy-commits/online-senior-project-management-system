@@ -63,6 +63,7 @@ export default function StudentTeamsClient() {
   const [team, setTeam] = useState<Team | null>(null)
   const [members, setMembers] = useState<any[]>([])
   const [project, setProject] = useState<Project | null>(null)
+  const [currentUser, setCurrentUser] = useState<{ full_name: string; email: string } | null>(null)
   
   // Custom states for interactive collaboration tools
   const [activeTab, setActiveTab] = useState<'roster' | 'chat' | 'scheduler' | 'guidelines'>('roster')
@@ -86,6 +87,34 @@ export default function StudentTeamsClient() {
   
   const [successToast, setSuccessToast] = useState('')
 
+  // Load persisted collaboration URLs on mount
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const storedRepo = localStorage.getItem('seniorproj_github_url')
+      if (storedRepo) {
+        setRepoUrl(storedRepo)
+      } else {
+        setRepoUrl('https://github.com/freddy-commits/online-senior-project-management-system')
+      }
+
+      const storedSlack = localStorage.getItem('seniorproj_slack_url')
+      if (storedSlack) setSlackUrl(storedSlack)
+
+      const storedDocs = localStorage.getItem('seniorproj_docs_url')
+      if (storedDocs) setDocsUrl(storedDocs)
+    }
+  }, [])
+
+  // Safely formats absolute URLs to prevent Next.js relative routing bugs
+  const formatUrl = (url: string) => {
+    if (!url) return '#'
+    const trimmed = url.trim()
+    if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
+      return trimmed
+    }
+    return `https://${trimmed}`
+  }
+
   const supabase = createClient()
 
   useEffect(() => {
@@ -96,6 +125,16 @@ export default function StudentTeamsClient() {
         if (!user) {
           loadMockData()
           return
+        }
+
+        // Fetch user profile to get logged-in name
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('full_name, email')
+          .eq('id', user.id)
+          .single()
+        if (profile) {
+          setCurrentUser(profile)
         }
 
         // Fetch team memberships
@@ -164,6 +203,12 @@ export default function StudentTeamsClient() {
           const parsed = JSON.parse(data)
           // Find standard demo student or active student profile
           const activeProfile = parsed.profiles.find((p: any) => p.role === 'student') || parsed.profiles[0]
+          if (activeProfile) {
+            setCurrentUser({
+              full_name: activeProfile.full_name,
+              email: activeProfile.email
+            })
+          }
           
           // Let's find project first
           // Wait, is there a project in mock projects assigned to this student?
@@ -214,9 +259,11 @@ export default function StudentTeamsClient() {
     e.preventDefault()
     if (!newMessage.trim()) return
 
+    const senderName = currentUser?.full_name || 'Student'
+
     const msg = {
       id: Date.now().toString(),
-      sender: 'Alex Carter (You)',
+      sender: `${senderName} (You)`,
       text: newMessage.trim(),
       time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     }
@@ -237,7 +284,7 @@ export default function StudentTeamsClient() {
         ...prev,
         {
           id: (Date.now() + 1).toString(),
-          sender: members.find(m => m.profiles.full_name !== 'Alex Carter')?.profiles.full_name || 'Chloe Smith',
+          sender: members.find(m => m.profiles?.full_name !== senderName)?.profiles?.full_name || 'Chloe Smith',
           text: randomReply,
           time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
         }
@@ -465,12 +512,16 @@ export default function StudentTeamsClient() {
                         <input
                           type="text"
                           value={repoUrl}
-                          onChange={(e) => setRepoUrl(e.target.value)}
+                          onChange={(e) => {
+                            const val = e.target.value
+                            setRepoUrl(val)
+                            localStorage.setItem('seniorproj_github_url', val)
+                          }}
                           className="w-full text-[10px] font-semibold text-slate-500 bg-transparent border-b border-transparent hover:border-slate-300 focus:border-indigo-600 focus:outline-none py-0.5"
                         />
                       </div>
                       <a 
-                        href={repoUrl}
+                        href={formatUrl(repoUrl)}
                         target="_blank"
                         rel="noreferrer"
                         className="text-[10px] font-extrabold uppercase tracking-wider text-indigo-700 hover:underline flex items-center gap-1"
@@ -486,16 +537,20 @@ export default function StudentTeamsClient() {
                         <span className="text-[8px] bg-slate-100 text-slate-600 font-black px-2 py-0.5 rounded uppercase border border-slate-200">Active</span>
                       </div>
                       <div className="space-y-1">
-                        <h4 className="text-xs font-black text-slate-800">Slack Slack workspace</h4>
+                        <h4 className="text-xs font-black text-slate-800">Slack Workspace</h4>
                         <input
                           type="text"
                           value={slackUrl}
-                          onChange={(e) => setSlackUrl(e.target.value)}
+                          onChange={(e) => {
+                            const val = e.target.value
+                            setSlackUrl(val)
+                            localStorage.setItem('seniorproj_slack_url', val)
+                          }}
                           className="w-full text-[10px] font-semibold text-slate-500 bg-transparent border-b border-transparent hover:border-slate-300 focus:border-indigo-600 focus:outline-none py-0.5"
                         />
                       </div>
                       <a 
-                        href={slackUrl}
+                        href={formatUrl(slackUrl)}
                         target="_blank"
                         rel="noreferrer"
                         className="text-[10px] font-extrabold uppercase tracking-wider text-indigo-700 hover:underline flex items-center gap-1"
@@ -515,12 +570,16 @@ export default function StudentTeamsClient() {
                         <input
                           type="text"
                           value={docsUrl}
-                          onChange={(e) => setDocsUrl(e.target.value)}
+                          onChange={(e) => {
+                            const val = e.target.value
+                            setDocsUrl(val)
+                            localStorage.setItem('seniorproj_docs_url', val)
+                          }}
                           className="w-full text-[10px] font-semibold text-slate-500 bg-transparent border-b border-transparent hover:border-slate-300 focus:border-indigo-600 focus:outline-none py-0.5"
                         />
                       </div>
                       <a 
-                        href={docsUrl}
+                        href={formatUrl(docsUrl)}
                         target="_blank"
                         rel="noreferrer"
                         className="text-[10px] font-extrabold uppercase tracking-wider text-indigo-700 hover:underline flex items-center gap-1"

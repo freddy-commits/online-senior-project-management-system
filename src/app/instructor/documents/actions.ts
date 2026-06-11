@@ -55,6 +55,60 @@ export async function updateDeliverableStatusAdmin(
       .select()
 
     if (error) throw error
+
+    // Fetch details and notify student
+    try {
+      const { data: delivObj } = await adminClient
+        .from('deliverables')
+        .select('title, project_id')
+        .eq('id', deliverableId)
+        .single()
+
+      if (delivObj) {
+        const { data: projObj } = await adminClient
+          .from('projects')
+          .select('title, student_id, instructor_id')
+          .eq('id', delivObj.project_id)
+          .single()
+
+        if (projObj && projObj.student_id) {
+          const { data: studentProfile } = await adminClient
+            .from('profiles')
+            .select('full_name, email')
+            .eq('id', projObj.student_id)
+            .single()
+
+          const { data: instructorProfile } = await adminClient
+            .from('profiles')
+            .select('full_name')
+            .eq('id', projObj.instructor_id || '')
+            .single()
+
+          if (studentProfile && studentProfile.email) {
+            const { notifyStudentMilestoneGraded } = await import('@/lib/email/emailService')
+            await notifyStudentMilestoneGraded(
+              studentProfile.email,
+              studentProfile.full_name || 'Student',
+              instructorProfile?.full_name || 'Faculty Advisor',
+              projObj.title,
+              delivObj.title,
+              status === 'graded' ? (grade || 'Reviewed') : 'Revisions Requested',
+              feedback
+            )
+          }
+
+          // Trigger SMS notification
+          const { sendSMS } = await import('@/lib/sms/smsService')
+          await sendSMS({
+            recipientId: projObj.student_id,
+            message: `🎯 Milestone Updated: Your deliverable "${delivObj.title}" has been graded/reviewed by Dr. ${instructorProfile?.full_name || 'Faculty Advisor'}. Grade: ${status === 'graded' ? (grade || 'Reviewed') : 'Revisions Requested'}.`
+          })
+        }
+      }
+    } catch (notifyErr) {
+      console.error('Failed to notify student of milestone evaluation:', notifyErr)
+    }
+
     return { success: true, data }
   } catch (err: any) {
     console.error('updateDeliverableStatusAdmin failed:', err)

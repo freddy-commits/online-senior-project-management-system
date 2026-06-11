@@ -66,16 +66,21 @@ export default function AdminProjectManagement() {
       if (instr && instr.email && proj) {
         try {
           const { notifyInstructorAssigned, notifyStudentSupervisorAssigned } = await import('@/lib/email/emailService')
+          const { sendSMS } = await import('@/lib/sms/smsService')
           
-          // 1. Notify supervisor
+          // 1. Notify supervisor (Email + SMS)
           await notifyInstructorAssigned(
             instr.email,
             instr.full_name || 'Advisor',
             proj.title,
             proj.student?.full_name || 'Assigned Student'
           )
+          await sendSMS({
+            recipientId: instructorId,
+            message: `🛡️ Department Assignment: You have been assigned as Faculty Supervisor for the project "${proj.title}" by student ${proj.student?.full_name || 'Student'}. Please log in to supervise.`
+          })
 
-          // 2. Notify student
+          // 2. Notify student (Email + SMS)
           const studentEmail = proj.student?.email
           if (studentEmail) {
             await notifyStudentSupervisorAssigned(
@@ -85,8 +90,14 @@ export default function AdminProjectManagement() {
               proj.title
             )
           }
+          if (proj.student_id) {
+            await sendSMS({
+              recipientId: proj.student_id,
+              message: `🎉 Department Assignment: Dr. ${instr.full_name || 'Sarah Johnson'} has been assigned as your Faculty Supervisor for project "${proj.title}". Your milestone submission locks are now lifted!`
+            })
+          }
         } catch (err) {
-          console.error('Failed to notify instructor or student:', err)
+          console.error('Failed to notify instructor or student via email/SMS:', err)
         }
       }
 

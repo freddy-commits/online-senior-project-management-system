@@ -129,19 +129,69 @@ export async function submitDeliverable(deliverableId: string, submissionUrl: st
       .eq('id', deliverableId)
       .select()
 
+    let success = false
     if (!userError && userUpdated && userUpdated.length > 0) {
-      return { success: true }
+      success = true
+    } else {
+      // Fall back to admin
+      console.warn('User client submission failed or affected 0 rows, trying admin client:', userError?.message)
+      const adminSupabase = createAdminClient()
+      const { error: adminError } = await adminSupabase
+        .from('deliverables')
+        .update({ submission_url: submissionUrl, status: 'submitted' })
+        .eq('id', deliverableId)
+
+      if (adminError) throw adminError
+      success = true
     }
 
-    // Fall back to admin
-    console.warn('User client submission failed or affected 0 rows, trying admin client:', userError?.message)
-    const adminSupabase = createAdminClient()
-    const { error: adminError } = await adminSupabase
-      .from('deliverables')
-      .update({ submission_url: submissionUrl, status: 'submitted' })
-      .eq('id', deliverableId)
+    if (success) {
+      // Fetch details and notify instructor/supervisor
+      try {
+        const adminSupabase = createAdminClient()
+        const { data: delivObj } = await adminSupabase
+          .from('deliverables')
+          .select('title, project_id')
+          .eq('id', deliverableId)
+          .single()
 
-    if (adminError) throw adminError
+        if (delivObj) {
+          const { data: projObj } = await adminSupabase
+            .from('projects')
+            .select('title, student_id, instructor_id')
+            .eq('id', delivObj.project_id)
+            .single()
+
+          if (projObj && projObj.instructor_id) {
+            const { data: studentProfile } = await adminSupabase
+              .from('profiles')
+              .select('full_name')
+              .eq('id', projObj.student_id)
+              .single()
+
+            const { data: instructorProfile } = await adminSupabase
+              .from('profiles')
+              .select('full_name, email')
+              .eq('id', projObj.instructor_id)
+              .single()
+
+            if (instructorProfile && instructorProfile.email) {
+              const { notifyInstructorMilestoneSubmission } = await import('@/lib/email/emailService')
+              await notifyInstructorMilestoneSubmission(
+                studentProfile?.full_name || 'Student',
+                instructorProfile.email,
+                instructorProfile.full_name || 'Faculty Advisor',
+                projObj.title,
+                delivObj.title
+              )
+            }
+          }
+        }
+      } catch (notifyErr) {
+        console.error('Failed to send submission email notification to supervisor:', notifyErr)
+      }
+    }
+
     return { success: true }
   } catch (err: any) {
     console.error('submitDeliverable server action failed:', err)

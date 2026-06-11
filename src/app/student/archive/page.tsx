@@ -42,24 +42,70 @@ export default function ProjectArchivePage() {
     async function loadArchive() {
       setLoading(true)
       try {
-        // Fetch approved projects from database first to show real records
-        const { data: realProjects } = await supabase
-          .from('projects')
-          .select('*, student:student_id(full_name), instructor:instructor_id(full_name), partner:industry_partner_id(full_name)')
-          .eq('status', 'approved')
+        // Check if we are running in local sandbox database mode
+        let projectsList: any[] = []
+        if (typeof window !== 'undefined' && localStorage.getItem('demo_mode') === 'true') {
+          const localData = localStorage.getItem('seniorproj_sandbox_db')
+          if (localData) {
+            const parsed = JSON.parse(localData)
+            const mockProjects = parsed.projects || []
+            const mockDeliverables = parsed.deliverables || []
+            const mockProfiles = parsed.profiles || []
+            
+            projectsList = mockProjects.map((p: any) => {
+              const student = mockProfiles.find((pr: any) => pr.id === p.student_id)
+              const instructor = mockProfiles.find((pr: any) => pr.id === p.instructor_id)
+              const partner = mockProfiles.find((pr: any) => pr.id === p.industry_partner_id)
+              const deliverables = mockDeliverables.filter((d: any) => d.project_id === p.id)
+              return {
+                ...p,
+                student: student ? { full_name: student.full_name } : null,
+                instructor: instructor ? { full_name: instructor.full_name } : null,
+                partner: partner ? { full_name: partner.full_name } : null,
+                deliverables
+              }
+            })
+          }
+        } else {
+          // Fetch from Supabase, including deliverables
+          const { data: realProjects } = await supabase
+            .from('projects')
+            .select('*, student:student_id(full_name), instructor:instructor_id(full_name), partner:industry_partner_id(full_name), deliverables:deliverables(*)')
+            .eq('status', 'approved')
+          projectsList = realProjects || []
+        }
 
-        const mappedReal = (realProjects || []).map((p: any, idx: number) => ({
-          id: p.id,
-          title: p.title,
-          description: p.description,
-          student_name: p.student?.full_name || 'Senior Student',
-          supervisor_name: p.instructor?.full_name || 'Dr. Sarah Johnson',
-          partner_name: p.partner?.full_name || undefined,
-          academic_year: '2025/2026',
-          track: p.industry_partner_id ? 'Industry Project' : 'Capstone Thesis',
-          tech_stack: idx % 2 === 0 ? ['Next.js', 'PostgreSQL', 'TailwindCSS'] : ['Python', 'PyTorch', 'FastAPI'],
-          grade: 'A'
-        }))
+        // Filter projects: only show if the final report/deliverable is graded
+        const completedProjects = projectsList.filter((p: any) => {
+          const deliverables = p.deliverables || []
+          const finalDeliv = deliverables.find((d: any) => 
+            (d.title.toLowerCase().includes('final') || d.title.toLowerCase().includes('presentation')) && 
+            d.status === 'graded'
+          )
+          return !!finalDeliv
+        })
+
+        const mappedReal = completedProjects.map((p: any, idx: number) => {
+          const deliverables = p.deliverables || []
+          const finalDeliv = deliverables.find((d: any) => 
+            (d.title.toLowerCase().includes('final') || d.title.toLowerCase().includes('presentation')) && 
+            d.status === 'graded'
+          )
+          const gradeValue = finalDeliv?.grade || 'A'
+
+          return {
+            id: p.id,
+            title: p.title,
+            description: p.description,
+            student_name: p.student?.full_name || 'Senior Student',
+            supervisor_name: p.instructor?.full_name || 'Dr. Sarah Johnson',
+            partner_name: p.partner?.full_name || undefined,
+            academic_year: '2025/2026',
+            track: p.industry_partner_id ? 'Industry Project' : 'Capstone Thesis',
+            tech_stack: idx % 2 === 0 ? ['Next.js', 'PostgreSQL', 'TailwindCSS'] : ['Python', 'PyTorch', 'FastAPI'],
+            grade: gradeValue
+          }
+        })
 
         // Seed static historical archive data for realism
         const staticArchive: ArchiveProject[] = [
@@ -125,15 +171,26 @@ export default function ProjectArchivePage() {
   })
 
   const getTechColor = (tech: string) => {
-    const map: Record<string, string> = {
-      'Next.js': 'bg-slate-900 text-slate-100 border-slate-800',
-      'React': 'bg-sky-500/10 text-sky-600 border-sky-200/50',
-      'Python': 'bg-blue-500/10 text-blue-600 border-blue-200/50',
-      'PyTorch': 'bg-orange-500/10 text-orange-600 border-orange-250/50',
-      'Go': 'bg-cyan-500/10 text-cyan-600 border-cyan-200/50',
-      'Solidity': 'bg-indigo-500/10 text-indigo-600 border-indigo-200/50',
+    const cleanTech = tech.toUpperCase().trim()
+    if (cleanTech === 'NEXT.JS' || cleanTech === 'REACT') {
+      return 'bg-slate-900 text-slate-100 border-transparent font-extrabold'
     }
-    return map[tech] || 'bg-slate-100 text-slate-600 border-slate-200'
+    if (cleanTech === 'POSTGRESQL' || cleanTech === 'SOLIDITY') {
+      return 'bg-slate-100 text-slate-700 border-transparent font-extrabold'
+    }
+    if (cleanTech === 'TAILWINDCSS' || cleanTech === 'FASTAPI') {
+      return 'bg-sky-50 text-sky-700 border-transparent font-extrabold'
+    }
+    if (cleanTech === 'PYTHON') {
+      return 'bg-purple-50 text-purple-700 border-transparent font-extrabold'
+    }
+    if (cleanTech === 'PYTORCH') {
+      return 'bg-orange-50 text-orange-600 border border-orange-200 font-extrabold'
+    }
+    if (cleanTech === 'GO') {
+      return 'bg-cyan-50 text-cyan-700 border-transparent font-extrabold'
+    }
+    return 'bg-slate-100 text-slate-600 border-transparent font-bold'
   }
 
   return (
@@ -148,32 +205,32 @@ export default function ProjectArchivePage() {
               Academic Database
             </span>
             <h1 className="text-3xl font-black text-slate-900 tracking-tight">Project Archive</h1>
-            <p className="text-xs text-slate-500 font-semibold leading-relaxed">
+            <p className="text-xs text-slate-550 font-semibold leading-relaxed">
               Explore and search previously completed Capstone theses and Industry sponsor projects.
             </p>
           </div>
         </div>
 
         {/* Filters and Controls */}
-        <div className="bg-white border border-slate-200 rounded-2xl p-4 flex flex-col md:flex-row gap-4 items-center justify-between shadow-sm">
+        <div className="bg-white border border-slate-200 rounded-[2rem] p-4 flex flex-col md:flex-row gap-4 items-center justify-between shadow-sm">
           <div className="relative w-full md:flex-1">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
             <input
               type="text"
               placeholder="Search by topic, tech stack, student or supervisor..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-slate-50/50 border border-slate-200 rounded-xl py-2.5 pl-10 pr-4 text-xs font-semibold text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+              className="w-full bg-slate-50 border border-slate-200 rounded-full py-3 pl-11 pr-4 text-xs font-semibold text-slate-800 placeholder-slate-450 focus:outline-none focus:ring-2 focus:ring-indigo-500/15 focus:border-indigo-500 transition-all"
             />
           </div>
 
-          <div className="flex gap-3 w-full md:w-auto self-stretch md:self-auto justify-end">
+          <div className="flex gap-3 w-full md:w-auto self-stretch md:self-auto justify-end px-2">
             <div className="flex items-center gap-2 w-full md:w-auto">
-              <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider whitespace-nowrap">Track:</span>
+              <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider whitespace-nowrap">TRACK:</span>
               <select
                 value={trackFilter}
                 onChange={(e) => setTrackFilter(e.target.value as any)}
-                className="bg-white border border-slate-250 rounded-xl py-2.5 px-4 text-xs font-bold text-slate-700 focus:outline-none focus:ring-1 focus:ring-indigo-500 cursor-pointer shadow-sm min-w-[140px]"
+                className="bg-white border border-slate-250 rounded-xl py-2 px-4 pr-8 text-xs font-black text-slate-800 focus:outline-none focus:ring-1 focus:ring-indigo-500 cursor-pointer shadow-sm min-w-[140px]"
               >
                 <option value="all">All Tracks</option>
                 <option value="thesis">Capstone Thesis</option>
@@ -204,24 +261,24 @@ export default function ProjectArchivePage() {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, scale: 0.95 }}
                   transition={{ duration: 0.35, delay: idx * 0.05 }}
-                  className="bg-white border border-slate-200 rounded-[2.25rem] p-6 shadow-sm hover:shadow-md hover:border-slate-300 transition-all flex flex-col justify-between"
+                  className="bg-white border border-slate-200 rounded-[2rem] p-6 shadow-sm hover:shadow-md transition-all flex flex-col justify-between"
                 >
                   <div className="space-y-4">
                     <div className="flex justify-between items-center">
                       <span className={`px-2.5 py-1 rounded-lg text-[9px] font-black uppercase tracking-wider border ${
-                        proj.track === 'Industry Project'
-                          ? 'bg-amber-50 border-amber-200/60 text-amber-800'
-                          : 'bg-indigo-50 border-indigo-200/60 text-indigo-700'
+                        proj.track.toLowerCase().includes('industry')
+                          ? 'bg-amber-50 border-amber-100 text-amber-800'
+                          : 'bg-indigo-50 border-indigo-100 text-indigo-600'
                       }`}>
-                        {proj.track}
+                        {proj.track.toUpperCase()}
                       </span>
-                      <span className="text-[10px] text-slate-400 font-bold flex items-center gap-1.5 bg-slate-50 border border-slate-100 px-2 py-0.5 rounded-md">
+                      <span className="text-[10px] text-slate-400 font-bold flex items-center gap-1.5 select-none">
                         <Calendar className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                         {proj.academic_year}
                       </span>
                     </div>
 
-                    <div className="space-y-2">
+                    <div className="space-y-1">
                       <h3 className="text-base font-extrabold text-slate-900 leading-snug">{proj.title}</h3>
                       <p className="text-xs text-slate-550 font-semibold leading-relaxed line-clamp-3">{proj.description}</p>
                     </div>
@@ -230,18 +287,20 @@ export default function ProjectArchivePage() {
                     <div className="flex flex-wrap gap-1.5 pt-1">
                       {proj.tech_stack.map(tech => (
                         <span key={tech} className={`border rounded-lg px-2.5 py-0.5 text-[8.5px] font-black uppercase select-none ${getTechColor(tech)}`}>
-                          {tech}
+                          {tech.toUpperCase()}
                         </span>
                       ))}
                     </div>
                   </div>
 
+                  <div className="border-t border-slate-100 mt-5 mb-4" />
+
                   {/* Roster / Contacts */}
-                  <div className="border-t border-slate-100 pt-5 mt-6 flex justify-between items-end gap-4">
+                  <div className="flex justify-between items-end gap-4">
                     <div className="space-y-2 flex-1 min-w-0">
-                      <div className="text-[9px] text-slate-400 font-black uppercase tracking-widest mb-1 flex items-center gap-1">
-                        <Tag className="w-3 h-3 text-slate-350" />
-                        Team Details
+                      <div className="text-[9px] text-slate-400 font-black uppercase tracking-widest mb-1 flex items-center gap-1.5">
+                        <Tag className="w-3.5 h-3.5 text-slate-450 shrink-0" />
+                        TEAM DETAILS
                       </div>
                       
                       <div className="space-y-1">
@@ -262,9 +321,9 @@ export default function ProjectArchivePage() {
                       </div>
                     </div>
 
-                    <div className="bg-emerald-50 border border-emerald-100 text-emerald-700 px-3.5 py-1.5 rounded-2xl text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5 select-none shadow-sm shrink-0">
+                    <div className="bg-emerald-50 border border-emerald-100 text-emerald-700 px-3.5 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider flex items-center gap-1 select-none shadow-sm shrink-0">
                       <Star className="w-3.5 h-3.5 fill-current text-emerald-500" />
-                      <span>Grade: {proj.grade}</span>
+                      <span>GRADE: {proj.grade}</span>
                     </div>
                   </div>
                 </motion.div>
