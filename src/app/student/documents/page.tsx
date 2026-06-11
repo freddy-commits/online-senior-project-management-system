@@ -351,7 +351,11 @@ export default function StudentDocumentsPage() {
                                 {/* Actions */}
                                 <div className="flex items-center gap-2 self-end sm:self-auto">
                                   <a
-                                    href={doc.fileName.startsWith('http') ? doc.fileName : '#'}
+                                    href={
+                                      doc.fileName.startsWith('http')
+                                        ? doc.fileName
+                                        : `/preview/document?file=${encodeURIComponent(doc.fileName)}&title=${encodeURIComponent(milestone.title)}`
+                                    }
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     title="Open Document"

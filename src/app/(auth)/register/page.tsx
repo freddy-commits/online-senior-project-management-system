@@ -126,14 +126,32 @@ export default function RegisterPage() {
     setLoading(true)
     setError('')
     try {
-      const supabase = createClient()
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider,
-        options: {
-          redirectTo: `${window.location.origin}/auth/callback`
-        }
-      })
-      if (error) throw error
+      const mockEmail = 
+        selectedRole === 'student' ? 'home@gmail.com' :
+        selectedRole === 'supervisor' ? 'monari@gmail.com' :
+        selectedRole === 'instructor' ? 'ssanch2311@ueab.ac.ke' :
+        selectedRole === 'industry' ? 'ben@gmail.com' : 'feed@gmail.com'
+
+      // Simulate a small delay for OAuth loading state
+      await new Promise(resolve => setTimeout(resolve, 800))
+
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('demo_mode', 'true')
+        localStorage.setItem('active_user_email', mockEmail)
+        document.cookie = `demo_role=${selectedRole}; path=/`
+      }
+
+      if (selectedRole === 'student') {
+        router.push('/student/dashboard')
+      } else if (selectedRole === 'instructor') {
+        router.push('/instructor/dashboard')
+      } else if (selectedRole === 'industry') {
+        router.push('/partner/dashboard')
+      } else if (selectedRole === 'supervisor') {
+        router.push('/supervisor/dashboard')
+      } else {
+        router.push('/admin')
+      }
     } catch (err: any) {
       console.error(`${provider} oauth failed:`, err.message || err)
       setError(err.message || 'OAuth authentication failed.')

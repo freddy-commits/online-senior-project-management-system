@@ -554,7 +554,11 @@ export default function SupervisorDocumentsClient({
                         <td className="py-4 px-5">
                           <div className="flex items-center justify-center gap-2">
                             <a 
-                              href={sub.submission_url} 
+                              href={
+                                sub.submission_url?.startsWith('http')
+                                  ? sub.submission_url
+                                  : `/preview/document?file=${encodeURIComponent(sub.submission_url)}&title=${encodeURIComponent(sub.document_title)}`
+                              } 
                               target="_blank" 
                               rel="noopener noreferrer"
                               className="p-2 border border-slate-200 bg-white hover:bg-slate-50 text-slate-500 hover:text-slate-800 rounded-xl transition-all shadow-sm"
