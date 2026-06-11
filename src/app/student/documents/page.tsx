@@ -151,6 +151,15 @@ export default function StudentDocumentsPage() {
     return acc
   }, {})
 
+  // Sort groups: milestones with documents first (by due_date), then empty milestones (by due_date)
+  const sortedGroupedDocs = Object.values(groupedDocs).sort((a, b) => {
+    const hasA = a.docs.length > 0
+    const hasB = b.docs.length > 0
+    if (hasA && !hasB) return -1
+    if (!hasA && hasB) return 1
+    return new Date(a.milestone.due_date).getTime() - new Date(b.milestone.due_date).getTime()
+  })
+
   // ── loading ──────────────────────────────────────────────────────────────────
   if (loading) {
     return (
@@ -248,7 +257,7 @@ export default function StudentDocumentsPage() {
           </div>
         ) : (
           <div className="space-y-3">
-            {Object.values(groupedDocs).map(({ milestone, docs: mDocs }, idx) => {
+            {sortedGroupedDocs.map(({ milestone, docs: mDocs }, idx) => {
               const isOpen = expandedGroups[milestone.id] ?? true
               const hasDocs = mDocs.length > 0
               return (
