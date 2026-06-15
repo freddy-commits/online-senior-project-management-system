@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { redirect } from 'next/navigation'
 import SupervisorMilestonesClient from '@/components/dashboard/SupervisorMilestonesClient'
 
@@ -10,9 +11,21 @@ export default async function SupervisorMilestonesPage() {
     redirect('/login')
   }
 
-  let enrichedDeliverables: any[] = []
+  // Verify the user is a supervisor
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('id', user.id)
+    .single()
 
-  const { data: projs } = await supabase
+  if (!profile || profile.role !== 'supervisor') {
+    redirect('/login')
+  }
+
+  let enrichedDeliverables: any[] = []
+  const adminClient = createAdminClient()
+
+  const { data: projs } = await adminClient
     .from('projects')
     .select('id, title')
     .eq('instructor_id', user.id)
@@ -21,7 +34,7 @@ export default async function SupervisorMilestonesPage() {
 
   if (projectsList.length > 0) {
     const deliverablesPromises = projectsList.map(async (proj: any) => {
-      const { data: delivs, error } = await supabase
+      const { data: delivs, error } = await adminClient
         .from('deliverables')
         .select('*')
         .eq('project_id', proj.id)
@@ -42,7 +55,7 @@ export default async function SupervisorMilestonesPage() {
     enrichedDeliverables = results.flat()
   }
 
-  console.log('SERVER MILESTONES FETCH:', {
+  console.log('SERVER MILESTONES FETCH (ADMIN CLIENT):', {
     userId: user.id,
     projectsCount: projectsList.length,
     projectsList,
@@ -51,3 +64,4 @@ export default async function SupervisorMilestonesPage() {
 
   return <SupervisorMilestonesClient initialDeliverables={enrichedDeliverables} />
 }
+

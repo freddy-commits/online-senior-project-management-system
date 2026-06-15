@@ -433,7 +433,6 @@ export default function StudentMilestonesPage() {
     }
   }
 
-  const firstTodoIndex = deliverables.findIndex(d => d.status === 'todo')
   const getMilestoneState = (index: number, deliv: any) => {
     if (deliv.status === 'graded') {
       return 'completed'
@@ -441,7 +440,7 @@ export default function StudentMilestonesPage() {
     if (deliv.status === 'submitted') {
       return 'active'
     }
-    if (index === firstTodoIndex) {
+    if (deliv.status === 'todo') {
       return 'active'
     }
     return 'locked'
@@ -893,7 +892,7 @@ export default function StudentMilestonesPage() {
                               <h3 className="text-md font-bold text-slate-800 leading-snug">{deliv.title}</h3>
                               {score && (
                                 <span className="text-[9px] font-black uppercase tracking-widest text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-100">
-                                  SCORE: {score}
+                                  MARK: {score}
                                 </span>
                               )}
                             </div>
@@ -977,7 +976,7 @@ export default function StudentMilestonesPage() {
                     <CheckCircle2 className="w-8 h-8 text-emerald-600 bg-emerald-100 rounded-xl flex items-center justify-center p-1.5 shrink-0" />
                     <div className="overflow-hidden">
                       <span className="text-[10px] text-emerald-800 font-black uppercase block tracking-wider leading-none mb-1">Milestone Evaluated</span>
-                      <span className="text-[11px] text-slate-600 font-bold block truncate">Grade: {selectedMilestone.grade || 'A'}</span>
+                      <span className="text-[11px] text-slate-600 font-bold block truncate">Mark: {selectedMilestone.grade || 'Pending'}</span>
                     </div>
                   </div>
                 ) : null}

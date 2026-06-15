@@ -507,7 +507,17 @@ export default function InstructorDashboardClient({
                       </div>
 
                       <div>
-                        <h3 className="text-base font-black text-slate-900 leading-snug line-clamp-2">{project.title}</h3>
+                        {project.status === 'approved' ? (
+                          <a 
+                            href={`/instructor/projects/${project.id}`}
+                            className="text-base font-black text-slate-900 leading-snug line-clamp-2 hover:text-indigo-650 transition-colors block"
+                            title="View Project Milestones & Supervisor Marks"
+                          >
+                            {project.title}
+                          </a>
+                        ) : (
+                          <h3 className="text-base font-black text-slate-900 leading-snug line-clamp-2">{project.title}</h3>
+                        )}
                         <p className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wide mt-1.5">
                           Track: {project.origin === 'industry' ? 'Industry brief' : 'Academic solo'}
                         </p>
@@ -677,7 +687,13 @@ export default function InstructorDashboardClient({
                     {projects.filter(p => p.status === 'approved').map((p) => (
                       <tr key={p.id} className="hover:bg-slate-50/40 transition-colors">
                         <td className="py-4 px-6">
-                          <span className="font-bold text-slate-900 block">{p.title}</span>
+                          <a 
+                            href={`/instructor/projects/${p.id}`}
+                            className="font-bold text-slate-900 hover:text-indigo-600 transition-colors block"
+                            title="View Project Milestones & Supervisor Marks"
+                          >
+                            {p.title}
+                          </a>
                           <span className="text-[10px] text-slate-400 font-bold uppercase">{p.student?.full_name}</span>
                         </td>
                         <td className="py-4 px-6">{p.supervisor?.full_name || 'Unassigned'}</td>

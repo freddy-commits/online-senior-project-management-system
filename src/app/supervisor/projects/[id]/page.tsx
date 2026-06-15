@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { createClient } from '@/lib/supabase/client'
 import { useParams, useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import { 
@@ -16,6 +15,12 @@ import {
   Lock,
   X
 } from 'lucide-react'
+import { 
+  getSupervisorProjectDetails, 
+  getSupervisorProjectDeliverables, 
+  supervisorGradeDeliverableAction, 
+  supervisorSubmitFeedbackAction 
+} from '../actions'
 
 export default function SupervisorReviewPage() {
   const { id } = useParams()
@@ -25,41 +30,25 @@ export default function SupervisorReviewPage() {
   const [loading, setLoading] = useState(true)
   const [processing, setProcessing] = useState(false)
   const [successMsg, setSuccessMsg] = useState('')
-  
-  const supabase = createClient()
 
   useEffect(() => {
     async function fetchData() {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return router.push('/login')
-
-      let projData = null
-      let delivData = null
+      if (!id) return
       
-      try {
-        const { data: proj, error: projErr } = await supabase
-          .from('projects')
-          .select('*, student:student_id(full_name, email), instructor:instructor_id(full_name, email)')
-          .eq('id', id)
-          .single()
-        
-        if (projErr) throw projErr
-        projData = proj
-
-        const { data: deliv, error: delivErr } = await supabase
-          .from('deliverables')
-          .select('*')
-          .eq('project_id', id)
-          .order('due_date', { ascending: true })
-          
-        if (delivErr) throw delivErr
-        delivData = deliv
-      } catch (err) {
-        console.error('Supabase fetch failed:', err)
+      const projRes = await getSupervisorProjectDetails(id as string)
+      if (!projRes.success) {
+        console.error('Fetch project failed:', projRes.error)
+        setLoading(false)
+        return
       }
 
-      setProject(projData)
-      setDeliverables(delivData || [])
+      const delivRes = await getSupervisorProjectDeliverables(id as string)
+      if (!delivRes.success) {
+        console.error('Fetch deliverables failed:', delivRes.error)
+      }
+
+      setProject(projRes.project)
+      setDeliverables(delivRes.deliverables || [])
       setLoading(false)
     }
     fetchData()
@@ -68,19 +57,15 @@ export default function SupervisorReviewPage() {
   async function handleGradeSubmission(delivId: string, grade: string) {
     if (!grade) return
     setProcessing(true)
-    try {
-      const { error } = await supabase
-        .from('deliverables')
-        .update({ grade, status: 'graded' })
-        .eq('id', delivId)
-      if (error) throw new Error(error.message)
-
+    
+    const res = await supervisorGradeDeliverableAction(delivId, grade)
+    if (res.success) {
       setDeliverables(deliverables.map(d => d.id === delivId ? { ...d, grade, status: 'graded' } : d))
       setSuccessMsg('Grade submitted successfully!')
       setTimeout(() => setSuccessMsg(''), 5000)
-    } catch (dbErr: any) {
-      console.error('Supabase grading update failed:', dbErr)
-      alert('Failed to update grade: ' + dbErr.message)
+    } else {
+      console.error('Grading update failed:', res.error)
+      alert('Failed to update grade: ' + res.error)
     }
     setProcessing(false)
   }
@@ -90,37 +75,29 @@ export default function SupervisorReviewPage() {
     setProcessing(true)
     
     const delivItem = deliverables.find(d => d.id === delivId)
-    if (!delivItem || !project) return
+    if (!delivItem || !project) {
+      setProcessing(false)
+      return
+    }
 
-    try {
-      const { data: { user } } = await supabase.auth.getUser()
-      
-      // 1. Insert recommendation comment message to the student
-      const { error: msgErr } = await supabase.from('messages').insert({
-        sender_id: user?.id,
-        receiver_id: project.student_id,
-        content: `[Supervisor Recommendation] Milestone "${delivItem.title}": ${feedback}`
-      })
-      if (msgErr) throw msgErr
+    const res = await supervisorSubmitFeedbackAction(
+      delivId, 
+      feedback, 
+      project.student_id, 
+      project.title, 
+      delivItem.title
+    )
 
-      // 2. Insert notification
-      const { error: notifErr } = await supabase.from('notifications').insert({
-        user_id: project.student_id,
-        title: `New Recommendation on ${delivItem.title}`,
-        message: `Your supervisor added recommendations: "${feedback.slice(0, 80)}..."`,
-        type: 'system'
-      })
-      if (notifErr) throw notifErr
-
+    if (res.success) {
       // Clear the textarea
       const textarea = document.getElementById(`recommend-${delivId}`) as HTMLTextAreaElement
       if (textarea) textarea.value = ''
       
       setSuccessMsg('Supervisor Recommendation sent successfully!')
       setTimeout(() => setSuccessMsg(''), 5000)
-    } catch (dbErr: any) {
-      console.error('Supabase feedback submission failed:', dbErr)
-      alert('Failed to submit recommendation: ' + dbErr.message)
+    } else {
+      console.error('Feedback submission failed:', res.error)
+      alert('Failed to submit recommendation: ' + res.error)
     }
     setProcessing(false)
   }
@@ -192,8 +169,9 @@ export default function SupervisorReviewPage() {
           </h2>
           
           <div className="space-y-4">
-            {deliverables.length > 0 ? deliverables.map((item) => (
-              <div key={item.id} className="bg-white border border-slate-150 rounded-[2.25rem] p-6 shadow-sm hover:shadow-md transition-all">
+            {deliverables.filter(item => item.status !== 'todo').length > 0 ?
+              deliverables.filter(item => item.status !== 'todo').map((item) => (
+                <div key={item.id} className="bg-white border border-slate-150 rounded-[2.25rem] p-6 shadow-sm hover:shadow-md transition-all">
                 <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-5 pb-5 border-b border-slate-50">
                   <div className="flex gap-4">
                     <div className="w-12 h-12 rounded-2xl bg-slate-50 border border-slate-150 flex items-center justify-center text-slate-400 shrink-0">
@@ -241,7 +219,7 @@ export default function SupervisorReviewPage() {
                 <div className="space-y-4">
                   {item.status === 'graded' ? (
                     <div className="flex items-center justify-between p-3.5 bg-indigo-50 border border-indigo-100 rounded-xl">
-                      <span className="text-xs font-black text-indigo-700 uppercase tracking-wider">Final Milestone Grade</span>
+                      <span className="text-xs font-black text-indigo-700 uppercase tracking-wider">Milestone Mark</span>
                       <span className="font-black text-lg text-indigo-800">{item.grade}</span>
                     </div>
                   ) : (
@@ -273,19 +251,27 @@ export default function SupervisorReviewPage() {
                           <div className="flex gap-2">
                             <input 
                               id={`grade-${item.id}`}
-                              placeholder="Grade (A, B...)"
-                              maxLength={3}
-                              className="w-24 bg-white border border-slate-250 focus:border-indigo-500 rounded-xl px-3 py-2 text-xs font-bold text-center focus:outline-none"
+                              type="number"
+                              min="0"
+                              max="20"
+                              step="0.5"
+                              placeholder="Mark (0-20)"
+                              className="w-28 bg-white border border-slate-250 focus:border-indigo-500 rounded-xl px-3 py-2 text-xs font-bold text-center focus:outline-none"
                             />
                             <button 
                               onClick={() => {
                                 const val = (document.getElementById(`grade-${item.id}`) as HTMLInputElement).value
+                                const numeric = parseFloat(val)
+                                if (isNaN(numeric) || numeric < 0 || numeric > 20) {
+                                  alert('Please enter a valid mark between 0 and 20.')
+                                  return
+                                }
                                 handleGradeSubmission(item.id, val)
                               }}
                               disabled={processing}
                               className="px-6 py-2.5 bg-indigo-700 hover:bg-indigo-800 text-white rounded-xl font-black text-xs uppercase tracking-wider shadow-sm transition-all cursor-pointer shrink-0"
                             >
-                              Grade
+                              Award Mark
                             </button>
                           </div>
                         )}
@@ -296,7 +282,7 @@ export default function SupervisorReviewPage() {
               </div>
             )) : (
               <div className="p-16 border-2 border-dashed border-slate-200 rounded-[2.25rem] text-center text-slate-400 font-bold text-xs bg-slate-50/30">
-                Waiting for student to schedule or upload project milestones.
+                Waiting for student to upload and submit project milestones.
               </div>
             )}
           </div>

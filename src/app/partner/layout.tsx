@@ -5,7 +5,6 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import { createClient } from '@/lib/supabase/client'
-import SandboxToolbar from '@/components/dashboard/SandboxToolbar'
 import { 
   LayoutDashboard, 
   Lightbulb, 
@@ -187,7 +186,6 @@ export default function PartnerLayout({ children }: { children: React.ReactNode 
       <main className="flex-1 overflow-y-auto p-8 custom-scrollbar">
         {children}
       </main>
-      <SandboxToolbar />
     </div>
   )
 }

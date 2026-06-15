@@ -399,31 +399,12 @@ export default function InstructorReviewPage() {
                           className="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-sm focus:ring-1 focus:ring-blue-500 outline-none resize-none text-white"
                           rows={2}
                         />
-                        
-                        <div className="flex gap-3">
-                          <button 
-                            onClick={() => handleFeedbackSubmission(item.id, (document.getElementById(`recommend-${item.id}`) as HTMLTextAreaElement).value)}
-                            className="flex-1 py-2 bg-white/5 hover:bg-white/10 rounded-xl text-xs font-bold transition-all border border-white/10 text-white"
-                          >
-                            Send Recommendation
-                          </button>
-                          
-                          {(item.title.toLowerCase().includes('final') || item.title.toLowerCase().includes('report') || item.title.toLowerCase().includes('proposal') || item.status === 'submitted') && (
-                            <div className="flex gap-2">
-                              <input 
-                                id={`grade-${item.id}`}
-                                placeholder="Grade (A, B, C...)"
-                                className="w-24 bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-sm focus:outline-none text-white"
-                              />
-                              <button 
-                                onClick={() => handleGradeSubmission(item.id, (document.getElementById(`grade-${item.id}`) as HTMLInputElement).value)}
-                                className="px-6 py-2 bg-green-600 hover:bg-green-500 rounded-xl font-bold text-sm shadow-lg shadow-green-600/20 transition-all text-white"
-                              >
-                                Submit Grade
-                              </button>
-                            </div>
-                          )}
-                        </div>
+                        <button
+                          onClick={() => handleFeedbackSubmission(item.id, (document.getElementById(`recommend-${item.id}`) as HTMLTextAreaElement)?.value)}
+                          className="self-end px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-bold text-xs transition-all"
+                        >
+                          Send Recommendation
+                        </button>
                       </>
                     )}
                   </div>

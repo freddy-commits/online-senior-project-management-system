@@ -52,17 +52,38 @@ export async function supervisorUpdateDeliverableStatus(
   feedback: string
 ) {
   try {
+    let formattedGrade: string | null = null
+    if (status === 'graded') {
+      if (!grade) {
+        return { success: false, error: 'A numeric mark out of 20 is required.' }
+      }
+      let numericGrade = parseFloat(grade)
+      if (isNaN(numericGrade) || numericGrade < 0 || numericGrade > 20) {
+        const match = grade.match(/^(\d+(?:\.\d+)?)\/20$/)
+        if (match) {
+          numericGrade = parseFloat(match[1])
+          if (isNaN(numericGrade) || numericGrade < 0 || numericGrade > 20) {
+            return { success: false, error: 'Mark must be between 0 and 20.' }
+          }
+        } else {
+          return { success: false, error: 'Mark must be between 0 and 20.' }
+        }
+      }
+      formattedGrade = `${numericGrade}/20`
+    }
+
     const adminClient = createAdminClient()
     const { data, error } = await adminClient
       .from('deliverables')
       .update({
         status: status,
-        grade: status === 'graded' ? grade : null,
+        grade: status === 'graded' ? formattedGrade : null,
         recommendation: feedback,
         updated_at: new Date().toISOString()
       })
       .eq('id', deliverableId)
       .select()
+
 
     if (error) throw error
 

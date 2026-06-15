@@ -103,66 +103,7 @@ export default function RegisterPage() {
       }
 
     } catch (err: any) {
-      console.warn('Registration attempt failed (expected if offline/unconfigured), trying sandbox fallback:', err.message || err)
-      
-      const isAlreadyExists = err.message && (
-        err.message.includes('already exists') || 
-        err.message.includes('already been registered')
-      )
-
-      // Fall back to sandbox/mock register on network errors, missing configurations,
-      // database/SMTP errors, or any registration failure (to bypass blocking the user).
-      if (!isAlreadyExists) {
-        console.warn("Registration or configuration issue encountered. Falling back to sandbox/mock register.")
-        try {
-          const { createMockClient } = await import('@/lib/supabase/mockClient')
-          const mockClient = createMockClient()
-          
-          const { data: authData, error: mockAuthError } = await mockClient.auth.signUp({ 
-            email, 
-            password,
-            options: {
-              data: {
-                full_name: fullName,
-                role: selectedRole
-              }
-            }
-          })
-
-          if (mockAuthError) {
-            throw mockAuthError
-          }
-
-          // Save active user email and demo mode in localStorage
-          if (typeof window !== 'undefined') {
-            localStorage.setItem('demo_mode', 'true')
-            localStorage.setItem('active_user_email', email)
-            document.cookie = `demo_role=${selectedRole}; path=/`
-            document.cookie = `active_user_email=${email}; path=/`
-            document.cookie = `demo_mode=true; path=/`
-          }
-
-          // Redirect to appropriate dashboard based on selectedRole
-          if (selectedRole === 'student') {
-            router.push('/student/dashboard')
-          } else if (selectedRole === 'instructor') {
-            router.push('/instructor/dashboard')
-          } else if (selectedRole === 'industry') {
-            router.push('/partner/dashboard')
-          } else if (selectedRole === 'supervisor') {
-            router.push('/supervisor/dashboard')
-          } else {
-            router.push('/admin')
-          }
-          return
-        } catch (mockErr: any) {
-          console.error("Mock registration fallback failed:", mockErr)
-          setError(`Network is unreachable. Sandbox fallback failed: ${mockErr.message || mockErr}`)
-          setLoading(false)
-          return
-        }
-      }
-
+      console.error('Registration attempt failed:', err.message || err)
       setError(err.message || 'Registration failed. Please try again.')
     } finally {
       setLoading(false)
@@ -173,34 +114,14 @@ export default function RegisterPage() {
     setLoading(true)
     setError('')
     try {
-      const mockEmail = 
-        selectedRole === 'student' ? 'home@gmail.com' :
-        selectedRole === 'supervisor' ? 'monari@gmail.com' :
-        selectedRole === 'instructor' ? 'ssanch2311@ueab.ac.ke' :
-        selectedRole === 'industry' ? 'ben@gmail.com' : 'feed@gmail.com'
-
-      // Simulate a small delay for OAuth loading state
-      await new Promise(resolve => setTimeout(resolve, 800))
-
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('demo_mode', 'true')
-        localStorage.setItem('active_user_email', mockEmail)
-        document.cookie = `demo_role=${selectedRole}; path=/`
-        document.cookie = `active_user_email=${mockEmail}; path=/`
-        document.cookie = `demo_mode=true; path=/`
-      }
-
-      if (selectedRole === 'student') {
-        router.push('/student/dashboard')
-      } else if (selectedRole === 'instructor') {
-        router.push('/instructor/dashboard')
-      } else if (selectedRole === 'industry') {
-        router.push('/partner/dashboard')
-      } else if (selectedRole === 'supervisor') {
-        router.push('/supervisor/dashboard')
-      } else {
-        router.push('/admin')
-      }
+      const supabase = createClient()
+      const { error: oauthError } = await supabase.auth.signInWithOAuth({
+        provider,
+        options: {
+          redirectTo: `${window.location.origin}/api/auth/confirm`
+        }
+      })
+      if (oauthError) throw oauthError
     } catch (err: any) {
       console.error(`${provider} oauth failed:`, err.message || err)
       setError(err.message || 'OAuth authentication failed.')

@@ -1,7 +1,6 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
-const VALID_DEMO_ROLES = ['student', 'instructor', 'supervisor', 'industry', 'admin']
 
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({
@@ -41,16 +40,7 @@ export async function updateSession(request: NextRequest) {
     path.startsWith('/api') ||
     path.startsWith('/preview')
 
-  // ── Demo / OAuth-mock mode ─────────────────────────────────────────────────
-  // If the request carries a valid demo_role cookie (set by the Google/GitHub
-  // mock OAuth handler), let the user through without requiring a real Supabase
-  // session. This makes the "Continue with Google" / "Continue with GitHub"
-  // buttons fully functional in the local-dev / demo environment.
-  const demoRole = request.cookies.get('demo_role')?.value
-  if (demoRole && VALID_DEMO_ROLES.includes(demoRole)) {
-    // Already authenticated via demo — allow through
-    return supabaseResponse
-  }
+
 
   // ── Real Supabase session check ────────────────────────────────────────────
   const {

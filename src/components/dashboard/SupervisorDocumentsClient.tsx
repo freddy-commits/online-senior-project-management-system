@@ -688,22 +688,24 @@ export default function SupervisorDocumentsClient({
                 <X className="w-4.5 h-4.5" />
               </button>
 
-              <div className="space-y-2">
+              <div className="space-y-2 mt-4">
                 <h3 className="text-lg font-black text-slate-900 tracking-tight leading-snug">Approve Submission</h3>
                 <p className="text-xs text-slate-500 font-semibold leading-relaxed">
                   Reviewing <strong>{selectedSub.document_title}</strong> by <strong>{selectedSub.student_name}</strong>.
                 </p>
               </div>
 
-              <div className="bg-slate-50 border border-slate-150 rounded-2xl p-4 flex flex-col gap-3">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Award Milestone Grade (Optional)</label>
+              <div className="bg-slate-50 border border-slate-150 rounded-2xl p-4 flex flex-col gap-3 mt-4">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Award Milestone Mark (0-20)</label>
                 <div className="flex gap-3">
                   <input
-                    type="text"
-                    placeholder="e.g. A, B+, Pass"
+                    type="number"
+                    min="0"
+                    max="20"
+                    step="0.5"
+                    placeholder="e.g. 18"
                     value={gradeInput}
                     onChange={(e) => setGradeInput(e.target.value)}
-                    maxLength={10}
                     className="flex-1 bg-white border border-slate-250 focus:border-indigo-500 rounded-xl px-4 py-2.5 text-xs font-bold focus:outline-none"
                   />
                 </div>
@@ -721,14 +723,22 @@ export default function SupervisorDocumentsClient({
                   Cancel
                 </button>
                 <button
-                  onClick={() => handleUpdateDeliverable('graded', 'APPROVED', gradeInput || 'PASSED')}
-                  disabled={actionProcessing}
+                  onClick={() => {
+                    const numeric = parseFloat(gradeInput)
+                    if (isNaN(numeric) || numeric < 0 || numeric > 20) {
+                      alert('Please enter a valid mark between 0 and 20.')
+                      return
+                    }
+                    handleUpdateDeliverable('graded', 'APPROVED', gradeInput)
+                  }}
+                  disabled={actionProcessing || !gradeInput}
                   className="flex-1 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-black uppercase tracking-wider shadow-sm transition-all flex items-center justify-center gap-1.5 cursor-pointer disabled:bg-slate-300 disabled:cursor-not-allowed"
                 >
                   {actionProcessing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
                   Confirm Approval
                 </button>
               </div>
+
             </motion.div>
           </div>
         )}

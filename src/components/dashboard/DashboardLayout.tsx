@@ -5,7 +5,6 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
 import { createClient } from '@/lib/supabase/client'
-import SandboxToolbar from './SandboxToolbar'
 import { 
   LayoutDashboard, 
   FolderKanban, 
@@ -198,7 +197,6 @@ export default function DashboardLayout({ children, role, userName }: DashboardL
           {children}
         </div>
       </main>
-      <SandboxToolbar />
     </div>
   )
 }

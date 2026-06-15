@@ -417,12 +417,14 @@ export default function InstructorDocumentsClient({
     if (!selectedSub) return
     setActionProcessing(true)
 
+    const gradeToSubmit = selectedSub.type === 'Final document' ? gradeInput : selectedSub.grade || null
+
     // Call server action to update Supabase
-    const res = await updateDeliverableStatusAdmin(selectedSub.id, status, gradeInput, feedbackInput)
+    const res = await updateDeliverableStatusAdmin(selectedSub.id, status, gradeToSubmit, feedbackInput)
 
     // If this is a final document (Final submission) and approved, write this grade to the projects table too
-    if (selectedSub.type === 'Final document' && status === 'graded' && gradeInput) {
-      await updateProjectGradeAdmin(selectedSub.project_id, gradeInput)
+    if (selectedSub.type === 'Final document' && status === 'graded' && gradeToSubmit) {
+      await updateProjectGradeAdmin(selectedSub.project_id, gradeToSubmit)
     }
 
     // Sync sandbox fallback
@@ -437,16 +439,16 @@ export default function InstructorDocumentsClient({
               return {
                 ...d,
                 status: status,
-                grade: status === 'graded' ? gradeInput : '',
+                grade: status === 'graded' ? gradeToSubmit : '',
                 feedback: feedbackInput,
                 updated_at: new Date().toISOString()
               }
             }
             return d
           })
-          if (selectedSub.type === 'Final document' && status === 'graded' && gradeInput) {
+          if (selectedSub.type === 'Final document' && status === 'graded' && gradeToSubmit) {
             parsed.projects = parsed.projects.map((p: any) => 
-              p.id === selectedSub.project_id ? { ...p, grade: gradeInput, grade_published: true } : p
+              p.id === selectedSub.project_id ? { ...p, grade: gradeToSubmit, grade_published: true } : p
             )
           }
           localStorage.setItem(storageKey, JSON.stringify(parsed))
@@ -464,7 +466,7 @@ export default function InstructorDocumentsClient({
 
     if (res.success) {
       showToast(status === 'graded' 
-        ? `Successfully reviewed & graded "${selectedSub.document_title}"!` 
+        ? `Successfully reviewed "${selectedSub.document_title}"!` 
         : `Requested revisions on "${selectedSub.document_title}".`
       )
       
@@ -474,7 +476,7 @@ export default function InstructorDocumentsClient({
           return {
             ...d,
             status: status,
-            grade: status === 'graded' ? gradeInput : '',
+            grade: status === 'graded' ? (selectedSub.type === 'Final document' ? gradeInput : selectedSub.grade) : '',
             feedback: feedbackInput
           }
         }
@@ -495,7 +497,7 @@ export default function InstructorDocumentsClient({
           return {
             ...d,
             status: status,
-            grade: status === 'graded' ? gradeInput : '',
+            grade: status === 'graded' ? (selectedSub.type === 'Final document' ? gradeInput : selectedSub.grade) : '',
             feedback: feedbackInput
           }
         }
@@ -1057,19 +1059,30 @@ export default function InstructorDocumentsClient({
                   </a>
                 </div>
 
-                {/* Score Input */}
-                <div className="space-y-2">
-                  <label className="block text-xs font-black uppercase tracking-wider text-slate-400">
-                    {selectedSub.type === 'Final document' ? 'Assign Course Grade (Final)' : 'Grade Score / Marks'}
-                  </label>
-                  <input
-                    type="text"
-                    placeholder={selectedSub.type === 'Final document' ? "e.g. A, B+, A-" : "e.g. 85/100, A, B+"}
-                    value={gradeInput}
-                    onChange={(e) => setGradeInput(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-xs font-bold text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-400/30 focus:border-indigo-500 transition-all"
-                  />
-                </div>
+                {/* Score Input / View */}
+                {selectedSub.type === 'Final document' ? (
+                  <div className="space-y-2">
+                    <label className="block text-xs font-black uppercase tracking-wider text-slate-400">
+                      Assign Course Grade (Final)
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="e.g. A, B+, A-"
+                      value={gradeInput}
+                      onChange={(e) => setGradeInput(e.target.value)}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-xs font-bold text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-400/30 focus:border-indigo-500 transition-all"
+                    />
+                  </div>
+                ) : (
+                  <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl">
+                    <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 block mb-1">
+                      Milestone Mark (Awarded by Supervisor)
+                    </span>
+                    <span className="text-sm font-bold text-slate-700">
+                      {selectedSub.grade ? `${selectedSub.grade}` : 'No mark awarded yet by supervisor'}
+                    </span>
+                  </div>
+                )}
 
                 {/* Feedback Input */}
                 <div className="space-y-2">
@@ -1158,7 +1171,9 @@ export default function InstructorDocumentsClient({
                 {/* Score display/input */}
                 <div className="grid grid-cols-2 gap-4">
                   <div className="p-4 bg-emerald-50/40 border border-emerald-100 rounded-2xl">
-                    <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 block mb-1">Grade Score</span>
+                    <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 block mb-1">
+                      {selectedSub.type === 'Final document' ? 'Course Grade' : 'Milestone Mark'}
+                    </span>
                     <span className="text-2xl font-black text-[#065F46]">{selectedSub.grade || 'N/A'}</span>
                   </div>
                   <div className="p-4 bg-slate-50 border border-slate-250/50 rounded-2xl flex flex-col justify-center">
@@ -1168,17 +1183,19 @@ export default function InstructorDocumentsClient({
                 </div>
 
                 {/* Grade editing form if needed */}
-                <div className="space-y-2">
-                  <label className="block text-xs font-black uppercase tracking-wider text-slate-400">
-                    Edit Grade / Score
-                  </label>
-                  <input
-                    type="text"
-                    value={gradeInput}
-                    onChange={(e) => setGradeInput(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-xs font-bold text-slate-800 focus:outline-none focus:ring-1 focus:ring-indigo-500 transition-all"
-                  />
-                </div>
+                {selectedSub.type === 'Final document' && (
+                  <div className="space-y-2">
+                    <label className="block text-xs font-black uppercase tracking-wider text-slate-400">
+                      Edit Course Grade
+                    </label>
+                    <input
+                      type="text"
+                      value={gradeInput}
+                      onChange={(e) => setGradeInput(e.target.value)}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-xs font-bold text-slate-800 focus:outline-none focus:ring-1 focus:ring-indigo-500 transition-all"
+                    />
+                  </div>
+                )}
 
                 {/* Feedback notes */}
                 <div className="space-y-2">

@@ -31,6 +31,11 @@ class MockQueryBuilder {
     return this
   }
 
+  in(column: string, values: any[]) {
+    this.filters.push(item => Array.isArray(values) && values.includes(item[column]))
+    return this
+  }
+
   or(expr: string) {
     // Example: and(sender_id.eq.id,receiver_id.eq.id),and(sender_id.eq.id,receiver_id.eq.id)
     this.filters.push(item => {

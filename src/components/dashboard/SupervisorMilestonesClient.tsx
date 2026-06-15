@@ -17,11 +17,12 @@ export default function SupervisorMilestonesClient({
 }: { 
   initialDeliverables: Deliverable[] 
 }) {
-  const [deliverables] = useState<Deliverable[]>(initialDeliverables || [])
+  const [deliverables] = useState<Deliverable[]>(
+    (initialDeliverables || []).filter(d => d.status !== 'todo')
+  )
 
   const pendingCount = deliverables.filter(d => d.status === 'submitted').length
   const gradedCount = deliverables.filter(d => d.status === 'graded').length
-  const todoCount = deliverables.filter(d => d.status === 'todo').length
 
   return (
     <div className="max-w-6xl mx-auto p-8 pb-20 text-slate-800 font-sans">
@@ -33,7 +34,7 @@ export default function SupervisorMilestonesClient({
         <p className="text-xs text-slate-500 font-medium">Track student upload milestones and review pending submissions.</p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
         <div className="bg-white border border-slate-200 rounded-3xl p-5 shadow-sm">
           <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">Pending Review</span>
           <span className="text-2xl font-black text-amber-600">{pendingCount}</span>
@@ -41,10 +42,6 @@ export default function SupervisorMilestonesClient({
         <div className="bg-white border border-slate-200 rounded-3xl p-5 shadow-sm">
           <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">Graded Milestones</span>
           <span className="text-2xl font-black text-indigo-700">{gradedCount}</span>
-        </div>
-        <div className="bg-white border border-slate-200 rounded-3xl p-5 shadow-sm">
-          <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">Todo Items</span>
-          <span className="text-2xl font-black text-slate-600">{todoCount}</span>
         </div>
       </div>
 

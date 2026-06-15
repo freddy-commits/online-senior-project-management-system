@@ -3,8 +3,11 @@
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Users, Mail, Phone, ExternalLink, Loader2 } from 'lucide-react'
+import { useTrack } from '@/components/providers/TrackProvider'
 
 export default function SupervisorTeamsPage() {
+  const { trackMode } = useTrack()
+  const isIndustry = trackMode === 'industry' || trackMode === 'partner'
   const [teams, setTeams] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const supabase = createClient()
@@ -64,6 +67,11 @@ export default function SupervisorTeamsPage() {
     fetchTeams()
   }, [])
 
+  const displayedTeams = teams.filter((team) => {
+    const isTeamIndustry = !!team.partner || !!team.industry_partner_id
+    return isIndustry ? isTeamIndustry : !isTeamIndustry
+  })
+
   return (
     <div className="max-w-6xl mx-auto p-8 pb-20 text-slate-800 font-sans">
       <div className="mb-8 space-y-1">
@@ -78,13 +86,13 @@ export default function SupervisorTeamsPage() {
         <div className="flex justify-center items-center py-10">
           <Loader2 className="w-6 h-6 text-indigo-600 animate-spin" />
         </div>
-      ) : teams.length === 0 ? (
+      ) : displayedTeams.length === 0 ? (
         <div className="text-center py-16 border-2 border-dashed border-slate-200 rounded-[2.25rem] text-slate-400 font-bold text-xs bg-slate-50/30">
-          No teams assigned to you yet.
+          No {isIndustry ? 'industry' : 'capstone'} teams assigned to you yet.
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {teams.map((team) => (
+          {displayedTeams.map((team) => (
             <div key={team.id} className="bg-white border border-slate-150 rounded-[2.25rem] p-6 shadow-sm flex flex-col justify-between hover:shadow-md transition-all">
               <div className="space-y-4">
                 <div className="flex justify-between items-start">
