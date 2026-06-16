@@ -63,7 +63,7 @@ export default function StudentTeamsClient() {
   const [team, setTeam] = useState<Team | null>(null)
   const [members, setMembers] = useState<any[]>([])
   const [project, setProject] = useState<Project | null>(null)
-  const [currentUser, setCurrentUser] = useState<{ full_name: string; email: string } | null>(null)
+  const [currentUser, setCurrentUser] = useState<{ id: string; full_name: string; email: string } | null>(null)
   
   // Custom states for interactive collaboration tools
   const [activeTab, setActiveTab] = useState<'roster' | 'chat' | 'scheduler' | 'guidelines'>('roster')
@@ -73,37 +73,131 @@ export default function StudentTeamsClient() {
   ])
   const [newMessage, setNewMessage] = useState('')
   
-  const [meetings, setMeetings] = useState<any[]>([
-    { id: 'm1', title: 'Sprint Planning Sync', date: 'June 08, 2026', time: '2:00 PM - 3:00 PM', type: 'Virtual (Google Meet)' },
-    { id: 'm2', title: 'Weekly Mentor Review', date: 'June 11, 2026', time: '11:00 AM - 12:00 PM', type: 'Office Sync' }
-  ])
+  const [meetings, setMeetings] = useState<any[]>([])
   const [newMeetingTitle, setNewMeetingTitle] = useState('')
   const [newMeetingDate, setNewMeetingDate] = useState('')
   const [newMeetingTime, setNewMeetingTime] = useState('')
 
-  const [repoUrl, setRepoUrl] = useState('https://github.com/alexcarter/ai-healthcare-dashboard')
+  // Per-student GitHub URL (sourced from Supabase profile, then project, then localStorage)
+  const [repoUrl, setRepoUrl] = useState('')
+  const [repoSaving, setRepoSaving] = useState(false)
+  const [repoSaved, setRepoSaved] = useState(false)
   const [slackUrl, setSlackUrl] = useState('https://slack.com/workspace-invite')
   const [docsUrl, setDocsUrl] = useState('https://docs.google.com/folder-shared')
   
   const [successToast, setSuccessToast] = useState('')
 
-  // Load persisted collaboration URLs on mount
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const storedRepo = localStorage.getItem('seniorproj_github_url')
-      if (storedRepo) {
-        setRepoUrl(storedRepo)
+  const fetchMeetings = async (projectId: string) => {
+    try {
+      const isDemoMode = typeof window !== 'undefined' && localStorage.getItem('demo_mode') === 'true'
+      if (isDemoMode) {
+        const storageKey = 'seniorproj_sandbox_db'
+        const data = localStorage.getItem(storageKey)
+        if (data) {
+          const parsed = JSON.parse(data)
+          const teamMeetings = (parsed.meetings || []).filter((m: any) => m.project_id === projectId)
+          setMeetings(teamMeetings)
+        }
       } else {
-        setRepoUrl('https://github.com/freddy-commits/online-senior-project-management-system')
+        const { data, error } = await supabase
+          .from('meetings')
+          .select('*')
+          .eq('project_id', projectId)
+        
+        if (error) throw error
+        if (data) {
+          const mapped = data.map((m: any) => ({
+            id: m.id,
+            project_id: m.project_id,
+            student_id: m.student_id,
+            title: m.title,
+            description: m.description,
+            date: new Date(m.meeting_date).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' }),
+            raw_date: m.meeting_date,
+            time: m.meeting_time,
+            type: m.meeting_type === 'virtual' ? 'Virtual (Google Meet)' : m.meeting_type
+          }))
+          setMeetings(mapped)
+        }
+      }
+    } catch (err) {
+      console.error("Failed to load meetings:", err)
+    }
+  }
+
+  // Reload meetings whenever the project changes
+  useEffect(() => {
+    if (project?.id) {
+      fetchMeetings(project.id)
+    }
+  }, [project?.id])
+
+  // Load persisted collaboration URLs on mount - GitHub is per-student from Supabase profile
+  useEffect(() => {
+    async function loadCollabUrls() {
+      try {
+        const sbClient = createClient()
+        const { data: { user } } = await sbClient.auth.getUser()
+        if (user) {
+          // Fetch github_url from the student's own profile row
+          const { data: profileRow } = await sbClient
+            .from('profiles')
+            .select('github_url')
+            .eq('id', user.id)
+            .single()
+
+          if (profileRow?.github_url) {
+            setRepoUrl(profileRow.github_url)
+          } else {
+            // Fallback: localStorage → project default
+            const storedRepo = typeof window !== 'undefined' ? localStorage.getItem(`seniorproj_github_url_${user.id}`) : null
+            setRepoUrl(storedRepo || 'https://github.com/')
+          }
+        } else {
+          // Not authenticated — use generic localStorage key
+          const storedRepo = typeof window !== 'undefined' ? localStorage.getItem('seniorproj_github_url') : null
+          setRepoUrl(storedRepo || 'https://github.com/')
+        }
+      } catch {
+        const storedRepo = typeof window !== 'undefined' ? localStorage.getItem('seniorproj_github_url') : null
+        setRepoUrl(storedRepo || 'https://github.com/')
       }
 
-      const storedSlack = localStorage.getItem('seniorproj_slack_url')
-      if (storedSlack) setSlackUrl(storedSlack)
+      if (typeof window !== 'undefined') {
+        const storedSlack = localStorage.getItem('seniorproj_slack_url')
+        if (storedSlack) setSlackUrl(storedSlack)
 
-      const storedDocs = localStorage.getItem('seniorproj_docs_url')
-      if (storedDocs) setDocsUrl(storedDocs)
+        const storedDocs = localStorage.getItem('seniorproj_docs_url')
+        if (storedDocs) setDocsUrl(storedDocs)
+      }
     }
+    loadCollabUrls()
   }, [])
+
+  // Save student's GitHub URL to their Supabase profile
+  const handleSaveGithubUrl = async () => {
+    setRepoSaving(true)
+    try {
+      const sbClient = createClient()
+      const { data: { user } } = await sbClient.auth.getUser()
+      if (user) {
+        await sbClient
+          .from('profiles')
+          .update({ github_url: repoUrl.trim() })
+          .eq('id', user.id)
+        // Also cache in localStorage with user-scoped key
+        localStorage.setItem(`seniorproj_github_url_${user.id}`, repoUrl.trim())
+      } else {
+        localStorage.setItem('seniorproj_github_url', repoUrl.trim())
+      }
+      setRepoSaved(true)
+      setTimeout(() => setRepoSaved(false), 3000)
+      triggerToast('GitHub repository URL saved to your profile!')
+    } catch {
+      triggerToast('Saved locally (database update failed)')
+    }
+    setRepoSaving(false)
+  }
 
   // Safely formats absolute URLs to prevent Next.js relative routing bugs
   const formatUrl = (url: string) => {
@@ -127,14 +221,22 @@ export default function StudentTeamsClient() {
           return
         }
 
-        // Fetch user profile to get logged-in name
+        // Fetch user profile including github_url
         const { data: profile } = await supabase
           .from('profiles')
-          .select('full_name, email')
+          .select('id, full_name, email, github_url')
           .eq('id', user.id)
           .single()
-        if (profile) {
-          setCurrentUser(profile)
+
+        setCurrentUser({
+          id: user.id,
+          full_name: profile?.full_name || user.email?.split('@')[0] || 'Student',
+          email: profile?.email || user.email || 'student@university.edu'
+        })
+
+        // Override repoUrl with the live database value if present
+        if (profile?.github_url) {
+          setRepoUrl(profile.github_url)
         }
 
         // Fetch team memberships
@@ -205,6 +307,7 @@ export default function StudentTeamsClient() {
           const activeProfile = parsed.profiles.find((p: any) => p.role === 'student') || parsed.profiles[0]
           if (activeProfile) {
             setCurrentUser({
+              id: activeProfile.id,
               full_name: activeProfile.full_name,
               email: activeProfile.email
             })
@@ -292,20 +395,136 @@ export default function StudentTeamsClient() {
     }, 1500)
   }
 
-  const handleCreateMeeting = (e: React.FormEvent) => {
+  const handleCreateMeeting = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!newMeetingTitle || !newMeetingDate || !newMeetingTime) return
-
-    const formattedDate = new Date(newMeetingDate).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' })
-    const item = {
-      id: Date.now().toString(),
-      title: newMeetingTitle.trim(),
-      date: formattedDate,
-      time: newMeetingTime,
-      type: 'Virtual (Google Meet)'
+    
+    if (!newMeetingTitle || !newMeetingTitle.trim()) {
+      alert("Please enter a meeting title.")
+      return
+    }
+    if (!newMeetingDate) {
+      alert("Please select a meeting date.")
+      return
+    }
+    if (!newMeetingTime || !newMeetingTime.trim()) {
+      alert("Please enter a meeting time slot.")
+      return
+    }
+    if (!project?.id) {
+      alert("Project context not found. Make sure you are assigned to a project.")
+      return
+    }
+    if (!currentUser?.id) {
+      alert("Current user profile not found. Please reload or log in again.")
+      return
     }
 
-    setMeetings([...meetings, item])
+    const isDemoMode = typeof window !== 'undefined' && localStorage.getItem('demo_mode') === 'true'
+    
+    let parsedDate = new Date(newMeetingDate)
+    if (isNaN(parsedDate.getTime())) {
+      // Try parsing DD/MM/YYYY
+      if (newMeetingDate.includes('/')) {
+        const parts = newMeetingDate.split('/')
+        if (parts.length === 3) {
+          const day = parseInt(parts[0], 10)
+          const month = parseInt(parts[1], 10) - 1
+          const year = parseInt(parts[2], 10)
+          parsedDate = new Date(year, month, day)
+        }
+      }
+    }
+
+    if (isNaN(parsedDate.getTime())) {
+      alert("Please enter a valid date in YYYY-MM-DD or DD/MM/YYYY format.")
+      return
+    }
+
+    // Format for display: e.g. "Jun 17, 2026"
+    const formattedDate = parsedDate.toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' })
+    // Format for DB insertion: YYYY-MM-DD
+    const yyyy = parsedDate.getFullYear()
+    const mm = String(parsedDate.getMonth() + 1).padStart(2, '0')
+    const dd = String(parsedDate.getDate()).padStart(2, '0')
+    const dbDate = `${yyyy}-${mm}-${dd}`
+
+    const meetingData = {
+      project_id: project.id,
+      student_id: currentUser.id,
+      title: newMeetingTitle.trim(),
+      description: 'Teammate Sync',
+      meeting_date: dbDate,
+      meeting_time: newMeetingTime,
+      meeting_type: 'virtual',
+      status: 'pending'
+    }
+
+    if (isDemoMode) {
+      const item = {
+        id: `mock-mtg-${Date.now()}`,
+        project_id: project.id,
+        student_id: currentUser.id,
+        title: meetingData.title,
+        description: meetingData.description,
+        date: formattedDate,
+        time: meetingData.meeting_time,
+        type: 'Virtual (Google Meet)'
+      }
+
+      setMeetings(prev => [...prev, item])
+
+      if (typeof window !== 'undefined') {
+        const storageKey = 'seniorproj_sandbox_db'
+        const data = localStorage.getItem(storageKey)
+        if (data) {
+          try {
+            const parsed = JSON.parse(data)
+            if (!parsed.meetings) {
+              parsed.meetings = []
+            }
+            parsed.meetings.push(item)
+            localStorage.setItem(storageKey, JSON.stringify(parsed))
+            
+            await fetch('/api/sandbox/sync', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(parsed)
+            }).catch(() => {})
+          } catch (err) {
+            console.error("Failed to sync meeting to sandbox:", err)
+          }
+        }
+      }
+    } else {
+      try {
+        const { data, error } = await supabase
+          .from('meetings')
+          .insert([meetingData])
+          .select()
+
+        if (error) throw error
+
+        if (data && data.length > 0) {
+          const inserted = data[0]
+          const item = {
+            id: inserted.id,
+            project_id: inserted.project_id,
+            student_id: inserted.student_id,
+            title: inserted.title,
+            description: inserted.description,
+            date: new Date(inserted.meeting_date).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' }),
+            time: inserted.meeting_time,
+            type: inserted.meeting_type === 'virtual' ? 'Virtual (Google Meet)' : inserted.meeting_type
+          }
+          setMeetings(prev => [...prev, item])
+        }
+      } catch (err: any) {
+        console.error("Failed to save live meeting to Supabase:", err)
+        alert("Failed to schedule meeting on the database: " + (err.message || err))
+        return
+      }
+    }
+
     setNewMeetingTitle('')
     setNewMeetingDate('')
     setNewMeetingTime('')
@@ -402,20 +621,20 @@ export default function StudentTeamsClient() {
         </div>
       </div>
 
-      {/* Tab Selectors */}
-      <div className="flex border-b border-slate-200 gap-2 overflow-x-auto pb-px">
+      {/* Tab Selectors — horizontally scrollable on mobile */}
+      <div className="flex border-b border-slate-200 gap-1 overflow-x-auto pb-px -mx-1 px-1 scrollbar-none">
         {[
-          { id: 'roster', label: 'Teammates & Leads', icon: <Users className="w-4 h-4" /> },
-          { id: 'chat', label: 'Team Portal Chat', icon: <MessageSquare className="w-4 h-4" /> },
-          { id: 'scheduler', label: 'Meeting Syncs', icon: <Calendar className="w-4 h-4" /> },
-          { id: 'guidelines', label: 'Agile Best Practices', icon: <BookOpen className="w-4 h-4" /> }
+          { id: 'roster', label: 'Teammates', icon: <Users className="w-4 h-4 shrink-0" /> },
+          { id: 'chat', label: 'Team Chat', icon: <MessageSquare className="w-4 h-4 shrink-0" /> },
+          { id: 'scheduler', label: 'Meetings', icon: <Calendar className="w-4 h-4 shrink-0" /> },
+          { id: 'guidelines', label: 'Guidelines', icon: <BookOpen className="w-4 h-4 shrink-0" /> }
         ].map((tab) => (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id as any)}
-            className={`flex items-center gap-2 px-5 py-3 text-xs font-black uppercase tracking-wider transition-all border-b-2 cursor-pointer ${
+            className={`flex items-center gap-1.5 px-3 sm:px-5 py-3 text-[10px] sm:text-xs font-black uppercase tracking-wider transition-all border-b-2 cursor-pointer whitespace-nowrap shrink-0 ${
               activeTab === tab.id
-                ? 'border-indigo-700 text-indigo-700 font-bold'
+                ? 'border-indigo-700 text-indigo-700'
                 : 'border-transparent text-slate-400 hover:text-slate-600'
             }`}
           >
@@ -500,43 +719,54 @@ export default function StudentTeamsClient() {
                     <p className="text-[10px] text-slate-400 font-extrabold uppercase mt-1">Integration Channels</p>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    {/* Github Repository */}
-                    <div className="p-5 border border-slate-150 rounded-2xl flex flex-col justify-between h-40 bg-slate-50/20 hover:border-slate-300 transition-all shadow-sm">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {/* Github Repository — per-student URL saved to profile */}
+                    <div className="p-5 border border-slate-150 rounded-2xl flex flex-col gap-3 bg-slate-50/20 hover:border-slate-300 transition-all shadow-sm">
                       <div className="flex justify-between items-start">
                         <GitBranch className="w-8 h-8 text-slate-800" />
-                        <span className="text-[8px] bg-slate-100 text-slate-600 font-black px-2 py-0.5 rounded uppercase border border-slate-200">Active</span>
+                        <span className="text-[8px] bg-slate-100 text-slate-600 font-black px-2 py-0.5 rounded uppercase border border-slate-200">Your Repo</span>
                       </div>
-                      <div className="space-y-1">
-                        <h4 className="text-xs font-black text-slate-800">Github Repository</h4>
+                      <div className="space-y-1 flex-1">
+                        <h4 className="text-xs font-black text-slate-800">My GitHub Repository</h4>
                         <input
                           type="text"
                           value={repoUrl}
-                          onChange={(e) => {
-                            const val = e.target.value
-                            setRepoUrl(val)
-                            localStorage.setItem('seniorproj_github_url', val)
-                          }}
+                          onChange={(e) => setRepoUrl(e.target.value)}
+                          placeholder="https://github.com/your-username/repo"
                           className="w-full text-[10px] font-semibold text-slate-500 bg-transparent border-b border-transparent hover:border-slate-300 focus:border-indigo-600 focus:outline-none py-0.5"
                         />
+                        <p className="text-[9px] text-indigo-400 font-bold mt-1">Your personal repository — other students see their own.</p>
                       </div>
-                      <a 
-                        href={formatUrl(repoUrl)}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="text-[10px] font-extrabold uppercase tracking-wider text-indigo-700 hover:underline flex items-center gap-1"
-                      >
-                        Open Repository <ExternalLink className="w-3.5 h-3.5" />
-                      </a>
+                      <div className="flex items-center gap-2">
+                        <a 
+                          href={formatUrl(repoUrl)}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-[10px] font-extrabold uppercase tracking-wider text-indigo-700 hover:underline flex items-center gap-1"
+                        >
+                          Open <ExternalLink className="w-3 h-3" />
+                        </a>
+                        <button
+                          onClick={handleSaveGithubUrl}
+                          disabled={repoSaving}
+                          className={`ml-auto text-[10px] font-black uppercase tracking-wider px-3 py-1 rounded-lg transition-all ${
+                            repoSaved
+                              ? 'bg-emerald-100 text-emerald-700 border border-emerald-200'
+                              : 'bg-indigo-700 hover:bg-indigo-800 text-white'
+                          }`}
+                        >
+                          {repoSaving ? 'Saving...' : repoSaved ? '✓ Saved' : 'Save URL'}
+                        </button>
+                      </div>
                     </div>
 
                     {/* Slack Workspace */}
-                    <div className="p-5 border border-slate-150 rounded-2xl flex flex-col justify-between h-40 bg-slate-50/20 hover:border-slate-300 transition-all shadow-sm">
+                    <div className="p-5 border border-slate-150 rounded-2xl flex flex-col gap-3 bg-slate-50/20 hover:border-slate-300 transition-all shadow-sm">
                       <div className="flex justify-between items-start">
                         <MessageSquare className="w-8 h-8 text-indigo-600" />
                         <span className="text-[8px] bg-slate-100 text-slate-600 font-black px-2 py-0.5 rounded uppercase border border-slate-200">Active</span>
                       </div>
-                      <div className="space-y-1">
+                      <div className="space-y-1 flex-1">
                         <h4 className="text-xs font-black text-slate-800">Slack Workspace</h4>
                         <input
                           type="text"
@@ -560,12 +790,12 @@ export default function StudentTeamsClient() {
                     </div>
 
                     {/* Shared Folder */}
-                    <div className="p-5 border border-slate-150 rounded-2xl flex flex-col justify-between h-40 bg-slate-50/20 hover:border-slate-300 transition-all shadow-sm">
+                    <div className="p-5 border border-slate-150 rounded-2xl flex flex-col gap-3 bg-slate-50/20 hover:border-slate-300 transition-all shadow-sm">
                       <div className="flex justify-between items-start">
                         <FolderGit className="w-8 h-8 text-amber-500" />
                         <span className="text-[8px] bg-slate-100 text-slate-600 font-black px-2 py-0.5 rounded uppercase border border-slate-200">Active</span>
                       </div>
-                      <div className="space-y-1">
+                      <div className="space-y-1 flex-1">
                         <h4 className="text-xs font-black text-slate-800">Shared Documents</h4>
                         <input
                           type="text"
@@ -673,35 +903,41 @@ export default function StudentTeamsClient() {
                   </div>
 
                   <div className="space-y-3">
-                    {meetings.map((mtg) => (
-                      <div 
-                        key={mtg.id}
-                        className="p-4 border border-slate-150 rounded-2xl flex flex-col md:flex-row md:items-center justify-between gap-4 bg-slate-50/20 shadow-sm"
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-700 shadow-inner">
-                            <Video className="w-5 h-5" />
-                          </div>
-                          <div>
-                            <h4 className="text-xs font-black text-slate-800">{mtg.title}</h4>
-                            <p className="text-[9px] text-indigo-500 font-extrabold uppercase tracking-wider mt-0.5">
-                              {mtg.type}
-                            </p>
-                          </div>
-                        </div>
-
-                        <div className="flex items-center gap-4 text-xs font-semibold text-slate-500">
-                          <div className="flex items-center gap-1">
-                            <Calendar className="w-3.5 h-3.5 text-slate-400" />
-                            <span>{mtg.date}</span>
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <Clock className="w-3.5 h-3.5 text-slate-400" />
-                            <span>{mtg.time}</span>
-                          </div>
-                        </div>
+                    {meetings.length === 0 ? (
+                      <div className="text-center py-12 text-slate-450 dark:text-slate-500 font-bold text-xs bg-slate-50/10 border border-dashed border-slate-200 dark:border-slate-800 rounded-2xl">
+                        No sync meetings scheduled yet. Use the form below to book a team sync!
                       </div>
-                    ))}
+                    ) : (
+                      meetings.map((mtg) => (
+                        <div 
+                          key={mtg.id}
+                          className="p-4 border border-slate-150 rounded-2xl flex flex-col md:flex-row md:items-center justify-between gap-4 bg-slate-50/20 shadow-sm"
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-700 shadow-inner">
+                              <Video className="w-5 h-5" />
+                            </div>
+                            <div>
+                              <h4 className="text-xs font-black text-slate-800">{mtg.title}</h4>
+                              <p className="text-[9px] text-indigo-500 font-extrabold uppercase tracking-wider mt-0.5">
+                                {mtg.type}
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-4 text-xs font-semibold text-slate-500">
+                            <div className="flex items-center gap-1">
+                              <Calendar className="w-3.5 h-3.5 text-slate-400" />
+                              <span>{mtg.date}</span>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <Clock className="w-3.5 h-3.5 text-slate-400" />
+                              <span>{mtg.time}</span>
+                            </div>
+                          </div>
+                        </div>
+                      ))
+                    )}
                   </div>
                 </div>
 

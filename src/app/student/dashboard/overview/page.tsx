@@ -41,7 +41,7 @@ export default async function OverviewPage() {
   }))
 
   return (
-    <div className="p-8 pb-20">
+    <div className="p-4 md:p-8 pb-20">
       <StudentDashboardClient initialProfile={profile} initialProjects={enrichedProjects} />
     </div>
   )

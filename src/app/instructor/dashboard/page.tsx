@@ -51,7 +51,7 @@ export default async function InstructorDashboardPage() {
     .select('*')
 
   return (
-    <div className="p-8 pb-20">
+    <div className="p-4 md:p-8 pb-20">
       <InstructorDashboardClient 
         initialProjects={enrichedProjects} 
         supervisors={supervisors || []} 

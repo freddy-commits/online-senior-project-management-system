@@ -1,6 +1,6 @@
 export default function ActionItemsPage() {
   return (
-    <div className="p-8">
+    <div className="p-4 md:p-8">
       <div className="bg-white rounded-3xl border border-slate-100 p-8 min-h-[50vh] shadow-sm">
         <h2 className="text-xl font-black text-slate-900 mb-2">Action Items</h2>
         <p className="text-sm text-slate-500 font-semibold mb-6">Track and manage your upcoming tasks and deliverables.</p>

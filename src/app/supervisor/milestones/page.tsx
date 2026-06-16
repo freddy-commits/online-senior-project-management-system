@@ -62,6 +62,11 @@ export default async function SupervisorMilestonesPage() {
     delivsCount: enrichedDeliverables.length,
   })
 
-  return <SupervisorMilestonesClient initialDeliverables={enrichedDeliverables} />
+  return (
+    <SupervisorMilestonesClient 
+      initialDeliverables={enrichedDeliverables} 
+      projectsList={projectsList}
+    />
+  )
 }
 

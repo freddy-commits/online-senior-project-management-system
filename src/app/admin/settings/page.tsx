@@ -9,7 +9,7 @@ import NotificationPreferencesSection from '@/components/settings/NotificationPr
 import SocialLinksSection from '@/components/settings/SocialLinksSection'
 import WorkspacePreferencesSection from '@/components/settings/WorkspacePreferencesSection'
 
-export default function PartnerSettingsPage() {
+export default function AdminSettingsPage() {
   const [profile, setProfile] = useState<any>(null)
   const [loading, setLoading] = useState(true)
 
@@ -57,7 +57,7 @@ export default function PartnerSettingsPage() {
     <div className="max-w-4xl mx-auto pb-20 p-4 md:p-8">
       {/* Header */}
       <div className="mb-10">
-        <h1 className="text-3xl font-black text-slate-900 mb-2">Partner Settings</h1>
+        <h1 className="text-3xl font-black text-slate-900 mb-2">Panel Member Settings</h1>
         <p className="text-slate-500">Manage your profile, security, and notification preferences.</p>
       </div>
 

@@ -1,8 +1,15 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
   --background: #fcfbfe;
   --foreground: #090d1f;
+}
+
+.dark {
+  --background: #0b1329;
+  --foreground: #f8fafc;
 }
 
 @theme inline {
@@ -110,3 +117,70 @@ h1, h2, h3, h4, h5, h6 {
   filter: blur(45px);
   pointer-events: none;
 }
+
+/* Global utility mapping for Tailwind dark mode fallback */
+.dark .bg-white,
+.dark .bg-white\/90,
+.dark .bg-white\/95 {
+  background-color: #0f172a !important; /* slate-900 */
+}
+
+.dark .bg-slate-50,
+.dark .bg-\[\#f5f8fc\],
+.dark .bg-slate-50\/50,
+.dark .bg-\[\#F7F7F5\],
+.dark .bg-\[\#FDFBF7\],
+.dark .bg-\[\#F7FBF9\],
+.dark .bg-\[\#FDF8F8\] {
+  background-color: #090d16 !important; /* slate-950 */
+}
+
+.dark .bg-slate-100 {
+  background-color: #1e293b !important; /* slate-800 */
+}
+
+/* Force dark border colors */
+.dark .border-slate-100,
+.dark .border-slate-150,
+.dark .border-slate-200,
+.dark .border-slate-250,
+.dark .border-slate-300 {
+  border-color: #1e293b !important; /* slate-800 */
+}
+
+/* Force text readability in dark mode */
+.dark .text-slate-900,
+.dark .text-slate-950,
+.dark .text-slate-850,
+.dark .text-slate-800,
+.dark .text-slate-750 {
+  color: #f8fafc !important; /* slate-50 */
+}
+
+.dark .text-slate-700,
+.dark .text-slate-600 {
+  color: #cbd5e1 !important; /* slate-300 */
+}
+
+.dark .text-slate-550,
+.dark .text-slate-500,
+.dark .text-slate-400,
+.dark .text-slate-450 {
+  color: #94a3b8 !important; /* slate-400 */
+}
+
+/* Ensure inputs and selects render dark backgrounds and white text */
+.dark input:not([type="submit"]):not([type="button"]),
+.dark textarea,
+.dark select {
+  background-color: #0b1329 !important;
+  border-color: #1e293b !important;
+  color: #f8fafc !important;
+}
+
+.dark .premium-card {
+  background: rgba(15, 23, 42, 0.85) !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+  box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.5) !important;
+}
+

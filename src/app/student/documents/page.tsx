@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { createClient } from '@/lib/supabase/client'
 import { useTrack } from '@/components/providers/TrackProvider'
 import { getDeliverables, getStudentProjects } from '../milestones/actions'
+import { useTranslations } from 'next-intl'
 import {
   FileText,
   ExternalLink,
@@ -36,9 +37,9 @@ interface DocEntry {
 // ─── Status Badge ─────────────────────────────────────────────────────────────
 function StatusBadge({ status }: { status: string }) {
   const map: Record<string, { label: string; className: string }> = {
-    graded:    { label: 'Graded',    className: 'bg-emerald-50 text-emerald-700 border-emerald-200' },
-    submitted: { label: 'Submitted', className: 'bg-indigo-50 text-indigo-700 border-indigo-200' },
-    todo:      { label: 'Pending',   className: 'bg-slate-50 text-slate-500 border-slate-200' },
+    graded:    { label: 'Graded',    className: 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-350 dark:border-emerald-900' },
+    submitted: { label: 'Submitted', className: 'bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-950/40 dark:text-indigo-350 dark:border-indigo-900' },
+    todo:      { label: 'Pending',   className: 'bg-slate-50 text-slate-500 border-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700' },
   }
   const s = map[status] || map['todo']
   return (
@@ -50,6 +51,7 @@ function StatusBadge({ status }: { status: string }) {
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 export default function StudentDocumentsPage() {
+  const t = useTranslations('Documents')
   const supabase = createClient()
   const { trackMode } = useTrack()
 
@@ -66,7 +68,6 @@ export default function StudentDocumentsPage() {
 
   async function fetchData() {
     setLoading(true)
-    // Reset state on track switch
     setDocs([])
     setMilestones([])
     setProject(null)
@@ -80,7 +81,6 @@ export default function StudentDocumentsPage() {
         origin: p.origin || (p.industry_partner_id ? 'industry' : 'student')
       }))
 
-      // Try to find project matching current track; fall back to first available project
       const activeProj =
         projects.find((p: any) =>
           p.origin === expectedOrigin ||
@@ -126,8 +126,6 @@ export default function StudentDocumentsPage() {
     setLoading(false)
   }
 
-
-
   function showToast(msg: string) {
     setToast(msg)
     setTimeout(() => setToast(''), 4000)
@@ -151,21 +149,19 @@ export default function StudentDocumentsPage() {
     return acc
   }, {})
 
-  // Sort groups: milestones with documents first (by due_date), then empty milestones (by due_date)
-  const sortedGroupedDocs = Object.values(groupedDocs).sort((a, b) => {
-    const hasA = a.docs.length > 0
-    const hasB = b.docs.length > 0
-    if (hasA && !hasB) return -1
-    if (!hasA && hasB) return 1
-    return new Date(a.milestone.due_date).getTime() - new Date(b.milestone.due_date).getTime()
-  })
+  // Sort groups: milestones with documents first (by due_date), filtering out unsubmitted ones
+  const sortedGroupedDocs = Object.values(groupedDocs)
+    .filter((g) => g.milestone.status === 'submitted' || g.milestone.status === 'graded' || g.milestone.submission_url)
+    .sort((a, b) => {
+      return new Date(a.milestone.due_date).getTime() - new Date(b.milestone.due_date).getTime()
+    })
 
   // ── loading ──────────────────────────────────────────────────────────────────
   if (loading) {
     return (
-      <div className="flex-1 flex items-center justify-center min-h-[60vh]">
+      <div className="flex-1 flex items-center justify-center min-h-[60vh] bg-slate-50/50 dark:bg-slate-950">
         <div className="flex flex-col items-center gap-3">
-          <Loader2 className="w-8 h-8 text-indigo-600 animate-spin" />
+          <Loader2 className="w-8 h-8 text-indigo-650 animate-spin" />
           <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Loading Documents...</span>
         </div>
       </div>
@@ -175,13 +171,13 @@ export default function StudentDocumentsPage() {
   // ── no project ────────────────────────────────────────────────────────────────
   if (!project) {
     return (
-      <div className="flex-1 flex items-center justify-center min-h-[60vh] p-8">
-        <div className="bg-white border border-slate-200 rounded-[2.5rem] p-12 text-center max-w-md shadow-sm space-y-4">
-          <div className="w-14 h-14 bg-slate-50 border border-slate-100 rounded-3xl flex items-center justify-center mx-auto">
+      <div className="flex-1 flex items-center justify-center min-h-[60vh] p-8 bg-slate-50/50 dark:bg-slate-950">
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-[2.5rem] p-12 text-center max-w-md shadow-sm space-y-4">
+          <div className="w-14 h-14 bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-750 rounded-3xl flex items-center justify-center mx-auto">
             <FolderOpen className="w-7 h-7 text-slate-400" />
           </div>
-          <h2 className="text-lg font-black text-slate-900">No Active Project</h2>
-          <p className="text-xs text-slate-500 font-semibold leading-relaxed">
+          <h2 className="text-lg font-black text-slate-900 dark:text-white">No Active Project</h2>
+          <p className="text-xs text-slate-505 dark:text-slate-400 font-semibold leading-relaxed">
             You don't have an active project yet. Once a project is assigned or approved, your document library will appear here.
           </p>
         </div>
@@ -191,7 +187,7 @@ export default function StudentDocumentsPage() {
 
   // ── main render ───────────────────────────────────────────────────────────────
   return (
-    <div className="flex-1 bg-slate-50/50 p-6 md:p-8 font-sans relative">
+    <div className="flex-1 bg-slate-50/50 dark:bg-slate-950 p-6 md:p-8 font-sans relative">
 
       {/* Toast */}
       <AnimatePresence>
@@ -200,7 +196,7 @@ export default function StudentDocumentsPage() {
             initial={{ opacity: 0, y: -16, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -16, scale: 0.95 }}
-            className="fixed top-24 right-8 z-50 bg-slate-900 text-white py-3.5 px-6 rounded-2xl shadow-xl border border-slate-700/50 flex items-center gap-3 text-xs font-bold"
+            className="fixed top-24 right-8 z-50 bg-slate-905 dark:bg-slate-800 text-white dark:text-slate-100 py-3.5 px-6 rounded-2xl shadow-xl border border-slate-700/50 flex items-center gap-3 text-xs font-bold"
           >
             <Sparkles className="w-4 h-4 text-indigo-400" />
             {toast}
@@ -211,15 +207,15 @@ export default function StudentDocumentsPage() {
       <div className="max-w-5xl mx-auto space-y-7">
 
         {/* ── Header ── */}
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-slate-100 pb-5">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-slate-100 dark:border-slate-850 pb-5">
           <div className="space-y-1">
             <span className="text-[10px] font-black uppercase tracking-widest text-indigo-500 flex items-center gap-2">
               <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse" />
               {project.title}
             </span>
-            <h1 className="text-3xl font-black tracking-tight text-slate-900">Document Library</h1>
-            <p className="text-xs text-slate-500 font-semibold">
-              Manage and view all your project deliverable documents in one place.
+            <h1 className="text-3xl font-black tracking-tight text-slate-900 dark:text-white">{t('title')}</h1>
+            <p className="text-xs text-slate-500 dark:text-slate-405 font-semibold">
+              {t('subtitle')}
             </p>
           </div>
         </div>
@@ -227,33 +223,33 @@ export default function StudentDocumentsPage() {
         {/* ── Stats Strip ── */}
         <div className="grid grid-cols-3 gap-4">
           {[
-            { icon: <FileText className="w-4 h-4 text-indigo-500" />, label: 'Documents Uploaded', value: totalUploaded, color: 'text-indigo-600' },
-            { icon: <CheckCircle2 className="w-4 h-4 text-emerald-500" />, label: 'Milestones Covered', value: `${totalUploaded} / ${totalMilestones}`, color: 'text-emerald-600' },
-            { icon: <AlertCircle className="w-4 h-4 text-amber-500" />, label: 'Awaiting Upload', value: pendingMilestones, color: 'text-amber-600' },
+            { icon: <FileText className="w-4 h-4 text-indigo-500" />, label: t('uploaded'), value: totalUploaded, color: 'text-indigo-600 dark:text-indigo-400' },
+            { icon: <CheckCircle2 className="w-4 h-4 text-emerald-500" />, label: t('covered'), value: `${totalUploaded} / ${totalMilestones}`, color: 'text-emerald-600 dark:text-emerald-400' },
+            { icon: <AlertCircle className="w-4 h-4 text-amber-500" />, label: t('awaiting'), value: pendingMilestones, color: 'text-amber-600 dark:text-amber-400' },
           ].map((stat, i) => (
             <motion.div
               key={i}
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.4, delay: i * 0.07 }}
-              className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm flex items-center gap-4"
+              className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm flex items-center gap-4"
             >
-              <div className="w-9 h-9 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center shrink-0">
+              <div className="w-9 h-9 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800 flex items-center justify-center shrink-0">
                 {stat.icon}
               </div>
               <div>
                 <span className={`text-xl font-black ${stat.color}`}>{stat.value}</span>
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mt-0.5">{stat.label}</span>
+                <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider block mt-0.5">{stat.label}</span>
               </div>
             </motion.div>
           ))}
         </div>
 
         {/* ── Milestone Document Groups ── */}
-        {totalMilestones === 0 ? (
-          <div className="bg-white border border-slate-200 rounded-[2rem] p-12 text-center shadow-sm space-y-3">
-            <FolderOpen className="w-10 h-10 text-slate-300 mx-auto" />
-            <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">No milestones found for this project.</p>
+        {sortedGroupedDocs.length === 0 ? (
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-[2rem] p-12 text-center shadow-sm space-y-3">
+            <FolderOpen className="w-10 h-10 text-slate-300 dark:text-slate-600 mx-auto" />
+            <p className="text-xs font-bold text-slate-450 dark:text-slate-500 uppercase tracking-widest">No documents submitted yet.</p>
           </div>
         ) : (
           <div className="space-y-3">
@@ -266,23 +262,23 @@ export default function StudentDocumentsPage() {
                   initial={{ opacity: 0, y: 16 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.35, delay: idx * 0.05 }}
-                  className="bg-white border border-slate-200 rounded-[1.75rem] shadow-sm overflow-hidden"
+                  className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-[1.75rem] shadow-sm overflow-hidden"
                 >
                   {/* Group Header */}
                   <button
                     onClick={() => toggleGroup(milestone.id)}
-                    className="w-full flex items-center justify-between px-6 py-4 hover:bg-slate-50 transition-colors cursor-pointer"
+                    className="w-full flex items-center justify-between px-6 py-4 hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors cursor-pointer"
                   >
                     <div className="flex items-center gap-3">
-                      <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${hasDocs ? 'bg-indigo-50 border border-indigo-100' : 'bg-slate-50 border border-slate-100'}`}>
-                        <FileText className={`w-4 h-4 ${hasDocs ? 'text-indigo-500' : 'text-slate-300'}`} />
+                      <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${hasDocs ? 'bg-indigo-50 dark:bg-indigo-950 border border-indigo-100 dark:border-indigo-900' : 'bg-slate-50 dark:bg-slate-800 border border-slate-100 dark:border-slate-750'}`}>
+                        <FileText className={`w-4 h-4 ${hasDocs ? 'text-indigo-500' : 'text-slate-350 dark:text-slate-600'}`} />
                       </div>
                       <div className="text-left">
-                        <span className="text-sm font-extrabold text-slate-900 block">{milestone.title}</span>
-                        <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">
+                        <span className="text-sm font-extrabold text-slate-900 dark:text-slate-100 block">{milestone.title}</span>
+                        <span className="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
                           Due {new Date(milestone.due_date).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' })}
                           {' · '}
-                          {hasDocs ? `${mDocs.length} document${mDocs.length > 1 ? 's' : ''}` : 'No document uploaded'}
+                          {hasDocs ? `${mDocs.length} document${mDocs.length > 1 ? 's' : ''}` : t('no_docs')}
                         </span>
                       </div>
                     </div>
@@ -305,10 +301,10 @@ export default function StudentDocumentsPage() {
                         transition={{ duration: 0.25 }}
                         className="overflow-hidden"
                       >
-                        <div className="border-t border-slate-100 px-6 py-4 space-y-3">
+                        <div className="border-t border-slate-100 dark:border-slate-800/60 px-6 py-4 space-y-3">
                           {!hasDocs ? (
                             <div className="flex items-center justify-between py-3">
-                              <span className="text-xs text-slate-400 font-semibold italic">No document uploaded for this milestone yet. Please upload files in the Milestones module.</span>
+                              <span className="text-xs text-slate-400 dark:text-slate-500 font-semibold italic">{t('no_docs')}</span>
                             </div>
                           ) : (
                             mDocs.map((doc, dIdx) => (
@@ -317,34 +313,29 @@ export default function StudentDocumentsPage() {
                                 initial={{ opacity: 0, x: -8 }}
                                 animate={{ opacity: 1, x: 0 }}
                                 transition={{ duration: 0.2, delay: dIdx * 0.04 }}
-                                className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 bg-slate-50 border border-slate-200 rounded-2xl"
+                                className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-850 rounded-2xl"
                               >
                                 {/* File Info */}
                                 <div className="flex items-center gap-3">
-                                  <div className="w-10 h-10 rounded-xl bg-white border border-slate-200 flex items-center justify-center shrink-0">
+                                  <div className="w-10 h-10 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-750 flex items-center justify-center shrink-0">
                                     <FileText className="w-5 h-5 text-indigo-500" />
                                   </div>
                                   <div>
-                                    <span className="text-xs font-extrabold text-slate-900 block leading-snug truncate max-w-[220px]">
+                                    <span className="text-xs font-extrabold text-slate-900 dark:text-slate-100 block leading-snug truncate max-w-[220px]">
                                       {doc.fileName}
                                     </span>
                                     <div className="flex items-center gap-2 mt-1">
                                       {doc.isLatest && (
-                                        <span className="inline-flex items-center gap-1 text-[9px] font-black text-indigo-600 bg-indigo-50 border border-indigo-100 px-2 py-0.5 rounded-md uppercase tracking-wide">
+                                        <span className="inline-flex items-center gap-1 text-[9px] font-black text-indigo-650 bg-indigo-50 dark:bg-indigo-950 border border-indigo-100 dark:border-indigo-900 px-2 py-0.5 rounded-md uppercase tracking-wide">
                                           <History className="w-2.5 h-2.5" />
-                                          Latest · v{doc.version}
+                                          {t('latest')} · v{doc.version}
                                         </span>
                                       )}
-                                      <span className="text-[9px] text-slate-400 font-bold flex items-center gap-1">
+                                      <span className="text-[9px] text-slate-400 dark:text-slate-500 font-bold flex items-center gap-1">
                                         <Clock className="w-2.5 h-2.5" />
                                         {new Date(doc.submittedAt).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
                                       </span>
                                     </div>
-                                    {doc.grade && (
-                                      <span className="text-[9px] font-black text-emerald-600 mt-1 block">
-                                        Grade: {doc.grade}
-                                      </span>
-                                    )}
                                   </div>
                                 </div>
 
@@ -353,8 +344,6 @@ export default function StudentDocumentsPage() {
                                   <a
                                     href={(() => {
                                       const raw = doc.fileName
-                                      // Build a proper URL: if it already has a scheme or leading /, use as-is
-                                      // If it's a bare filename (e.g. "receipt_(2).pdf"), prefix with /uploads/
                                       const normalizedFile = raw.startsWith('http') || raw.startsWith('/')
                                         ? raw
                                         : `/uploads/${raw.replace(/\s+/g, '_')}`
@@ -363,11 +352,10 @@ export default function StudentDocumentsPage() {
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     title="Open Document"
-                                    className="inline-flex items-center justify-center w-9 h-9 border border-slate-200 bg-white hover:bg-slate-50 text-slate-500 hover:text-slate-800 rounded-xl transition-all shadow-sm"
+                                    className="inline-flex items-center justify-center w-9 h-9 border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white rounded-xl transition-all shadow-sm"
                                   >
                                     <ExternalLink className="w-3.5 h-3.5" />
                                   </a>
-
                                 </div>
                               </motion.div>
                             ))
@@ -382,8 +370,6 @@ export default function StudentDocumentsPage() {
           </div>
         )}
       </div>
-
-
     </div>
   )
 }

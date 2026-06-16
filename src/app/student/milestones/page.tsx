@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { createClient } from '@/lib/supabase/client'
 import { useTrack } from '@/components/providers/TrackProvider'
 import { seedDeliverables, addCustomMilestone, submitDeliverable, getDeliverables, getStudentProjects } from './actions'
+import { useTranslations } from 'next-intl'
 import { 
   Calendar, 
   Check, 
@@ -41,6 +42,7 @@ const getMilestoneDescription = (title: string): string => {
 }
 
 export default function StudentMilestonesPage() {
+  const t = useTranslations('Milestones')
   const [project, setProject] = useState<any>(null)
   const [deliverables, setDeliverables] = useState<any[]>([])
   const [selectedMilestone, setSelectedMilestone] = useState<any>(null)
@@ -451,6 +453,13 @@ export default function StudentMilestonesPage() {
   const supervisorRole = trackMode === 'thesis' ? 'Senior Capstone Supervisor' : 'Industry Mentor Liaison'
   const supervisorAvatarInitials = supervisorName.split(' ').map((n: string) => n[0]).slice(0, 2).join('')
 
+  const submittedDeliverables = deliverables.filter(
+    (d: any) => d.status === 'submitted' || d.status === 'graded' || d.submission_url
+  )
+  const pendingDeliverables = deliverables.filter(
+    (d: any) => d.status === 'todo' && !d.submission_url
+  )
+
   // feedback content dynamically generated from selection details
   const getFeedbackQuote = () => {
     if (!selectedMilestone) return ''
@@ -464,7 +473,7 @@ export default function StudentMilestonesPage() {
   }
 
   return (
-    <div className="flex-1 overflow-y-auto bg-slate-50/50 p-6 md:p-8 font-sans relative">
+    <div className="flex-1 overflow-y-auto bg-slate-50/50 dark:bg-slate-950 p-6 md:p-8 font-sans relative">
       
       {/* Toast notification */}
       <AnimatePresence>
@@ -484,23 +493,23 @@ export default function StudentMilestonesPage() {
       <div className="max-w-7xl mx-auto space-y-6">
         
         {/* SUBHEADER AND MAIN HEADER STRIP */}
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-slate-100 pb-5">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-slate-100 dark:border-slate-800/60 pb-5">
           <div className="space-y-1">
             <span className="text-[10px] font-black uppercase tracking-widest text-[#a75d24] flex items-center gap-2">
               <span className="w-1.5 h-1.5 rounded-full bg-[#a75d24] animate-pulse" />
               {trackLabel} &bull; PHASE 3
             </span>
-            <h1 className="text-3xl font-black tracking-tight text-slate-900">Project Milestones</h1>
+            <h1 className="text-3xl font-black tracking-tight text-slate-900 dark:text-white">{t('title')}</h1>
           </div>
 
           <div className="flex items-center gap-2.5">
             {isFullyActive && (
               <button 
                 onClick={handleExportSchedule}
-                className="flex items-center gap-2 px-5 py-3 border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-extrabold text-xs uppercase tracking-wider rounded-2xl transition-all shadow-sm cursor-pointer select-none active:scale-[0.98]"
+                className="flex items-center gap-2 px-5 py-3 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 font-extrabold text-xs uppercase tracking-wider rounded-2xl transition-all shadow-sm cursor-pointer select-none active:scale-[0.98]"
               >
                 <Download className="w-3.5 h-3.5" />
-                Export Schedule
+                {t('export_schedule')}
               </button>
             )}
             {isFullyActive && (
@@ -509,7 +518,7 @@ export default function StudentMilestonesPage() {
                 className="flex items-center gap-2 px-5 py-3 bg-[#a75d24] hover:bg-[#8f4f1d] text-white font-extrabold text-xs uppercase tracking-wider rounded-2xl transition-all shadow-md shadow-[#a75d24]/10 cursor-pointer select-none active:scale-[0.98]"
               >
                 <Plus className="w-3.5 h-3.5" />
-                New Milestone
+                {t('new_milestone')}
               </button>
             )}
           </div>
@@ -765,12 +774,12 @@ export default function StudentMilestonesPage() {
               {/* Timeline connector bar */}
               <div className="absolute left-[34px] top-6 bottom-6 w-0.5 bg-slate-200 z-0 hidden sm:block" />
 
-              {deliverables.length === 0 ? (
-                <div className="bg-white border border-slate-100 rounded-3xl p-12 text-center text-slate-400 font-bold text-sm shadow-sm">
-                  No deliverables found. Click "+ New Milestone" to initialize one!
+              {submittedDeliverables.length === 0 ? (
+                <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-12 text-center text-slate-450 dark:text-slate-550 font-bold text-sm shadow-sm">
+                  {t('no_deliverables_submitted')}
                 </div>
               ) : (
-                deliverables.map((deliv, index) => {
+                submittedDeliverables.map((deliv, index) => {
                   const milestoneState = getMilestoneState(index, deliv)
                   const isSelected = selectedMilestone?.id === deliv.id
                   const score = deliv.grade || null
@@ -885,21 +894,21 @@ export default function StudentMilestonesPage() {
                           </div>
                         ) : milestoneState === 'completed' ? (
                           /* COMPLETED MILESTONE CARD: Clean design with green checkbox and score badge */
-                          <div className={`p-6 bg-white border rounded-[2rem] transition-all shadow-sm ${
-                            isSelected ? 'border-emerald-500 ring-2 ring-emerald-500/10' : 'border-slate-200 hover:border-slate-300'
+                          <div className={`p-6 bg-white dark:bg-slate-900 border rounded-[2rem] transition-all shadow-sm ${
+                            isSelected ? 'border-emerald-500 ring-2 ring-emerald-500/10' : 'border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700'
                           }`}>
                             <div className="flex items-center justify-between gap-4 mb-2">
-                              <h3 className="text-md font-bold text-slate-800 leading-snug">{deliv.title}</h3>
+                              <h3 className="text-md font-bold text-slate-800 dark:text-slate-100 leading-snug">{deliv.title}</h3>
                               {score && (
-                                <span className="text-[9px] font-black uppercase tracking-widest text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-100">
-                                  MARK: {score}
+                                <span className="text-[9px] font-black uppercase tracking-widest text-emerald-700 dark:text-emerald-350 bg-emerald-50 dark:bg-emerald-950/40 px-2.5 py-0.5 rounded-full border border-emerald-100 dark:border-emerald-900">
+                                  {t('mark')}: {score}
                                 </span>
                               )}
                             </div>
                             
-                            <p className="text-slate-500 text-xs font-semibold leading-relaxed mb-3">{deliv.description}</p>
+                            <p className="text-slate-500 dark:text-slate-400 text-xs font-semibold leading-relaxed mb-3">{deliv.description}</p>
                             
-                            <div className="flex items-center justify-between text-[10px] font-bold text-slate-400">
+                            <div className="flex items-center justify-between text-[10px] font-bold text-slate-400 dark:text-slate-500">
                               <span className="flex items-center gap-1">
                                 <Calendar className="w-3.5 h-3.5 shrink-0" />
                                 {new Date(deliv.due_date).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' })}
@@ -912,10 +921,10 @@ export default function StudentMilestonesPage() {
                           </div>
                         ) : (
                           /* LOCKED TIMELINE CARD: Greyed out locked milestone */
-                          <div className="p-6 bg-slate-50/50 border border-slate-200/60 rounded-[2rem] opacity-60">
-                            <h3 className="text-md font-bold text-slate-400 mb-2 leading-snug">{deliv.title}</h3>
-                            <p className="text-slate-400 text-xs font-semibold leading-relaxed mb-3">{deliv.description}</p>
-                            <div className="text-[10px] font-bold text-slate-400 flex items-center gap-1.5">
+                          <div className="p-6 bg-slate-50/50 dark:bg-slate-900/40 border border-slate-200/60 dark:border-slate-800 rounded-[2rem] opacity-60">
+                            <h3 className="text-md font-bold text-slate-400 dark:text-slate-500 mb-2 leading-snug">{deliv.title}</h3>
+                            <p className="text-slate-400 dark:text-slate-500 text-xs font-semibold leading-relaxed mb-3">{deliv.description}</p>
+                            <div className="text-[10px] font-bold text-slate-400 dark:text-slate-500 flex items-center gap-1.5">
                               <Lock className="w-3 h-3 shrink-0" />
                               Expected: {new Date(deliv.due_date).toLocaleDateString([], { month: 'long', year: 'numeric' })}
                             </div>
@@ -932,13 +941,42 @@ export default function StudentMilestonesPage() {
             <div className="lg:col-span-4 space-y-6">
               
               {/* SUBMISSION PORTAL CARD */}
-              <div className="bg-white border border-slate-200 rounded-[2.25rem] p-6 shadow-sm space-y-5">
+              <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-[2.25rem] p-6 shadow-sm space-y-5">
                 <div>
-                  <h2 className="text-xs font-black uppercase tracking-widest text-slate-400 mb-1">Submission Portal</h2>
-                  <p className="text-[11px] text-slate-500 leading-normal">
-                    Manage file uploads and repository linkings for <strong className="text-slate-800 font-bold">{selectedMilestone?.title || 'selected milestone'}</strong>.
+                  <h2 className="text-xs font-black uppercase tracking-widest text-slate-400 dark:text-slate-500 mb-1">{t('submission_portal')}</h2>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-450 leading-normal">
+                    Manage file uploads and repository linkings for <strong className="text-slate-850 dark:text-slate-100 font-bold">{selectedMilestone?.title || 'selected milestone'}</strong>.
                   </p>
                 </div>
+
+                {/* Milestone Selector Dropdown */}
+                {pendingDeliverables.length > 0 && (
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] text-slate-500 dark:text-slate-450 font-black uppercase tracking-wider block ml-1">
+                      {t('select_milestone')}
+                    </label>
+                    <select
+                      value={selectedMilestone && selectedMilestone.status === 'todo' ? selectedMilestone.id : ''}
+                      onChange={(e) => {
+                        const targetId = e.target.value
+                        const targetDeliv = deliverables.find((d: any) => d.id === targetId)
+                        if (targetDeliv) setSelectedMilestone(targetDeliv)
+                      }}
+                      className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl py-2.5 px-3 text-slate-900 dark:text-slate-100 focus:outline-none text-xs font-bold"
+                    >
+                      {selectedMilestone && selectedMilestone.status !== 'todo' ? (
+                        <option value="">Showing: {selectedMilestone.title} ({selectedMilestone.status.toUpperCase()})</option>
+                      ) : (
+                        <option value="" disabled>{t('select_pending')}</option>
+                      )}
+                      {pendingDeliverables.map((d: any) => (
+                        <option key={d.id} value={d.id}>
+                          {d.title} (Due {new Date(d.due_date).toLocaleDateString()})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
 
                 {/* Upload drag and drop box — show for both 'todo' AND 'submitted' so student can replace file */}
                 {(selectedMilestone?.status === 'todo' || selectedMilestone?.status === 'submitted') ? (
@@ -1060,7 +1098,6 @@ export default function StudentMilestonesPage() {
             )
           })()
         )}
-
       </div>
 
       {/* NEW MILESTONE MODAL POPUP */}
@@ -1070,28 +1107,28 @@ export default function StudentMilestonesPage() {
             
             <motion.div 
               initial={{ opacity: 0, scale: 0.95, y: 15 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95, y: 15 }}
-              className="bg-white rounded-[2.5rem] border border-slate-100 shadow-2xl max-w-lg w-full overflow-hidden"
+              className="bg-white dark:bg-slate-900 rounded-[2.5rem] border border-slate-100 dark:border-slate-800 shadow-2xl max-w-lg w-full overflow-hidden"
             >
               {/* Modal Header */}
-              <div className="bg-slate-50/50 border-b border-slate-100 px-8 py-5 flex items-center justify-between">
-                <h3 className="text-lg font-black text-slate-900 flex items-center gap-2">
+              <div className="bg-slate-50/50 dark:bg-slate-950/40 border-b border-slate-100 dark:border-slate-800 px-8 py-5 flex items-center justify-between">
+                <h3 className="text-lg font-black text-slate-900 dark:text-white flex items-center gap-2">
                   <Sparkles className="w-5 h-5 text-[#a75d24]" />
                   Create Workspace Milestone
                 </h3>
                 <button 
                   onClick={() => setIsAddModalOpen(false)}
-                  className="p-1 text-slate-400 hover:text-slate-600 hover:bg-slate-200/50 rounded-lg cursor-pointer"
+                  className="p-1 text-slate-400 hover:text-slate-600 dark:hover:bg-slate-800 rounded-lg cursor-pointer"
                 >
                   <X className="w-5 h-5" />
                 </button>
               </div>
 
               {/* Modal Form */}
-              <form onSubmit={handleAddMilestone} className="p-8 space-y-5">
+              <form onSubmit={handleAddMilestone} className="p-4 md:p-8 space-y-5">
                 {hasLocalDraft && (
-                  <div className="p-4 bg-[#fdf5f0] border border-[#a75d24]/20 rounded-2xl flex items-center justify-between text-xs text-[#a75d24] font-bold">
+                  <div className="p-4 bg-[#fdf5f0] dark:bg-amber-950/20 border border-[#a75d24]/20 dark:border-[#a75d24]/30 rounded-2xl flex items-center justify-between text-xs text-[#a75d24] font-bold">
                     <span>You have a locally saved milestone draft.</span>
                     <button
                       type="button"
@@ -1104,51 +1141,51 @@ export default function StudentMilestonesPage() {
                 )}
 
                 <div className="space-y-1">
-                  <label className="text-[10px] text-slate-500 font-black uppercase tracking-wider block ml-1">Milestone Title</label>
+                  <label className="text-[10px] text-slate-500 dark:text-slate-400 font-black uppercase tracking-wider block ml-1">Milestone Title</label>
                   <input 
                     type="text"
                     required
                     value={newTitle}
                     onChange={(e) => setNewTitle(e.target.value)}
                     placeholder="e.g., Beta Software Integration"
-                    className="w-full bg-slate-50 border border-slate-200 focus:border-[#a75d24] rounded-2xl py-3 px-4 text-slate-900 placeholder:text-slate-300 text-xs font-bold focus:outline-none focus:ring-2 focus:ring-[#a75d24]/10 transition-all"
+                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:border-[#a75d24] rounded-2xl py-3 px-4 text-slate-900 dark:text-slate-100 placeholder:text-slate-300 dark:placeholder:text-slate-600 text-xs font-bold focus:outline-none focus:ring-2 focus:ring-[#a75d24]/10 transition-all"
                   />
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-[10px] text-slate-500 font-black uppercase tracking-wider block ml-1">Description / Deliverable Specs</label>
+                  <label className="text-[10px] text-slate-500 dark:text-slate-400 font-black uppercase tracking-wider block ml-1">Description / Deliverable Specs</label>
                   <textarea 
                     rows={3}
                     value={newDescription}
                     onChange={(e) => setNewDescription(e.target.value)}
                     placeholder="Briefly describe what must be submitted for this milestone..."
-                    className="w-full bg-slate-50 border border-slate-200 focus:border-[#a75d24] rounded-2xl py-3 px-4 text-slate-900 placeholder:text-slate-300 text-xs font-bold focus:outline-none focus:ring-2 focus:ring-[#a75d24]/10 transition-all resize-none"
+                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:border-[#a75d24] rounded-2xl py-3 px-4 text-slate-900 dark:text-slate-100 placeholder:text-slate-300 dark:placeholder:text-slate-600 text-xs font-bold focus:outline-none focus:ring-2 focus:ring-[#a75d24]/10 transition-all resize-none"
                   />
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-[10px] text-slate-500 font-black uppercase tracking-wider block ml-1">Due Date</label>
+                  <label className="text-[10px] text-slate-500 dark:text-slate-400 font-black uppercase tracking-wider block ml-1">Due Date</label>
                   <input 
                     type="date"
                     required
                     value={newDueDate}
                     onChange={(e) => setNewDueDate(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-200 focus:border-[#a75d24] rounded-2xl py-3 px-4 text-slate-900 text-xs font-bold focus:outline-none focus:ring-2 focus:ring-[#a75d24]/10 transition-all appearance-none cursor-pointer"
+                    className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:border-[#a75d24] rounded-2xl py-3 px-4 text-slate-900 dark:text-slate-100 text-xs font-bold focus:outline-none focus:ring-2 focus:ring-[#a75d24]/10 transition-all appearance-none cursor-pointer"
                   />
                 </div>
 
-                <div className="flex items-center gap-3 justify-end pt-3 border-t border-slate-100 mt-6 flex-wrap">
+                <div className="flex items-center gap-3 justify-end pt-3 border-t border-slate-100 dark:border-slate-800 mt-6 flex-wrap">
                   <button 
                     type="button"
                     onClick={saveLocalDraft}
-                    className="px-4 py-3 border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 font-extrabold text-xs uppercase tracking-wider rounded-xl transition-all cursor-pointer select-none"
+                    className="px-4 py-3 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 font-extrabold text-xs uppercase tracking-wider rounded-xl transition-all cursor-pointer select-none"
                   >
                     Save Local Draft
                   </button>
                   <button 
                     type="button"
                     onClick={() => setIsAddModalOpen(false)}
-                    className="px-5 py-3 border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 font-extrabold text-xs uppercase tracking-wider rounded-xl transition-all cursor-pointer select-none"
+                    className="px-5 py-3 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 font-extrabold text-xs uppercase tracking-wider rounded-xl transition-all cursor-pointer select-none"
                   >
                     Cancel
                   </button>

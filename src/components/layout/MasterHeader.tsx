@@ -3,9 +3,11 @@
 import { useState, useEffect } from 'react'
 import TrackSwitcher from '@/components/navigation/TrackSwitcher'
 import { Bell, Menu } from 'lucide-react'
+import { useTranslations } from 'next-intl'
 
 export default function MasterHeader({ role = 'student' }: { role?: string }) {
   const [fullName, setFullName] = useState('User')
+  const t = useTranslations('Header')
   
   useEffect(() => {
     async function loadProfile() {
@@ -34,12 +36,12 @@ export default function MasterHeader({ role = 'student' }: { role?: string }) {
     .toUpperCase() || 'U'
 
   return (
-    <header className="h-20 bg-white border-b border-slate-200 px-8 flex items-center justify-between shrink-0 z-40 sticky top-0">
+    <header className="h-20 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-4 md:px-8 flex items-center justify-between shrink-0 z-40 sticky top-0">
       <div className="flex items-center gap-4">
         <button 
           onClick={() => window.dispatchEvent(new CustomEvent('toggle-mobile-sidebar'))}
-          className="md:hidden p-2 hover:bg-slate-100 rounded-xl text-slate-500 hover:text-slate-700 transition-colors border border-slate-200 cursor-pointer"
-          title="Toggle Sidebar"
+          className="md:hidden p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl text-slate-500 hover:text-slate-700 transition-colors border border-slate-200 dark:border-slate-700 cursor-pointer"
+          title={t('toggle_sidebar')}
         >
           <Menu className="w-5 h-5" />
         </button>
@@ -50,10 +52,10 @@ export default function MasterHeader({ role = 'student' }: { role?: string }) {
         <TrackSwitcher />
 
         {/* Divider */}
-        <div className="w-px h-8 bg-slate-200 hidden sm:block" />
+        <div className="w-px h-8 bg-slate-200 dark:bg-slate-800 hidden sm:block" />
 
         {/* Notifications */}
-        <button className="text-slate-400 hover:text-slate-600 transition-colors pr-2" title="Notifications">
+        <button className="text-slate-400 hover:text-slate-650 dark:text-slate-500 dark:hover:text-slate-350 transition-colors pr-2" title={t('notifications')}>
           <Bell className="w-5 h-5" />
         </button>
       </div>

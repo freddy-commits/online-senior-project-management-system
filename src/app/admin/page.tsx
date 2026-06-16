@@ -211,7 +211,7 @@ export default function AdminDashboard() {
     : '89.5'
 
   return (
-    <div className="p-8 pb-20 max-w-6xl mx-auto space-y-8 text-slate-800 font-sans">
+    <div className="p-4 md:p-8 pb-20 max-w-6xl mx-auto space-y-8 text-slate-800 font-sans">
       
       {successMessage && (
         <div className="fixed top-8 right-8 bg-emerald-600 text-white px-6 py-4 rounded-2xl shadow-xl font-bold flex items-center gap-3 z-50 animate-in slide-in-from-top-4">

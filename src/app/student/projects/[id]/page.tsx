@@ -121,7 +121,7 @@ export default function ProjectDetailsPage() {
   const isApproved = project.status === 'approved'
 
   return (
-    <div className="max-w-6xl mx-auto pb-20">
+    <div className="max-w-6xl mx-auto px-4 md:px-8 pt-8 pb-20">
       {/* Breadcrumbs */}
       <div className="flex items-center gap-2 mb-8 text-sm font-bold text-slate-400">
         <button onClick={() => router.push('/student/dashboard')} className="hover:text-slate-900 transition-colors">Dashboard</button>
@@ -130,7 +130,7 @@ export default function ProjectDetailsPage() {
       </div>
 
       {/* Hero Header */}
-      <div className="bg-white border border-slate-200 rounded-[2.5rem] p-10 mb-10 relative overflow-hidden shadow-sm">
+      <div className="bg-white border border-slate-200 rounded-[2.5rem] p-6 md:p-10 mb-10 relative overflow-hidden shadow-sm">
         <div className="absolute top-0 right-0 w-64 h-64 bg-blue-100/60 blur-[100px] rounded-full -mr-20 -mt-20 pointer-events-none" />
         
         <div className="relative flex flex-col md:flex-row md:items-end justify-between gap-8">

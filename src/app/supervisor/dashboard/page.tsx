@@ -41,7 +41,7 @@ export default async function SupervisorDashboardPage() {
   }
 
   return (
-    <div className="p-8 pb-20">
+    <div className="p-4 md:p-8 pb-20">
       <SupervisorDashboardClient initialProfile={profile} initialProjects={enrichedProjects} />
     </div>
   )
