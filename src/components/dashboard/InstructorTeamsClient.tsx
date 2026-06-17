@@ -197,9 +197,13 @@ export default function InstructorTeamsClient({
 
       // 3. If an industry project was selected, assign the team to the project
       if (selectedProjectId) {
+        const leaderId = selectedStudents[0]
         const { error: projectError } = await supabase
           .from('projects')
-          .update({ team_id: newTeam.id })
+          .update({ 
+            team_id: newTeam.id,
+            student_id: leaderId
+          })
           .eq('id', selectedProjectId)
 
         if (projectError) throw projectError
@@ -207,11 +211,18 @@ export default function InstructorTeamsClient({
         // Also trigger notifications for members
         try {
           const selectedProj = projects.find(p => p.id === selectedProjectId)
-          for (const sId of selectedStudents) {
+          for (let i = 0; i < selectedStudents.length; i++) {
+            const sId = selectedStudents[i]
+            const isLeader = i === 0
+            const notifTitle = isLeader ? 'Selected as Team Leader' : 'Team Allocated to Project'
+            const notifMessage = isLeader 
+              ? `You have been selected as the Team Leader for team "${teamName.trim()}" on project "${selectedProj?.title || 'Industry Project'}". You are responsible for scheduling sync meetings.`
+              : `You have been allocated to the team "${teamName.trim()}" for project "${selectedProj?.title || 'Industry Project'}".`
+
             await supabase.from('notifications').insert({
               user_id: sId,
-              title: 'Team Allocated to Project',
-              message: `You have been allocated to the team "${teamName.trim()}" for project "${selectedProj?.title || 'Industry Project'}".`,
+              title: notifTitle,
+              message: notifMessage,
               type: 'system',
               action_url: '/student/dashboard'
             })
@@ -243,7 +254,7 @@ export default function InstructorTeamsClient({
     setDissolvingTeamId(teamId)
     try {
       // 1. Remove project associations
-      await supabase.from('projects').update({ team_id: null }).eq('team_id', teamId)
+      await supabase.from('projects').update({ team_id: null, student_id: null }).eq('team_id', teamId)
       // 2. Delete team members
       await supabase.from('team_members').delete().eq('team_id', teamId)
       // 3. Delete team

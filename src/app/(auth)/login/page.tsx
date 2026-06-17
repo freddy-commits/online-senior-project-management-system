@@ -115,7 +115,7 @@ export default function LoginPage() {
       const { error: oauthError } = await supabase.auth.signInWithOAuth({
         provider,
         options: {
-          redirectTo: `${window.location.origin}/api/auth/confirm`
+          redirectTo: `${window.location.origin}/api/auth/callback?role=${selectedRole}`
         }
       })
       if (oauthError) throw oauthError

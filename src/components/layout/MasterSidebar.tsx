@@ -62,14 +62,14 @@ export default function MasterSidebar({ role = 'student' }: { role?: string }) {
     ? [
         { name: t('dashboard'), path: `/admin`, match: `/admin`, icon: <LayoutDashboard className="w-5 h-5" /> },
         { name: t('allocations'), path: `/admin/projects`, match: `/admin/projects`, icon: <Users className="w-5 h-5" /> },
-        { name: t('archive'), path: `/student/archive`, match: `/student/archive`, icon: <Archive className="w-5 h-5" /> },
+        { name: t('archive'), path: `/archive`, match: `/archive`, icon: <Archive className="w-5 h-5" /> },
       ]
     : [
         { name: t('dashboard'), path: `/${activeRole}/dashboard`, match: `/${activeRole}/dashboard`, icon: <LayoutDashboard className="w-5 h-5" /> },
         { name: t('milestones'), path: `/${activeRole}/milestones`, match: `/${activeRole}/milestones`, icon: <Target className="w-5 h-5" /> },
         { name: t('teams'), path: `/${activeRole}/teams`, match: `/${activeRole}/teams`, icon: <Users className="w-5 h-5" /> },
         { name: t('documents'), path: `/${activeRole}/documents`, match: `/${activeRole}/documents`, icon: <FileText className="w-5 h-5" /> },
-        { name: t('archive'), path: `/student/archive`, match: `/student/archive`, icon: <Archive className="w-5 h-5" /> },
+        { name: t('archive'), path: `/archive`, match: `/archive`, icon: <Archive className="w-5 h-5" /> },
       ]
 
   const fullName = profile?.full_name || 'User'
@@ -201,18 +201,7 @@ export default function MasterSidebar({ role = 'student' }: { role?: string }) {
           </button>
         </div>
 
-        {/* User profile footer card */}
-        <div className={`flex items-center gap-3 p-2.5 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800 ${isCollapsed ? 'justify-center p-1.5' : ''}`}>
-          <div className="w-9 h-9 bg-slate-900 dark:bg-slate-800 rounded-xl flex items-center justify-center text-white font-bold text-xs shadow-sm select-none shrink-0">
-            {initials}
-          </div>
-          {!isCollapsed && (
-            <div className="flex-1 min-w-0 flex flex-col justify-center">
-              <span className="text-xs font-black text-slate-900 dark:text-white truncate block leading-none">{fullName}</span>
-              <span className="text-[8.5px] font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-wider block mt-1.5 leading-none">{displayRole}</span>
-            </div>
-          )}
-        </div>
+
       </div>
     </aside>
     </>

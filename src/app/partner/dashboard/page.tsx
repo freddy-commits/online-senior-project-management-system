@@ -55,10 +55,30 @@ export default function PartnerDashboardPage() {
       // Fetch projects sponsored by this industry partner
       const { data: projs } = await supabase
         .from('projects')
-        .select('*, student:student_id(full_name, email)')
+        .select('*, student:student_id(full_name, email), teams:team_id(id, name)')
         .eq('industry_partner_id', user.id)
-      
-      setProjects(projs || [])
+
+      // Fetch all team members for assigned projects so we can show the full team
+      const teamIds = (projs || []).map((p: any) => p.team_id).filter(Boolean)
+      let membersMap: Record<string, any[]> = {}
+      if (teamIds.length > 0) {
+        const { data: members } = await supabase
+          .from('team_members')
+          .select('*, profiles:user_id(id, full_name, email, avatar_url)')
+          .in('team_id', teamIds)
+        if (members) {
+          members.forEach((m: any) => {
+            if (!membersMap[m.team_id]) membersMap[m.team_id] = []
+            membersMap[m.team_id].push(m)
+          })
+        }
+      }
+
+      const enrichedProjs = (projs || []).map((p: any) => ({
+        ...p,
+        teamMembers: p.team_id ? (membersMap[p.team_id] || []) : []
+      }))
+      setProjects(enrichedProjs)
     } catch (e) {
       console.error(e)
     } finally {
@@ -271,10 +291,32 @@ export default function PartnerDashboardPage() {
                     </div>
 
                     <div className="flex items-center gap-2">
-                      {p.student ? (
-                        <div className="flex items-center gap-1.5 px-3 py-1 bg-indigo-50 text-indigo-700 rounded-lg border border-indigo-100">
-                          <Users className="w-3.5 h-3.5" />
-                          <span>Assigned: {p.student.full_name}</span>
+                      {p.teamMembers && p.teamMembers.length > 0 ? (
+                        <div className="flex flex-col gap-1">
+                          <div className="flex items-center gap-1.5 mb-1">
+                            <Users className="w-3.5 h-3.5 text-indigo-600" />
+                            <span className="text-[10px] font-black uppercase tracking-wider text-indigo-600">
+                              {p.teams?.name || 'Team'} · {p.teamMembers.length} member{p.teamMembers.length !== 1 ? 's' : ''}
+                            </span>
+                          </div>
+                          <div className="flex flex-wrap gap-1.5">
+                            {p.teamMembers.map((m: any, idx: number) => (
+                              <div
+                                key={idx}
+                                title={m.profiles?.full_name}
+                                className={`flex items-center gap-1 px-2 py-0.5 rounded-lg border text-[10px] font-bold ${
+                                  m.profiles?.id === p.student_id
+                                    ? 'bg-indigo-600 border-indigo-600 text-white'
+                                    : 'bg-indigo-50 border-indigo-100 text-indigo-700'
+                                }`}
+                              >
+                                {m.profiles?.full_name || 'Unknown'}
+                                {m.profiles?.id === p.student_id && (
+                                  <span className="ml-0.5 text-[8px] font-black uppercase opacity-80">★ Lead</span>
+                                )}
+                              </div>
+                            ))}
+                          </div>
                         </div>
                       ) : (
                         <div className="flex items-center gap-1.5 px-3 py-1 bg-amber-50 text-amber-700 rounded-lg border border-amber-100">

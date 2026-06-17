@@ -40,6 +40,7 @@ interface Project {
   title: string
   description: string
   team_id: string | null
+  student_id: string | null
   instructor_id: string | null
   industry_partner_id: string | null
   origin: string
@@ -948,48 +949,60 @@ export default function StudentTeamsClient() {
                     <p className="text-[10px] text-slate-400 font-extrabold uppercase mt-1">Booking Workspace</p>
                   </div>
 
-                  <form onSubmit={handleCreateMeeting} className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div>
-                      <label className="block text-[9px] uppercase tracking-wider font-extrabold text-slate-400 mb-2">Meeting Title</label>
-                      <input
-                        required
-                        type="text"
-                        placeholder="e.g. Frontend Integration Review"
-                        value={newMeetingTitle}
-                        onChange={(e) => setNewMeetingTitle(e.target.value)}
-                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-xs font-bold text-slate-800 focus:outline-none focus:ring-1 focus:ring-indigo-650"
-                      />
+                  {currentUser?.id === project?.student_id ? (
+                    <form onSubmit={handleCreateMeeting} className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                      <div>
+                        <label className="block text-[9px] uppercase tracking-wider font-extrabold text-slate-400 mb-2">Meeting Title</label>
+                        <input
+                          required
+                          type="text"
+                          placeholder="e.g. Frontend Integration Review"
+                          value={newMeetingTitle}
+                          onChange={(e) => setNewMeetingTitle(e.target.value)}
+                          className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-xs font-bold text-slate-800 focus:outline-none focus:ring-1 focus:ring-indigo-650"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[9px] uppercase tracking-wider font-extrabold text-slate-400 mb-2">Date</label>
+                        <input
+                          required
+                          type="date"
+                          value={newMeetingDate}
+                          onChange={(e) => setNewMeetingDate(e.target.value)}
+                          className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-xs font-bold text-slate-800 focus:outline-none focus:ring-1 focus:ring-indigo-650"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[9px] uppercase tracking-wider font-extrabold text-slate-400 mb-2">Time Slot</label>
+                        <input
+                          required
+                          type="text"
+                          placeholder="e.g. 3:00 PM - 4:00 PM"
+                          value={newMeetingTime}
+                          onChange={(e) => setNewMeetingTime(e.target.value)}
+                          className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-xs font-bold text-slate-800 focus:outline-none focus:ring-1 focus:ring-indigo-650"
+                        />
+                      </div>
+                      <div className="md:col-span-3 flex justify-end">
+                        <button
+                          type="submit"
+                          className="px-6 py-3 bg-indigo-700 hover:bg-indigo-800 text-white rounded-xl text-xs font-black uppercase tracking-wider flex items-center gap-1.5 shadow transition-all cursor-pointer"
+                        >
+                          <Plus className="w-4 h-4" /> Book Team Sync
+                        </button>
+                      </div>
+                    </form>
+                  ) : (
+                    <div className="p-5 bg-amber-50 border border-amber-100 rounded-2xl flex items-start gap-3 text-amber-800">
+                      <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
+                      <div>
+                        <h4 className="font-bold text-xs uppercase tracking-widest mb-1">Scheduling Restricted</h4>
+                        <p className="text-[11px] text-slate-500 leading-relaxed">
+                          Only the designated Team Leader is authorized to schedule sync meetings for the team.
+                        </p>
+                      </div>
                     </div>
-                    <div>
-                      <label className="block text-[9px] uppercase tracking-wider font-extrabold text-slate-400 mb-2">Date</label>
-                      <input
-                        required
-                        type="date"
-                        value={newMeetingDate}
-                        onChange={(e) => setNewMeetingDate(e.target.value)}
-                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-xs font-bold text-slate-800 focus:outline-none focus:ring-1 focus:ring-indigo-650"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[9px] uppercase tracking-wider font-extrabold text-slate-400 mb-2">Time Slot</label>
-                      <input
-                        required
-                        type="text"
-                        placeholder="e.g. 3:00 PM - 4:00 PM"
-                        value={newMeetingTime}
-                        onChange={(e) => setNewMeetingTime(e.target.value)}
-                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-xs font-bold text-slate-800 focus:outline-none focus:ring-1 focus:ring-indigo-650"
-                      />
-                    </div>
-                    <div className="md:col-span-3 flex justify-end">
-                      <button
-                        type="submit"
-                        className="px-6 py-3 bg-indigo-700 hover:bg-indigo-800 text-white rounded-xl text-xs font-black uppercase tracking-wider flex items-center gap-1.5 shadow transition-all cursor-pointer"
-                      >
-                        <Plus className="w-4 h-4" /> Book Team Sync
-                      </button>
-                    </div>
-                  </form>
+                  )}
                 </div>
               </motion.div>
             )}

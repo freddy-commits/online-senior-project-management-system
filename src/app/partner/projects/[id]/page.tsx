@@ -22,6 +22,7 @@ export default function PartnerProjectDetailsPage() {
   const { id } = useParams()
   const router = useRouter()
   const [project, setProject] = useState<any>(null)
+  const [teamMembers, setTeamMembers] = useState<any[]>([])
   const [deliverables, setDeliverables] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [feedback, setFeedback] = useState('')
@@ -38,11 +39,20 @@ export default function PartnerProjectDetailsPage() {
       // Fetch project with student and instructor info
       const { data: proj } = await supabase
         .from('projects')
-        .select('*, student:student_id(full_name, email), instructor:instructor_id(full_name, email)')
+        .select('*, student:student_id(full_name, email), instructor:instructor_id(full_name, email), teams:team_id(id, name)')
         .eq('id', id)
         .single()
       
       setProject(proj)
+
+      // Fetch all team members for this project if it has a team assigned
+      if (proj?.team_id) {
+        const { data: members } = await supabase
+          .from('team_members')
+          .select('*, profiles:user_id(id, full_name, email, avatar_url)')
+          .eq('team_id', proj.team_id)
+        setTeamMembers(members || [])
+      }
 
       // Fetch key deliverables
       const { data: deliv } = await supabase
@@ -173,14 +183,14 @@ export default function PartnerProjectDetailsPage() {
                 <div className="text-sm font-bold text-slate-900">{project.instructor?.full_name || 'Unassigned'}</div>
               </div>
             </div>
-            {project.team_members?.length > 0 && (
+            {teamMembers.length > 0 && (
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-center font-bold text-emerald-600">
                   <Users className="w-5 h-5" />
                 </div>
                 <div>
                   <div className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Team Size</div>
-                  <div className="text-sm font-bold text-slate-900">{project.team_members.length} member{project.team_members.length !== 1 ? 's' : ''}</div>
+                  <div className="text-sm font-bold text-slate-900">{teamMembers.length} member{teamMembers.length !== 1 ? 's' : ''}</div>
                 </div>
               </div>
             )}
@@ -195,38 +205,46 @@ export default function PartnerProjectDetailsPage() {
             <h2 className="text-2xl font-bold flex items-center gap-3 text-slate-900">
               <Users className="w-6 h-6 text-indigo-600" />
               Assigned Student Team
+              {project.teams?.name && (
+                <span className="ml-2 px-2.5 py-0.5 bg-indigo-50 border border-indigo-100 rounded-lg text-xs font-black text-indigo-600">
+                  {project.teams.name}
+                </span>
+              )}
             </h2>
-            <div className="space-y-4">
-              <div className="flex items-center gap-4 p-4 bg-slate-50 border border-slate-150 rounded-2xl">
-                <div className="w-10 h-10 rounded-full bg-indigo-600 text-white font-bold flex items-center justify-center shrink-0">
-                  {project.student?.full_name?.[0] || '?'}
-                </div>
-                <div>
-                  <span className="text-xs font-bold text-slate-455 block">STUDENT LEAD</span>
-                  <span className="text-sm font-black text-slate-900">{project.student?.full_name || 'Awaiting assignment'}</span>
-                  <span className="text-xs text-slate-450 block mt-0.5">{project.student?.email}</span>
-                </div>
-              </div>
 
-              {/* Team Members List */}
-              <div className="p-4 border border-slate-100 rounded-2xl space-y-3">
-                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Team Members & Assigned Roles</span>
-                {project.team_members && project.team_members.length > 0 ? (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-                    {project.team_members.map((member: string, idx: number) => (
-                      <div key={idx} className="flex items-center gap-2 p-2 bg-slate-50/50 rounded-xl border border-slate-100">
-                        <div className="w-6 h-6 rounded-full bg-slate-200 text-slate-655 flex items-center justify-center font-bold text-[10px]">
-                          M{idx + 1}
-                        </div>
-                        <span className="text-xs font-bold text-slate-700 truncate">{member}</span>
+            {teamMembers.length > 0 ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {teamMembers.map((member: any, idx: number) => {
+                  const isLead = member.profiles?.id === project.student_id
+                  return (
+                    <div key={idx} className={`flex items-center gap-3 p-4 rounded-2xl border ${
+                      isLead
+                        ? 'bg-indigo-50 border-indigo-200'
+                        : 'bg-slate-50 border-slate-100'
+                    }`}>
+                      <div className={`w-10 h-10 rounded-full font-bold flex items-center justify-center shrink-0 text-sm ${
+                        isLead ? 'bg-indigo-600 text-white' : 'bg-slate-200 text-slate-600'
+                      }`}>
+                        {member.profiles?.full_name?.[0]?.toUpperCase() || '?'}
                       </div>
-                    ))}
-                  </div>
-                ) : (
-                  <span className="text-xs font-semibold text-slate-500 block italic">No additional team members registered. Works as a solo capstone/project.</span>
-                )}
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-sm font-black text-slate-900 truncate">{member.profiles?.full_name || 'Unknown'}</span>
+                          {isLead && (
+                            <span className="px-1.5 py-0.5 bg-indigo-600 text-white text-[8px] font-black uppercase rounded shrink-0">★ Leader</span>
+                          )}
+                        </div>
+                        <span className="text-xs text-slate-400 block mt-0.5 truncate">{member.profiles?.email}</span>
+                      </div>
+                    </div>
+                  )
+                })}
               </div>
-            </div>
+            ) : (
+              <div className="p-6 text-center border-2 border-dashed border-slate-200 rounded-2xl text-slate-400 text-xs font-bold">
+                No student team assigned yet. The instructor will allocate a team to this project.
+              </div>
+            )}
           </section>
 
           {/* Final Product Submission */}
