@@ -17,8 +17,10 @@ import {
   Search,
   Archive,
   Inbox,
-  CheckCircle2
+  CheckCircle2,
+  Download
 } from 'lucide-react'
+import ProjectDescription, { parseDescription } from '@/components/project/ProjectDescription'
 
 export default function InstructorVettingPage() {
   const [proposals, setProposals] = useState<any[]>([])
@@ -477,10 +479,37 @@ export default function InstructorVettingPage() {
               <div className="space-y-6">
                 <div>
                   <h3 className="text-xs font-black uppercase tracking-[0.2em] text-slate-400 mb-3">Abstract & Objectives</h3>
-                  <p className="text-sm text-slate-700 leading-relaxed bg-slate-50 p-6 rounded-2xl border border-slate-200/70">
-                    {selectedProposal.description}
-                  </p>
+                  <ProjectDescription 
+                    description={selectedProposal.description} 
+                    className="text-sm text-slate-700 leading-relaxed bg-slate-50 p-6 rounded-2xl border border-slate-200/70" 
+                  />
                 </div>
+
+                {/* Show a dedicated "Attached Document" panel for industry proposals that have a brief */}
+                {selectedProposal.origin === 'industry' && (() => {
+                  const { brief } = parseDescription(selectedProposal.description || '')
+                  if (!brief) return null
+                  return (
+                    <div className="bg-blue-50/60 border border-blue-200/70 rounded-2xl p-5 flex items-start gap-4">
+                      <div className="w-10 h-10 rounded-xl bg-blue-100 border border-blue-200 flex items-center justify-center shrink-0">
+                        <FileText className="w-5 h-5 text-blue-600" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h4 className="text-xs font-black uppercase tracking-[0.15em] text-blue-700 mb-1">Attached Industry Document</h4>
+                        <p className="text-xs text-blue-600 font-semibold mb-3 truncate" title={brief.name}>{brief.name}</p>
+                        <a
+                          href={brief.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl transition-all shadow-sm shadow-blue-600/20 cursor-pointer active:scale-[0.98]"
+                        >
+                          <Download className="w-3.5 h-3.5" />
+                          Download / View Document
+                        </a>
+                      </div>
+                    </div>
+                  )
+                })()}
 
                 {/* Supervisor Indicator Info */}
                 <div className="flex items-start gap-3 bg-amber-50/50 border border-amber-200/60 rounded-2xl p-4 text-xs text-amber-800 leading-normal">

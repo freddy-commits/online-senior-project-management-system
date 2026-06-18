@@ -19,6 +19,7 @@ import {
   AlertTriangle
 } from 'lucide-react'
 import { supervisorUpdateDeliverableStatus, fetchSupervisorDocumentsData } from '@/app/supervisor/documents/actions'
+import { fetchInstructorResources } from '@/app/instructor/resources/actions'
 
 interface SubmissionItem {
   id: string
@@ -80,51 +81,32 @@ export default function SupervisorDocumentsClient({
 
   // Supervisor activity log state
   const [activityLogs, setActivityLogs] = useState<ActivityLogItem[]>([])
+  const [instructorResources, setInstructorResources] = useState<any[]>([])
 
-  // Load sandbox fallback data & activity logs on mount
+  // Load instructor resources from Supabase on mount
+  useEffect(() => {
+    fetchInstructorResources().then((res) => {
+      if (res.success && res.data) {
+        setInstructorResources(res.data.map((r: any) => ({
+          id: r.id,
+          name: r.name,
+          size: r.size,
+          uploadedAt: new Date(r.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+          file_url: r.file_url,
+        })))
+      }
+    })
+  }, [])
+
+  // Load activity logs from localStorage on mount
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      // Load activity logs
       const savedLogs = localStorage.getItem('seniorproj_supervisor_activity_log')
       if (savedLogs) {
         try {
           setActivityLogs(JSON.parse(savedLogs))
         } catch (e) {
           console.error("Failed to parse activity logs", e)
-        }
-      }
-
-      // Check if sandbox local storage has active state and demo mode is true
-      const storageKey = 'seniorproj_sandbox_db'
-      const data = localStorage.getItem(storageKey)
-      const isDemoMode = localStorage.getItem('demo_mode') === 'true'
-      if (isDemoMode && data) {
-        try {
-          const parsed = JSON.parse(data)
-          // Find active supervisor profile
-          const activeEmail = localStorage.getItem('active_user_email')
-          const supervisorProfile = (activeEmail ? parsed.profiles.find((p: any) => p.email.toLowerCase() === activeEmail.toLowerCase()) : null) || 
-                                    parsed.profiles.find((p: any) => p.role === 'supervisor') || { id: supervisorId }
-          
-          // Filter projects assigned to this supervisor (instructor_id = supervisorProfile.id)
-          const supervisorProjects = parsed.projects.filter((p: any) => p.instructor_id === supervisorProfile.id)
-          const supervisorProjectIds = supervisorProjects.map((p: any) => p.id)
-          
-          const supervisorDeliverables = parsed.deliverables ? parsed.deliverables.filter((d: any) => supervisorProjectIds.includes(d.project_id)) : []
-          
-          // Enrich projects with student profiles from mock DB
-          const enrichedProjects = supervisorProjects.map((p: any) => {
-            const studentProfile = parsed.profiles?.find((prof: any) => prof.id === p.student_id)
-            return {
-              ...p,
-              student: studentProfile ? { full_name: studentProfile.full_name, email: studentProfile.email } : null
-            }
-          })
-          
-          setProjects(enrichedProjects)
-          setDeliverables(supervisorDeliverables)
-        } catch (e) {
-          console.error("Failed to parse localStorage sandbox db:", e)
         }
       }
     }
@@ -666,6 +648,55 @@ export default function SupervisorDocumentsClient({
           )}
         </div>
       </div>
+
+      {/* ── Instructor Shared Guidelines & Templates ── */}
+      {instructorResources.length > 0 && (
+        <div className="bg-gradient-to-r from-slate-50 to-indigo-50/30 border border-slate-200 rounded-[2rem] p-6 shadow-sm space-y-4">
+          <div>
+            <h2 className="text-sm font-black uppercase tracking-wider text-slate-850 flex items-center gap-2">
+              <FileText className="w-4 h-4 text-indigo-500" />
+              Instructor Guidelines & Reference Templates
+            </h2>
+            <p className="text-[11px] text-slate-500 mt-1 font-semibold">
+              Reference templates, guidelines, and rubrics uploaded by the course coordinator/instructor.
+            </p>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {instructorResources.map((res: any) => {
+              const fileUrl = res.file_url || (
+                res.name ? `/preview/document?file=${encodeURIComponent(`/uploads/${res.name.replace(/\s+/g, '_')}`)}&title=${encodeURIComponent(res.name)}` : '#'
+              )
+              return (
+                <div key={res.id} className="p-4 bg-white border border-slate-150 rounded-2xl flex items-center justify-between shadow-sm hover:shadow-md transition-shadow">
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center shrink-0">
+                      <FileText className="w-5 h-5 text-indigo-600" />
+                    </div>
+                    <div className="min-w-0">
+                      <span className="text-xs font-extrabold text-slate-850 block truncate max-w-[150px]" title={res.name}>
+                        {res.name}
+                      </span>
+                      <span className="text-[9px] text-slate-400 font-bold block mt-0.5">
+                        {res.size} &bull; {res.uploadedAt}
+                      </span>
+                    </div>
+                  </div>
+                  <a
+                    href={fileUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center justify-center w-8 h-8 border border-slate-200 bg-white hover:bg-slate-50 text-slate-500 hover:text-slate-800 rounded-xl transition-all shadow-sm shrink-0"
+                    title="Download Resource File"
+                  >
+                    <ExternalLink className="w-3.5 h-3.5" />
+                  </a>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
 
       {/* MODAL: APPROVE CONFIRMATION / GRADE */}
       <AnimatePresence>

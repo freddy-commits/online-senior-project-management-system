@@ -36,7 +36,8 @@ export default function SupervisorProfilePage() {
         phone: data.phone,
         bio: data.bio,
         dob: data.dob,
-        gender: data.gender
+        gender: data.gender,
+        avatar_url: data.avatar_url
       })
       .eq('id', user.id)
 

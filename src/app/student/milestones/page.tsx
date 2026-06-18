@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase/client'
 import { useTrack } from '@/components/providers/TrackProvider'
 import { seedDeliverables, addCustomMilestone, submitDeliverable, getDeliverables, getStudentProjects } from './actions'
 import { useTranslations } from 'next-intl'
+import ProjectDescription from '@/components/project/ProjectDescription'
 import { 
   Calendar, 
   Check, 
@@ -760,7 +761,10 @@ export default function StudentMilestonesPage() {
                     <div className="space-y-1">
                       <span className="text-[9px] font-black text-emerald-800 uppercase tracking-widest block">Approved Capstone Project Topic</span>
                       <h2 className="text-lg font-black text-slate-900">{project.title}</h2>
-                      <p className="text-xs font-semibold text-slate-500 max-w-3xl mt-1.5 leading-relaxed">{project.description}</p>
+                      <ProjectDescription 
+                        description={project.description} 
+                        className="text-xs font-semibold text-slate-500 max-w-3xl mt-1.5 leading-relaxed" 
+                      />
                     </div>
                   </div>
                 )}

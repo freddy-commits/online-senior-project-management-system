@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { motion, useScroll, useTransform } from 'framer-motion'
 import Link from 'next/link'
+import Image from 'next/image'
 import { 
   Check, 
   ArrowRight, 
@@ -26,7 +27,18 @@ export default function LandingContent() {
   const yImage2 = useTransform(scrollY, [200, 1400], [30, -50])
 
   return (
-    <div className="min-h-screen bg-[url('/landing_bg.png')] bg-cover bg-center bg-no-repeat bg-fixed text-slate-100 font-sans flex flex-col justify-between relative overflow-x-hidden">
+    <div className="min-h-screen text-slate-100 font-sans flex flex-col justify-between relative overflow-x-hidden">
+      {/* Hardware-accelerated fixed background image */}
+      <div className="fixed inset-0 -z-10 pointer-events-none select-none">
+        <Image
+          src="/landing_bg.webp"
+          alt="Background Pattern"
+          fill
+          priority
+          quality={75}
+          className="object-cover"
+        />
+      </div>
       
       {/* Deep glass overlay covering the whole background */}
       <div className="absolute inset-0 bg-gradient-to-br from-slate-950/90 via-indigo-950/80 to-purple-950/85 z-0 pointer-events-none" />
@@ -177,12 +189,19 @@ export default function LandingContent() {
 
             {/* Right Image Display with y-Parallax scroll effect */}
             <div className="md:col-span-6 w-full h-72 md:h-[28rem] rounded-[2rem] overflow-hidden shadow-2xl border border-white/10 relative bg-slate-900/50">
-              <motion.img 
+              <motion.div 
                 style={{ y: yImage1 }}
-                src="/students_collaborating_warm.png" 
-                alt="Students Collaborating" 
-                className="w-full h-[120%] object-cover absolute top-0 left-0 opacity-90"
-              />
+                className="w-full h-[120%] absolute top-0 left-0"
+              >
+                <Image 
+                  src="/students_collaborating_warm.webp" 
+                  alt="Students Collaborating" 
+                  fill
+                  sizes="(max-width: 768px) 100vw, 50vw"
+                  className="object-cover opacity-90"
+                  loading="lazy"
+                />
+              </motion.div>
             </div>
             
           </div>
@@ -194,12 +213,19 @@ export default function LandingContent() {
             
             {/* Left Image Display with y-Parallax scroll effect */}
             <div className="md:col-span-6 w-full h-72 md:h-[28rem] rounded-[2rem] overflow-hidden shadow-2xl border border-white/10 relative order-2 md:order-1 bg-slate-900/50">
-              <motion.img 
+              <motion.div 
                 style={{ y: yImage2 }}
-                src="/student_thesis_cool.png" 
-                alt="Hands typing on a tablet" 
-                className="w-full h-[120%] object-cover absolute top-0 left-0 opacity-90"
-              />
+                className="w-full h-[120%] absolute top-0 left-0"
+              >
+                <Image 
+                  src="/student_thesis_cool.webp" 
+                  alt="Hands typing on a tablet" 
+                  fill
+                  sizes="(max-width: 768px) 100vw, 50vw"
+                  className="object-cover opacity-90"
+                  loading="lazy"
+                />
+              </motion.div>
             </div>
 
             {/* Right Texts with Viewport Entry Slide-Up Animation */}
@@ -325,6 +351,7 @@ export default function LandingContent() {
                       <button 
                         key={dot}
                         onClick={() => setActiveDot(dot)}
+                        aria-label={`Go to slide ${dot + 1}`}
                         className={`w-4 h-1.5 rounded-full transition-all duration-300 ${
                           activeDot === dot ? 'bg-indigo-500 w-6' : 'bg-white/10 hover:bg-white/20'
                         }`}

@@ -23,7 +23,12 @@ export async function GET(request: Request) {
         .eq('id', user.id)
         .single()
 
-      if (existingProfile) {
+      // A user is considered "newly created" if their auth record was created in the last 30 seconds.
+      // This is crucial for OAuth signups where the database trigger defaults the role to 'student'
+      // because Google/GitHub OAuth doesn't supply the selected role metadata to the database trigger.
+      const isNewUser = new Date(user.created_at).getTime() >= Date.now() - 30 * 1000
+
+      if (existingProfile && !isNewUser) {
         // Existing user — redirect to their dashboard based on stored role
         const dashboardMap: Record<string, string> = {
           student: '/student/dashboard',

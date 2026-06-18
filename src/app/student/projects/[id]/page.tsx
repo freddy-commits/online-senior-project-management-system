@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { submitDeliverable, getDeliverables, getProjectById } from '../../milestones/actions'
 import { useParams, useRouter } from 'next/navigation'
 import { motion } from 'framer-motion'
+import ProjectDescription from '@/components/project/ProjectDescription'
 import { 
   FolderKanban, 
   Calendar, 
@@ -181,6 +182,14 @@ export default function ProjectDetailsPage() {
           </p>
         </div>
       ) : null}
+
+      {project.description && (
+        <div className="mb-10 p-6 md:p-8 bg-white border border-slate-200 rounded-[2rem] shadow-sm relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-50/50 blur-[50px] rounded-full -mr-10 -mt-10 pointer-events-none" />
+          <h3 className="text-xs font-black text-slate-500 uppercase tracking-widest mb-4">Project Description / Brief</h3>
+          <ProjectDescription description={project.description} className="text-sm text-slate-650 leading-relaxed font-semibold" />
+        </div>
+      )}
 
       <div className="grid lg:grid-cols-3 gap-10">
         {/* Deliverables List */}

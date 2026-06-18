@@ -28,6 +28,7 @@ import {
   Award
 } from 'lucide-react'
 import { updateDeliverableStatusAdmin, updateProjectGradeAdmin, fetchInstructorDocumentsData } from '@/app/instructor/documents/actions'
+import { fetchInstructorResources, saveInstructorResource, deleteInstructorResource } from '@/app/instructor/resources/actions'
 
 // Submissions structure
 interface SubmissionItem {
@@ -51,6 +52,8 @@ interface ResourceFile {
   name: string
   size: string
   uploadedAt: string
+  file_url?: string
+  storage_path?: string
 }
 
 export default function InstructorDocumentsClient({
@@ -91,68 +94,20 @@ export default function InstructorDocumentsClient({
   const [uploadProgress, setUploadProgress] = useState(0)
   const [uploadedResources, setUploadedResources] = useState<ResourceFile[]>([])
 
-  // Load persisted resources and sandbox data fallback on mount
+  // Load instructor resources from Supabase on mount
   useEffect(() => {
-    // Load persisted uploaded resource documents
-    if (typeof window !== 'undefined') {
-      const savedResources = localStorage.getItem('seniorproj_uploaded_resources')
-      if (savedResources) {
-        try {
-          setUploadedResources(JSON.parse(savedResources))
-        } catch (e) {
-          console.error("Failed to parse resource files", e)
-        }
+    fetchInstructorResources().then((res) => {
+      if (res.success && res.data) {
+        setUploadedResources(res.data.map((r: any) => ({
+          id: r.id,
+          name: r.name,
+          size: r.size,
+          uploadedAt: new Date(r.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+          file_url: r.file_url,
+          storage_path: r.storage_path,
+        })))
       }
-
-      // Check if sandbox local storage has active state
-      const storageKey = 'seniorproj_sandbox_db'
-      const data = localStorage.getItem(storageKey)
-      const isDemoMode = localStorage.getItem('demo_mode') === 'true'
-      if (isDemoMode && data) {
-        try {
-          const parsed = JSON.parse(data)
-          
-          // Seed the 5 mockup submissions if database state has no deliverables with submissions
-          const hasSubmissions = parsed.deliverables?.some((d: any) => d.submission_url)
-          if (!hasSubmissions) {
-            console.log("Seeding mockup submissions into local sandbox database...")
-            const seededState = seedMockupSubmissions(parsed)
-            localStorage.setItem(storageKey, JSON.stringify(seededState))
-            
-            // Sync to backend global state
-            fetch('/api/sandbox/sync', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(seededState)
-            }).catch(() => {})
-
-            // Update react states
-            const enrichedProjects = (seededState.projects || []).map((p: any) => {
-              const studentProfile = seededState.profiles?.find((prof: any) => prof.id === p.student_id)
-              return {
-                ...p,
-                student: studentProfile ? { full_name: studentProfile.full_name, email: studentProfile.email } : null
-              }
-            })
-            setProjects(enrichedProjects)
-            setDeliverables(seededState.deliverables || [])
-          } else {
-            // Override with local sandbox data to stay 100% in sync
-            const enrichedProjects = (parsed.projects || []).map((p: any) => {
-              const studentProfile = parsed.profiles?.find((prof: any) => prof.id === p.student_id)
-              return {
-                ...p,
-                student: studentProfile ? { full_name: studentProfile.full_name, email: studentProfile.email } : null
-              }
-            })
-            setProjects(enrichedProjects)
-            setDeliverables(parsed.deliverables || [])
-          }
-        } catch (e) {
-          console.error("Failed to parse localStorage sandbox db:", e)
-        }
-      }
-    }
+    })
   }, [])
 
   // Sync to submissions whenever projects or deliverables change
@@ -545,10 +500,10 @@ export default function InstructorDocumentsClient({
     }
   }
 
-  const handleFiles = (file: File) => {
+  const handleFiles = async (file: File) => {
     const maxSize = 20 * 1024 * 1024 // 20MB
     if (file.size > maxSize) {
-      showToast("File exceeds the maximum 20MB limit.")
+      showToast('File exceeds the maximum 20MB limit.')
       return
     }
 
@@ -556,44 +511,57 @@ export default function InstructorDocumentsClient({
     const fileNameLower = file.name.toLowerCase()
     const isValidType = validExtensions.some(ext => fileNameLower.endsWith(ext))
     if (!isValidType) {
-      showToast("Invalid file type. Only PDF and DOCX documents are allowed.")
+      showToast('Invalid file type. Only PDF and DOCX documents are allowed.')
       return
     }
 
     setUploadingFile(true)
-    setUploadProgress(0)
+    setUploadProgress(20)
 
-    const interval = setInterval(() => {
-      setUploadProgress((prev) => {
-        if (prev >= 100) {
-          clearInterval(interval)
-          setTimeout(() => {
-            const formattedSize = (file.size / (1024 * 1024)).toFixed(2) + " MB"
-            const newResFile: ResourceFile = {
-              id: `res-${Math.random().toString(36).substring(2, 9)}`,
-              name: file.name,
-              size: formattedSize,
-              uploadedAt: new Date().toLocaleDateString('en-US', {
-                month: 'short',
-                day: 'numeric',
-                year: 'numeric'
-              })
-            }
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+      formData.append('bucket', 'instructor-resources')
 
-            const updatedResources = [newResFile, ...uploadedResources]
-            setUploadedResources(updatedResources)
-            if (typeof window !== 'undefined') {
-              localStorage.setItem('seniorproj_uploaded_resources', JSON.stringify(updatedResources))
-            }
+      setUploadProgress(50)
 
-            setUploadingFile(false)
-            showToast(`Syllabus template "${file.name}" uploaded successfully!`)
-          }, 400)
-          return 100
-        }
-        return prev + 10
+      const response = await fetch('/api/upload', { method: 'POST', body: formData })
+      const result = await response.json()
+
+      if (!result.success) throw new Error(result.error || 'Upload failed')
+
+      setUploadProgress(80)
+
+      // Persist metadata to Supabase
+      const formattedSize = (file.size / (1024 * 1024)).toFixed(2) + ' MB'
+      const saveRes = await saveInstructorResource({
+        name: file.name,
+        size: formattedSize,
+        file_url: result.url,
       })
-    }, 150)
+
+      setUploadProgress(100)
+
+      if (saveRes.success && saveRes.data) {
+        const newResFile: ResourceFile = {
+          id: saveRes.data.id,
+          name: file.name,
+          size: formattedSize,
+          uploadedAt: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+          file_url: result.url,
+        }
+        setUploadedResources(prev => [newResFile, ...prev])
+        showToast(`Resource "${file.name}" uploaded and saved successfully!`)
+      } else {
+        throw new Error(saveRes.error || 'Failed to save resource metadata')
+      }
+    } catch (err: any) {
+      console.error('Upload failed:', err)
+      showToast(`Upload failed: ${err.message}`)
+    } finally {
+      setUploadingFile(false)
+      setUploadProgress(0)
+    }
   }
 
   const handleDeleteResource = (id: string, name: string) => {
@@ -950,15 +918,35 @@ export default function InstructorDocumentsClient({
                     </div>
                   </div>
                   <div className="flex items-center gap-1">
-                    <button 
-                      onClick={() => showToast(`Downloading "${res.name}" (simulated)`)}
-                      className="p-1.5 hover:bg-indigo-50 hover:text-indigo-700 text-slate-400 rounded-lg transition-colors cursor-pointer"
-                      title="Download Resource"
-                    >
-                      <Download className="w-4 h-4" />
-                    </button>
-                    <button 
-                      onClick={() => handleDeleteResource(res.id, res.name)}
+                    {res.file_url ? (
+                      <a
+                        href={res.file_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="p-1.5 hover:bg-indigo-50 hover:text-indigo-700 text-slate-400 rounded-lg transition-colors cursor-pointer"
+                        title="Download Resource"
+                      >
+                        <Download className="w-4 h-4" />
+                      </a>
+                    ) : (
+                      <button
+                        onClick={() => showToast(`Resource "${res.name}" URL unavailable.`)}
+                        className="p-1.5 hover:bg-indigo-50 hover:text-indigo-700 text-slate-400 rounded-lg transition-colors cursor-pointer"
+                        title="Download Resource"
+                      >
+                        <Download className="w-4 h-4" />
+                      </button>
+                    )}
+                    <button
+                      onClick={async () => {
+                        const result = await deleteInstructorResource(res.id)
+                        if (result.success) {
+                          setUploadedResources(prev => prev.filter(r => r.id !== res.id))
+                          showToast(`Resource "${res.name}" deleted.`)
+                        } else {
+                          showToast(`Failed to delete: ${result.error}`)
+                        }
+                      }}
                       className="p-1.5 hover:bg-red-50 hover:text-red-650 text-slate-400 rounded-lg transition-colors cursor-pointer"
                       title="Delete Resource"
                     >

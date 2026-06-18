@@ -37,6 +37,7 @@ import {
 
 
 import { useTrack } from '@/components/providers/TrackProvider'
+import ProjectDescription from '@/components/project/ProjectDescription'
 
 interface StudentDashboardClientProps {
   initialProfile: {
@@ -304,7 +305,7 @@ export default function StudentDashboardClient({
                       YEAR 3 • INDUSTRY TRACK
                     </span>
                     <h1 className="text-2xl font-black text-slate-900 tracking-tight leading-tight">{activeProject.title}</h1>
-                    <p className="text-xs text-slate-500 font-medium leading-relaxed max-w-2xl">{activeProject.description}</p>
+                    <ProjectDescription description={activeProject.description} className="text-xs text-slate-500 font-medium leading-relaxed max-w-2xl" />
                   </div>
                   <div className="bg-slate-50 border border-slate-100 rounded-xl p-2.5 shrink-0 text-center">
                     <span className="text-[8px] text-slate-400 font-extrabold uppercase block">Status</span>
@@ -527,7 +528,7 @@ export default function StudentDashboardClient({
                       YEAR 4 • CAPSTONE TRACK
                     </span>
                     <h1 className="text-2xl font-black text-slate-900 tracking-tight leading-tight">{activeProject.title}</h1>
-                    <p className="text-xs text-slate-500 font-medium leading-relaxed max-w-2xl">{activeProject.description}</p>
+                    <ProjectDescription description={activeProject.description} className="text-xs text-slate-500 font-medium leading-relaxed max-w-2xl" />
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
                     <span className="inline-flex items-center gap-1 px-3 py-1 bg-[#fdf5f0] text-[#a75d24] rounded-full text-[9px] font-black uppercase tracking-widest border border-[#a75d24]/20">

@@ -1,0 +1,35 @@
+# Project Station
+
+> Project Station is an integrated academic workspace for managing capstone and senior projects. It connects students, instructors, supervisors, and industry partners on a single platform.
+
+## Key Sections
+
+- [Home](/)
+- [Login](/login)
+- [Register](/register)
+- [Student Dashboard](/student/dashboard)
+- [Instructor Dashboard](/instructor/dashboard)
+- [Supervisor Dashboard](/supervisor/dashboard)
+- [Industry Partner Dashboard](/partner/dashboard)
+- [Admin Panel](/admin)
+
+## About
+
+Project Station is a capstone project management system designed for universities. It supports two academic tracks:
+
+- **Industry Track (Years 1–3):** Teams of students solve real-world challenges submitted by industry partners. Milestones, deliverables, and evaluations are tracked in one place.
+- **Thesis Track (Year 4):** Independent students conduct original research supervised by faculty advisors. The full thesis lifecycle — from proposal to final defense — is managed on the platform.
+
+## Features
+
+- Structured milestone and deliverable tracking
+- Document submission, review, and grading
+- Industry partner portal for submitting project briefs
+- Supervisor and instructor document evaluation
+- Team formation and management
+- Real-time notifications and grading feedback
+- Multi-role authentication (Student, Instructor, Supervisor, Industry Partner, Admin)
+
+## Usage Policy
+
+This content is publicly available for indexing. AI agents may use this information to help users understand what Project Station offers and how to navigate the platform.

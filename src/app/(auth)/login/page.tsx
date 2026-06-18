@@ -4,7 +4,8 @@ import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
+import { resetUserPasswordByEmail, checkEmailExists } from '../actions'
 import { 
   Users, 
   GraduationCap, 
@@ -14,7 +15,12 @@ import {
   Eye, 
   EyeOff, 
   Sliders,
-  Briefcase
+  Briefcase,
+  KeyRound,
+  X,
+  Lock,
+  Mail,
+  AlertCircle
 } from 'lucide-react'
 
 export default function LoginPage() {
@@ -23,6 +29,47 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [selectedRole, setSelectedRole] = useState('student')
+
+  // Forgot password modal state
+  const [isForgotOpen, setIsForgotOpen] = useState(false)
+  const [forgotEmail, setForgotEmail] = useState('')
+  const [forgotError, setForgotError] = useState('')
+  const [forgotLoading, setForgotLoading] = useState(false)
+  const [forgotSuccess, setForgotSuccess] = useState('')
+
+  async function handleRequestTempPassword(e: React.FormEvent) {
+    e.preventDefault()
+    if (!forgotEmail) return
+    setForgotLoading(true)
+    setForgotError('')
+    setForgotSuccess('')
+    try {
+      // Step 1: Verify the email exists in our system
+      const checkRes = await checkEmailExists(forgotEmail)
+      if (!checkRes.success) {
+        throw new Error(checkRes.error)
+      }
+      if (!checkRes.exists) {
+        throw new Error('This email is not registered in the system.')
+      }
+
+      // Step 2: Request temporary password and send email
+      const resetRes = await resetUserPasswordByEmail(forgotEmail)
+      if (!resetRes.success) {
+        throw new Error(resetRes.error)
+      }
+
+      if (resetRes.simulated) {
+        setForgotSuccess(`[Simulation Mode] Temporary password is: ${resetRes.tempPassword} (No RESEND_API_KEY is defined in environment variables. In production, this will be emailed directly to the user's real inbox.)`)
+      } else {
+        setForgotSuccess('A temporary password has been successfully sent to your registered email address!')
+      }
+    } catch (err: any) {
+      setForgotError(err.message || 'Failed to send temporary password.')
+    } finally {
+      setForgotLoading(false)
+    }
+  }
 
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -248,7 +295,20 @@ export default function LoginPage() {
 
             {/* Password input */}
             <div className="space-y-1.5">
-              <label className="text-[10px] text-slate-400 font-black uppercase tracking-wider block ml-1">Password</label>
+              <div className="flex items-center justify-between ml-1">
+                <label className="text-[10px] text-slate-400 font-black uppercase tracking-wider block">Password</label>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsForgotOpen(true)
+                    setForgotError('')
+                    setForgotSuccess('')
+                  }}
+                  className="text-[10px] text-blue-600 hover:text-blue-800 font-black uppercase tracking-wider"
+                >
+                  Forgot Password?
+                </button>
+              </div>
               <div className="relative">
                 <input
                   name="password"
@@ -339,6 +399,82 @@ export default function LoginPage() {
 
         </motion.div>
       </div>
+
+      {/* Forgot Password Recovery Modal */}
+      <AnimatePresence>
+        {isForgotOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 font-sans">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 15 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 15 }}
+              className="bg-white rounded-[2rem] border border-slate-200 p-8 max-w-md w-full shadow-2xl relative space-y-6"
+            >
+              <button
+                onClick={() => {
+                  setIsForgotOpen(false)
+                  setForgotEmail('')
+                  setForgotError('')
+                  setForgotSuccess('')
+                }}
+                className="absolute top-5 right-5 p-1.5 hover:bg-slate-50 rounded-xl transition-all cursor-pointer text-slate-400"
+              >
+                <X className="w-5 h-5" />
+              </button>
+
+              <div className="space-y-2 text-left">
+                <div className="w-12 h-12 bg-blue-50 border border-blue-100 text-blue-600 rounded-2xl flex items-center justify-center shadow-sm">
+                  <KeyRound className="w-6 h-6" />
+                </div>
+                <h3 className="text-xl font-black text-slate-900 tracking-tight leading-snug pt-2">
+                  Recover Password
+                </h3>
+                <p className="text-xs text-slate-500 font-semibold leading-relaxed">
+                  Enter your registered email address. We will generate and send a new temporary password to your real email account to help you reset it.
+                </p>
+              </div>
+
+              {forgotError && (
+                <div className="p-3 bg-red-50 border border-red-200 text-red-600 text-xs rounded-xl font-bold flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 shrink-0" />
+                  <span>{forgotError}</span>
+                </div>
+              )}
+
+              {forgotSuccess && (
+                <div className="p-3 bg-green-50 border border-green-200 text-green-700 text-xs rounded-xl font-bold flex items-center gap-2">
+                  <Check className="w-4 h-4 shrink-0" />
+                  <span>{forgotSuccess}</span>
+                </div>
+              )}
+
+              <form onSubmit={handleRequestTempPassword} className="space-y-4">
+                <div className="space-y-1.5">
+                  <label className="text-[10px] text-slate-400 font-black uppercase tracking-wider block ml-1">Account Email</label>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                    <input
+                      type="email"
+                      required
+                      placeholder="yourname@university.edu"
+                      value={forgotEmail}
+                      onChange={(e) => setForgotEmail(e.target.value)}
+                      className="w-full bg-slate-50/50 border border-slate-205 focus:border-blue-500 rounded-xl py-3 pl-10 pr-4 text-slate-900 placeholder:text-slate-300 text-xs font-bold focus:outline-none focus:ring-2 focus:ring-blue-500/10 transition-all"
+                    />
+                  </div>
+                </div>
+                <button
+                  type="submit"
+                  disabled={forgotLoading || !forgotEmail}
+                  className="w-full py-3.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-extrabold rounded-xl transition-all shadow-sm flex items-center justify-center gap-2 text-xs tracking-wider uppercase cursor-pointer"
+                >
+                  {forgotLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Send Temporary Password'}
+                </button>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
     </div>
   )

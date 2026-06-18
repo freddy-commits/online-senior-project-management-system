@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
@@ -18,12 +18,15 @@ import {
   SlidersHorizontal,
   CloudUpload,
   AlertCircle,
-  Settings as SettingsIcon
+  Settings as SettingsIcon,
+  FileText,
+  X
 } from 'lucide-react'
+import ProjectDescription from '@/components/project/ProjectDescription'
 
 export default function PartnerDashboardPage() {
   const router = useRouter()
-  const [activeTab, setActiveTab] = useState<'overview' | 'my-problems' | 'submit-problem'>('overview')
+  const [activeTab, setActiveTab] = useState<'my-problems' | 'submit-problem'>('my-problems')
   const [projects, setProjects] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   
@@ -36,6 +39,67 @@ export default function PartnerDashboardPage() {
   
   const [submitLoading, setSubmitLoading] = useState(false)
   const [submitSuccess, setSubmitSuccess] = useState('')
+
+  const [uploadedFileUrl, setUploadedFileUrl] = useState('')
+  const [uploadedFileName, setUploadedFileName] = useState('')
+  const [uploading, setUploading] = useState(false)
+  const [uploadError, setUploadError] = useState('')
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    // Limit to 50MB
+    if (file.size > 50 * 1024 * 1024) {
+      setUploadError('File size must be less than 50MB. Please use a smaller file.')
+      return
+    }
+
+    setUploading(true)
+    setUploadError('')
+
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+
+      const res = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData,
+      })
+
+      const data = await res.json()
+
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || `Upload failed (HTTP ${res.status})`)
+      }
+
+      if (data.url) {
+        // Use the original filename for display but the server URL for downloading
+        setUploadedFileUrl(data.url)
+        setUploadedFileName(file.name) // always use original name for readability
+      } else {
+        throw new Error('Upload response did not include a file URL')
+      }
+    } catch (err: any) {
+      setUploadError(err.message || 'Failed to upload file. Please try again.')
+      // Clear the file input so user can retry
+      if (fileInputRef.current) {
+        fileInputRef.current.value = ''
+      }
+    } finally {
+      setUploading(false)
+    }
+  }
+
+  const handleRemoveFile = () => {
+    setUploadedFileUrl('')
+    setUploadedFileName('')
+    setUploadError('')
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ''
+    }
+  }
 
   const supabase = createClient()
 
@@ -97,11 +161,22 @@ export default function PartnerDashboardPage() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
 
+      let descriptionWithBrief = probDesc
+      // Append category, priority, and skills to help instructors vet the submission
+      if (probSkills) {
+        descriptionWithBrief += `\n\nRequired Skills: ${probSkills}`
+      }
+      descriptionWithBrief += `\n\nCategory: ${probCategory} | Priority: ${probPriority}`
+      // Attach the uploaded file URL so the instructor can view the document
+      if (uploadedFileUrl) {
+        descriptionWithBrief += `\n\n[Attached Brief: ${uploadedFileName} | ${uploadedFileUrl}]`
+      }
+
       const { error } = await supabase
         .from('projects')
         .insert({
           title: probTitle,
-          description: probDesc,
+          description: descriptionWithBrief,
           industry_partner_id: user.id,
           status: 'pending' // waits for instructor to vet and approve
         })
@@ -112,6 +187,8 @@ export default function PartnerDashboardPage() {
       setProbTitle('')
       setProbDesc('')
       setProbSkills('')
+      setUploadedFileUrl('')
+      setUploadedFileName('')
       
       await fetchData()
       setTimeout(() => {
@@ -139,12 +216,6 @@ export default function PartnerDashboardPage() {
       {/* Dynamic Tab Navigation */}
       <div className="flex border-b border-slate-200 mb-8 text-sm font-black uppercase tracking-wider items-center flex-wrap">
         <button 
-          onClick={() => setActiveTab('overview')}
-          className={`pb-4 px-6 relative transition-all cursor-pointer ${activeTab === 'overview' ? 'text-indigo-600 border-b-2 border-indigo-600' : 'text-slate-400 hover:text-slate-700'}`}
-        >
-          Overview
-        </button>
-        <button 
           onClick={() => setActiveTab('my-problems')}
           className={`pb-4 px-6 relative transition-all cursor-pointer ${activeTab === 'my-problems' ? 'text-indigo-600 border-b-2 border-indigo-600' : 'text-slate-400 hover:text-slate-700'}`}
         >
@@ -156,97 +227,7 @@ export default function PartnerDashboardPage() {
         >
           Submit New Problem
         </button>
-        <Link 
-          href="/messages"
-          className="pb-4 px-6 relative transition-all text-slate-400 hover:text-slate-700 flex items-center gap-1.5"
-        >
-          <MessageSquare className="w-4 h-4" />
-          Messages
-        </Link>
-        <Link 
-          href="/partner/settings"
-          className="pb-4 px-6 relative transition-all text-slate-400 hover:text-slate-700 flex items-center gap-1.5"
-        >
-          <SettingsIcon className="w-4 h-4" />
-          Settings
-        </Link>
       </div>
-
-      {/* OVERVIEW TAB */}
-      {activeTab === 'overview' && (
-        <div className="space-y-8 animate-in fade-in duration-300">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-            {/* Card 1 */}
-            <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm flex items-center justify-between">
-              <div>
-                <span className="text-xs text-slate-500 font-bold uppercase block mb-1">Total Problems</span>
-                <span className="text-3xl font-black text-slate-900">{totalProblems}</span>
-              </div>
-              <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
-                <Briefcase className="w-5 h-5" />
-              </div>
-            </div>
-
-            {/* Card 2 */}
-            <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm flex items-center justify-between">
-              <div>
-                <span className="text-xs text-slate-500 font-bold uppercase block mb-1">Pending Assignment</span>
-                <span className="text-3xl font-black text-slate-900">{pendingAssignment}</span>
-              </div>
-              <div className="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
-                <Clock className="w-5 h-5" />
-              </div>
-            </div>
-
-            {/* Card 3 */}
-            <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm flex items-center justify-between">
-              <div>
-                <span className="text-xs text-slate-500 font-bold uppercase block mb-1">Active Projects</span>
-                <span className="text-3xl font-black text-slate-900">{activeProjects}</span>
-              </div>
-              <div className="w-10 h-10 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center">
-                <Target className="w-5 h-5" />
-              </div>
-            </div>
-
-            {/* Card 4 */}
-            <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm flex items-center justify-between">
-              <div>
-                <span className="text-xs text-slate-500 font-bold uppercase block mb-1">Student Teams</span>
-                <span className="text-3xl font-black text-slate-900">{totalStudentTeams}</span>
-              </div>
-              <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
-                <Users className="w-5 h-5" />
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white border border-slate-200 rounded-[2rem] p-6 shadow-sm space-y-6">
-            <h2 className="text-lg font-black text-slate-900">Recent Activity</h2>
-            {projects.length > 0 ? (
-              <div className="space-y-4">
-                {projects.slice(0, 3).map((p) => (
-                  <div key={p.id} className="p-4 bg-slate-50 border border-slate-100 rounded-2xl flex justify-between items-center">
-                    <div>
-                      <h4 className="font-bold text-slate-900 text-sm">{p.title}</h4>
-                      <p className="text-xs text-slate-500 mt-1 line-clamp-1">{p.description}</p>
-                    </div>
-                    <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase border ${
-                      p.status === 'approved' ? 'bg-green-50 border-green-200 text-green-700' : 'bg-amber-50 border-amber-200 text-amber-700'
-                    }`}>
-                      {p.status}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-10 text-slate-400 font-bold text-xs">
-                No recent activity. Submit a problem statement to get started.
-              </div>
-            )}
-          </div>
-        </div>
-      )}
 
       {/* MY PROBLEMS TAB */}
       {activeTab === 'my-problems' && (
@@ -279,7 +260,7 @@ export default function PartnerDashboardPage() {
                           {p.status === 'approved' ? 'active' : 'pending vetting'}
                         </span>
                       </div>
-                      <p className="text-xs font-semibold text-slate-500 mt-2 leading-relaxed max-w-4xl">{p.description}</p>
+                      <ProjectDescription description={p.description} className="text-xs font-semibold text-slate-500 mt-2 leading-relaxed max-w-4xl" />
                     </div>
                   </div>
 
@@ -429,11 +410,53 @@ export default function PartnerDashboardPage() {
             {/* Resources & Data Drag box */}
             <div>
               <label className="block text-[10px] uppercase tracking-[0.2em] font-black text-slate-500 mb-2">Resources & Data</label>
-              <div className="border-2 border-dashed border-slate-200 hover:border-indigo-500 rounded-xl p-6 text-center transition-all bg-slate-50/50 cursor-pointer group">
-                <CloudUpload className="w-6 h-6 text-slate-400 group-hover:text-indigo-600 mx-auto mb-2 transition-colors" />
-                <span className="text-xs font-extrabold text-slate-800 block">Upload datasets, documentation, or related files</span>
-                <span className="text-[9.5px] text-slate-400 font-bold block pt-0.5">PDF, CSV, XLSX, or ZIP up to 50MB</span>
-              </div>
+              
+              <input 
+                type="file"
+                ref={fileInputRef}
+                onChange={handleFileChange}
+                accept=".pdf,.csv,.xlsx,.xls,.zip"
+                className="hidden"
+              />
+
+              {!uploadedFileUrl ? (
+                <div 
+                  onClick={() => fileInputRef.current?.click()}
+                  className="border-2 border-dashed border-slate-200 hover:border-indigo-500 rounded-xl p-6 text-center transition-all bg-slate-50/50 cursor-pointer group animate-in fade-in duration-200"
+                >
+                  {uploading ? (
+                    <Loader2 className="w-6 h-6 text-indigo-500 animate-spin mx-auto mb-2" />
+                  ) : (
+                    <CloudUpload className="w-6 h-6 text-slate-400 group-hover:text-indigo-600 mx-auto mb-2 transition-colors" />
+                  )}
+                  <span className="text-xs font-extrabold text-slate-800 block">
+                    {uploading ? 'Uploading brief...' : 'Upload datasets, documentation, or related files'}
+                  </span>
+                  <span className="text-[9.5px] text-slate-400 font-bold block pt-0.5">PDF, CSV, XLSX, or ZIP up to 50MB</span>
+                </div>
+              ) : (
+                <div className="border border-slate-200 rounded-xl p-4 bg-slate-50/50 flex items-center justify-between animate-in fade-in zoom-in-95 duration-200">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center">
+                      <FileText className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <span className="text-xs font-extrabold text-slate-800 block truncate max-w-[280px]">
+                        {uploadedFileName}
+                      </span>
+                      <span className="text-[10px] text-green-600 font-bold block">File uploaded successfully</span>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleRemoveFile}
+                    className="p-1.5 hover:bg-slate-200 rounded-lg text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              )}
+              {uploadError && <p className="text-red-500 text-xs mt-1 ml-1 font-semibold">{uploadError}</p>}
             </div>
 
             <div className="p-4 bg-indigo-50/50 border border-indigo-100 rounded-2xl flex gap-3 text-indigo-800">

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { User, Save, ShieldCheck, Loader2, Camera } from 'lucide-react'
 
 export default function ProfileSection({ initialProfile, onSave }: { initialProfile: any, onSave: (data: any) => Promise<boolean> }) {
@@ -10,12 +10,57 @@ export default function ProfileSection({ initialProfile, onSave }: { initialProf
     phone: initialProfile?.phone || '',
     bio: initialProfile?.bio || '',
     dob: initialProfile?.dob || '',
-    gender: initialProfile?.gender || 'not_specified'
+    gender: initialProfile?.gender || 'not_specified',
+    avatar_url: initialProfile?.avatar_url || ''
   })
   
   const [saving, setSaving] = useState(false)
   const [success, setSuccess] = useState(false)
   const [errors, setErrors] = useState<{ [key: string]: boolean }>({})
+
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const [uploading, setUploading] = useState(false)
+  const [uploadError, setUploadError] = useState('')
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    // Limit to 2MB
+    if (file.size > 2 * 1024 * 1024) {
+      setUploadError('Image size must be less than 2MB.')
+      return
+    }
+
+    setUploading(true)
+    setUploadError('')
+
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+      formData.append('bucket', 'avatars')
+
+      const res = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData,
+      })
+
+      if (!res.ok) {
+        throw new Error('Failed to upload image.')
+      }
+
+      const data = await res.json()
+      if (data.success && data.url) {
+        setProfile((prev) => ({ ...prev, avatar_url: data.url }))
+      } else {
+        throw new Error(data.error || 'Upload failed')
+      }
+    } catch (err: any) {
+      setUploadError(err.message || 'Failed to upload photo.')
+    } finally {
+      setUploading(false)
+    }
+  }
 
   const validate = () => {
     const newErrors: { [key: string]: boolean } = {}
@@ -48,15 +93,39 @@ export default function ProfileSection({ initialProfile, onSave }: { initialProf
       </h2>
 
       <div className="flex flex-col md:flex-row gap-8 mb-8 items-start">
-        <div className="w-24 h-24 rounded-full bg-slate-100 flex items-center justify-center border-2 border-dashed border-slate-300 relative group shrink-0">
-          <User className="w-8 h-8 text-slate-400" />
-          <button className="absolute bottom-0 right-0 p-1.5 bg-indigo-600 rounded-full text-white hover:bg-indigo-700 transition-colors shadow-sm">
-            <Camera className="w-3.5 h-3.5" />
+        <div className="relative group shrink-0">
+          <div 
+            onClick={() => fileInputRef.current?.click()}
+            className="w-24 h-24 rounded-full bg-slate-100 flex items-center justify-center border-2 border-dashed border-slate-350 overflow-hidden cursor-pointer hover:border-indigo-400 transition-colors"
+          >
+            {uploading ? (
+              <Loader2 className="w-8 h-8 text-indigo-500 animate-spin" />
+            ) : profile.avatar_url ? (
+              <img src={profile.avatar_url} alt="Profile photo" className="w-full h-full object-cover" />
+            ) : (
+              <User className="w-8 h-8 text-slate-400" />
+            )}
+          </div>
+          <button 
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            className="absolute -bottom-1 -right-1 p-2 bg-indigo-600 rounded-full text-white hover:bg-indigo-700 transition-colors shadow-md border-2 border-white flex items-center justify-center cursor-pointer active:scale-95"
+            title="Upload profile photo"
+          >
+            <Camera className="w-4 h-4" />
           </button>
         </div>
+        <input 
+          type="file"
+          ref={fileInputRef}
+          onChange={handleFileChange}
+          accept="image/*"
+          className="hidden"
+        />
         <div className="flex-1 space-y-1">
           <h3 className="font-bold text-slate-800">Profile Photo</h3>
           <p className="text-xs text-slate-500">Upload a professional photo for your workspace profile. Max size 2MB.</p>
+          {uploadError && <p className="text-red-500 text-xs mt-1 ml-1 font-semibold">{uploadError}</p>}
         </div>
       </div>
 

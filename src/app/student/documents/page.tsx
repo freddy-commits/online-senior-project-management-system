@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { createClient } from '@/lib/supabase/client'
 import { useTrack } from '@/components/providers/TrackProvider'
 import { getDeliverables, getStudentProjects } from '../milestones/actions'
+import { fetchInstructorResources } from '@/app/instructor/resources/actions'
 import { useTranslations } from 'next-intl'
 import {
   FileText,
@@ -61,6 +62,21 @@ export default function StudentDocumentsPage() {
   const [loading, setLoading] = useState(true)
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({})
   const [toast, setToast] = useState('')
+  const [instructorResources, setInstructorResources] = useState<any[]>([])
+
+  useEffect(() => {
+    fetchInstructorResources().then((res) => {
+      if (res.success && res.data) {
+        setInstructorResources(res.data.map((r: any) => ({
+          id: r.id,
+          name: r.name,
+          size: r.size,
+          uploadedAt: new Date(r.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+          file_url: r.file_url,
+        })))
+      }
+    })
+  }, [])
 
   useEffect(() => {
     fetchData()
@@ -244,6 +260,55 @@ export default function StudentDocumentsPage() {
             </motion.div>
           ))}
         </div>
+
+        {/* ── Instructor Shared Guidelines & Templates ── */}
+        {instructorResources.length > 0 && (
+          <div className="bg-gradient-to-r from-slate-50 to-indigo-50/30 border border-slate-200 dark:bg-slate-900/40 dark:border-slate-800 rounded-[2rem] p-6 shadow-sm space-y-4">
+            <div>
+              <h2 className="text-sm font-black uppercase tracking-wider text-slate-850 dark:text-slate-100 flex items-center gap-2">
+                <FileText className="w-4 h-4 text-indigo-500" />
+                Instructor Guidelines & Reference Templates
+              </h2>
+              <p className="text-[11px] text-slate-500 mt-1 font-semibold">
+                Reference templates, guidelines, and rubrics uploaded by your instructor to help structure your submissions.
+              </p>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {instructorResources.map((res) => {
+                const fileUrl = res.file_url || (
+                  res.name ? `/preview/document?file=${encodeURIComponent(`/uploads/${res.name.replace(/\s+/g, '_')}`)}&title=${encodeURIComponent(res.name)}` : '#'
+                )
+                return (
+                  <div key={res.id} className="p-4 bg-white border border-slate-150 rounded-2xl flex items-center justify-between shadow-sm hover:shadow-md transition-shadow">
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center shrink-0">
+                        <FileText className="w-5 h-5 text-indigo-600" />
+                      </div>
+                      <div className="min-w-0">
+                        <span className="text-xs font-extrabold text-slate-850 block truncate max-w-[200px]" title={res.name}>
+                          {res.name}
+                        </span>
+                        <span className="text-[9px] text-slate-400 font-bold block mt-0.5">
+                          {res.size} &bull; {res.uploadedAt}
+                        </span>
+                      </div>
+                    </div>
+                    <a
+                      href={fileUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center justify-center w-8 h-8 border border-slate-200 bg-white hover:bg-slate-50 text-slate-500 hover:text-slate-800 rounded-xl transition-all shadow-sm shrink-0"
+                      title="Download Resource File"
+                    >
+                      <ExternalLink className="w-3.5 h-3.5" />
+                    </a>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        )}
 
         {/* ── Milestone Document Groups ── */}
         {sortedGroupedDocs.length === 0 ? (

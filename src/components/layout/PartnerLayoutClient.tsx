@@ -65,7 +65,6 @@ export default function PartnerLayoutClient({ children, initialUserName }: Partn
 
   const menuItems = [
     { name: 'Dashboard', icon: <LayoutDashboard className="w-5 h-5" />, path: '/partner/dashboard' },
-    { name: 'Pitch Proposals', icon: <Lightbulb className="w-5 h-5" />, path: '/partner/pitch' },
     { name: 'Archive', icon: <Archive className="w-5 h-5" />, path: '/archive' },
     { name: 'Messages', icon: <MessageSquare className="w-5 h-5" />, path: '/messages' },
     { name: 'Settings', icon: <Settings className="w-5 h-5" />, path: '/partner/settings' },
