@@ -12,15 +12,20 @@ import {
   MoreVertical,
   Loader2,
   ChevronRight,
-  ShieldCheck
+  ShieldCheck,
+  Eye,
+  Mail,
+  X
 } from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
 
 export default function AdminProjectManagement() {
   const [projects, setProjects] = useState<any[]>([])
-  const [instructors, setInstructors] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [userProfile, setUserProfile] = useState<any>(null)
   const [processing, setProcessing] = useState<string | null>(null)
+  const [activeMenuProjectId, setActiveMenuProjectId] = useState<string | null>(null)
+  const [selectedProjectForView, setSelectedProjectForView] = useState<any | null>(null)
   
   const supabase = createClient()
 
@@ -38,74 +43,16 @@ export default function AdminProjectManagement() {
         .select('*, student:student_id(full_name, email), instructor:instructor_id(full_name, email)')
         .order('created_at', { ascending: false })
       
-      setProjects(projs || [])
-
-      // Fetch all instructors for the assignment dropdown
-      const { data: inst } = await supabase.from('profiles').select('id, full_name, email').eq('role', 'instructor')
-      setInstructors(inst || [])
+      // Filter to keep ONLY projects where this panel member is assigned in examiner_panel
+      const filtered = (projs || []).filter((p: any) => 
+        p.examiner_panel && Array.isArray(p.examiner_panel) && p.examiner_panel.includes(user.id)
+      )
       
+      setProjects(filtered)
       setLoading(false)
     }
     fetchData()
   }, [])
-
-  async function assignInstructor(projectId: string, instructorId: string) {
-    setProcessing(projectId)
-    const { error } = await supabase
-      .from('projects')
-      .update({ instructor_id: instructorId || null })
-      .eq('id', projectId)
-
-    if (error) {
-      alert(error.message)
-    } else {
-      // Find assigned instructor and project details to send notification email
-      const instr = instructors.find(i => i.id === instructorId)
-      const proj = projects.find(p => p.id === projectId)
-      if (instr && instr.email && proj) {
-        try {
-          const { notifyInstructorAssigned, notifyStudentSupervisorAssigned } = await import('@/lib/email/emailService')
-          const { sendSMS } = await import('@/lib/sms/smsService')
-          
-          // 1. Notify supervisor (Email + SMS)
-          await notifyInstructorAssigned(
-            instr.email,
-            instr.full_name || 'Advisor',
-            proj.title,
-            proj.student?.full_name || 'Assigned Student'
-          )
-          await sendSMS({
-            recipientId: instructorId,
-            message: `🛡️ Department Assignment: You have been assigned as Faculty Supervisor for the project "${proj.title}" by student ${proj.student?.full_name || 'Student'}. Please log in to supervise.`
-          })
-
-          // 2. Notify student (Email + SMS)
-          const studentEmail = proj.student?.email
-          if (studentEmail) {
-            await notifyStudentSupervisorAssigned(
-              studentEmail,
-              proj.student?.full_name || 'Student',
-              instr.full_name || 'Advisor',
-              proj.title
-            )
-          }
-          if (proj.student_id) {
-            await sendSMS({
-              recipientId: proj.student_id,
-              message: `🎉 Department Assignment: Dr. ${instr.full_name || 'Sarah Johnson'} has been assigned as your Faculty Supervisor for project "${proj.title}". Your milestone submission locks are now lifted!`
-            })
-          }
-        } catch (err) {
-          console.error('Failed to notify instructor or student via email/SMS:', err)
-        }
-      }
-
-      // Refresh list
-      const { data } = await supabase.from('projects').select('*, student:student_id(full_name, email), instructor:instructor_id(full_name, email)')
-      setProjects(data || [])
-    }
-    setProcessing(null)
-  }
 
   async function toggleRecommendation(projectId: string, currentState: boolean) {
     setProcessing(projectId)
@@ -177,7 +124,7 @@ export default function AdminProjectManagement() {
                       {project.status}
                     </span>
                   </td>
-                  <td className="px-8 py-6 text-right">
+                  <td className="px-8 py-6 text-right relative">
                     <div className="flex items-center justify-end gap-3">
                       <button 
                         onClick={() => toggleRecommendation(project.id, project.is_recommended)}
@@ -190,9 +137,41 @@ export default function AdminProjectManagement() {
                       >
                         <Star className="w-4 h-4" />
                       </button>
-                      <button className="p-2 hover:bg-slate-100 rounded-lg transition-colors border border-transparent">
-                        <MoreVertical className="w-4 h-4 text-slate-500" />
-                      </button>
+                      <div className="relative">
+                        <button 
+                          onClick={() => setActiveMenuProjectId(activeMenuProjectId === project.id ? null : project.id)}
+                          className="p-2 hover:bg-slate-100 rounded-lg transition-colors border border-transparent cursor-pointer"
+                        >
+                          <MoreVertical className="w-4 h-4 text-slate-500" />
+                        </button>
+                        {activeMenuProjectId === project.id && (
+                          <>
+                            <div className="fixed inset-0 z-10" onClick={() => setActiveMenuProjectId(null)} />
+                            <div className="absolute right-0 mt-2 w-48 bg-white border border-slate-200 rounded-xl shadow-lg z-20 py-1.5 overflow-hidden">
+                              <button 
+                                onClick={() => {
+                                  setSelectedProjectForView(project)
+                                  setActiveMenuProjectId(null)
+                                }}
+                                className="w-full text-left px-4 py-2 hover:bg-slate-50 text-xs font-semibold text-slate-700 hover:text-slate-950 flex items-center gap-2 cursor-pointer transition-colors"
+                              >
+                                <Eye className="w-4 h-4 text-slate-400" />
+                                View Details
+                              </button>
+                              {project.student?.email && (
+                                <a 
+                                  href={`mailto:${project.student.email}?subject=Project Allocation: ${encodeURIComponent(project.title)}`}
+                                  className="w-full text-left px-4 py-2 hover:bg-slate-50 text-xs font-semibold text-slate-700 hover:text-slate-950 flex items-center gap-2 cursor-pointer transition-colors"
+                                  onClick={() => setActiveMenuProjectId(null)}
+                                >
+                                  <Mail className="w-4 h-4 text-slate-400" />
+                                  Email Student Lead
+                                </a>
+                              )}
+                            </div>
+                          </>
+                        )}
+                      </div>
                     </div>
                   </td>
                 </tr>
@@ -201,6 +180,94 @@ export default function AdminProjectManagement() {
           </table>
         </div>
       </div>
+
+      {/* Project Details Modal */}
+      <AnimatePresence>
+        {selectedProjectForView && (
+          <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-white rounded-[2.5rem] border border-slate-200 shadow-xl max-w-2xl w-full overflow-hidden"
+            >
+              <div className="p-8 border-b border-slate-100 flex justify-between items-start gap-4">
+                <div>
+                  <span className={`px-2.5 py-1 rounded-lg text-[9px] font-black uppercase tracking-wider border mb-2.5 inline-block ${
+                    selectedProjectForView.status === 'approved' 
+                      ? 'bg-green-50 border-green-100 text-green-700' 
+                      : 'bg-yellow-50 border-yellow-100 text-yellow-700'
+                  }`}>
+                    {selectedProjectForView.status}
+                  </span>
+                  <h2 className="text-xl font-black text-slate-950 leading-snug">{selectedProjectForView.title}</h2>
+                </div>
+                <button 
+                  onClick={() => setSelectedProjectForView(null)}
+                  className="p-2 hover:bg-slate-100 rounded-xl text-slate-400 hover:text-slate-600 transition-all cursor-pointer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="p-8 space-y-6 max-h-[60vh] overflow-y-auto custom-scrollbar">
+                <div className="space-y-2">
+                  <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Project Description</h4>
+                  <p className="text-sm font-semibold text-slate-650 leading-relaxed bg-slate-50 p-5 rounded-2xl border border-slate-100">
+                    {selectedProjectForView.description || "No description provided."}
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Student Lead</h4>
+                    <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 flex items-center gap-3">
+                      <div className="w-9 h-9 bg-blue-100 rounded-xl flex items-center justify-center text-blue-700 font-extrabold text-sm">
+                        {selectedProjectForView.student?.full_name?.[0]?.toUpperCase() || 'S'}
+                      </div>
+                      <div>
+                        <div className="text-xs font-bold text-slate-800">{selectedProjectForView.student?.full_name || 'N/A'}</div>
+                        <div className="text-[10px] font-semibold text-slate-500">{selectedProjectForView.student?.email || 'N/A'}</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Academic Advisor / Supervisor</h4>
+                    <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 flex items-center gap-3">
+                      <div className="w-9 h-9 bg-emerald-100 rounded-xl flex items-center justify-center text-emerald-700 font-extrabold text-sm">
+                        {selectedProjectForView.instructor?.full_name?.[0]?.toUpperCase() || 'A'}
+                      </div>
+                      <div>
+                        <div className="text-xs font-bold text-slate-800">{selectedProjectForView.instructor?.full_name || 'Not Assigned'}</div>
+                        <div className="text-[10px] font-semibold text-slate-500">{selectedProjectForView.instructor?.email || 'N/A'}</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="pt-2 flex flex-wrap gap-3">
+                  {selectedProjectForView.is_recommended && (
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-yellow-50 border border-yellow-100 text-yellow-700 rounded-xl text-xs font-black uppercase tracking-wider">
+                      <Star className="w-3.5 h-3.5 fill-current" />
+                      Recommended to Industry
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              <div className="p-6 border-t border-slate-100 bg-slate-50 flex justify-end">
+                <button 
+                  onClick={() => setSelectedProjectForView(null)}
+                  className="px-6 py-2.5 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 font-bold rounded-xl text-xs uppercase tracking-wider shadow-sm transition-all cursor-pointer"
+                >
+                  Close
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }

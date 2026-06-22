@@ -54,8 +54,22 @@ export default function AdminDashboard() {
         .eq('id', user.id)
         .single()
 
-      if (!prof || prof.role !== 'admin') {
-        window.location.href = `/${prof?.role || ''}`
+      let hasAccess = false
+      if (prof.role === 'examiner_panel') {
+        hasAccess = true
+      } else if (prof.role === 'supervisor' || prof.role === 'instructor') {
+        const { data: examinerProjs } = await supabase
+          .from('projects')
+          .select('id')
+          .contains('examiner_panel', [user.id])
+          .limit(1)
+        if (examinerProjs && examinerProjs.length > 0) {
+          hasAccess = true
+        }
+      }
+
+      if (!hasAccess) {
+        window.location.href = `/${prof?.role || ''}/dashboard`
         return
       }
       setProfile(prof)
@@ -89,33 +103,6 @@ export default function AdminDashboard() {
       console.warn("Live Supabase fetch failed, reading from Sandbox db:", err)
     }
 
-    // Always fallback/merge if we are in sandbox environment or Supabase is empty
-    if (typeof window !== 'undefined') {
-      const storageKey = 'seniorproj_sandbox_db'
-      const data = localStorage.getItem(storageKey)
-      if (data) {
-        try {
-          const parsed = JSON.parse(data)
-          if ((projs.length === 0 || !projs.some(p => p.student)) && parsed.projects) {
-            projs = parsed.projects.map((p: any) => {
-              const student = parsed.profiles.find((pr: any) => pr.id === p.student_id)
-              const instructor = parsed.profiles.find((pr: any) => pr.id === p.instructor_id)
-              return {
-                ...p,
-                student: student ? { full_name: student.full_name, email: student.email } : null,
-                instructor: instructor ? { full_name: instructor.full_name, email: instructor.email } : null
-              }
-            })
-          }
-          if (allDeliverables.length === 0 && parsed.deliverables) {
-            allDeliverables = parsed.deliverables
-          }
-        } catch (e) {
-          console.error("Error parsing sandbox db:", e)
-        }
-      }
-    }
-
     // Filter out industry projects: keep only academic/capstone projects
     const capstoneOnly = projs.filter((p: any) => !p.industry_partner_id)
     
@@ -135,18 +122,6 @@ export default function AdminDashboard() {
     setProjects(enriched)
   }
 
-  async function syncLocalDb(updatedState: any) {
-    if (typeof window !== 'undefined') {
-      const storageKey = 'seniorproj_sandbox_db'
-      localStorage.setItem(storageKey, JSON.stringify(updatedState))
-      await fetch('/api/sandbox/sync', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updatedState)
-      }).catch(() => {})
-    }
-  }
-
   // Handle final review and questions submission
   async function handleSubmitEvaluation(e: React.FormEvent) {
     e.preventDefault()
@@ -163,22 +138,79 @@ export default function AdminDashboard() {
         })
         .eq('id', evaluatingProject.id)
       if (error) throw error
-    } catch (err) {
-      console.warn("Live Supabase write failed, writing to fallback Sandbox:", err)
-      // Fallback
-      if (typeof window !== 'undefined') {
-        const storageKey = 'seniorproj_sandbox_db'
-        const data = localStorage.getItem(storageKey)
-        if (data) {
-          const parsed = JSON.parse(data)
-          parsed.projects = parsed.projects.map((p: any) => 
-            p.id === evaluatingProject.id 
-              ? { ...p, review_notes: evalNotes, review_questions: questions, review_completed: true }
-              : p
-          )
-          await syncLocalDb(parsed)
-        }
+
+      // 1. Insert notification in Supabase
+      const { error: notifError } = await supabase
+        .from('notifications')
+        .insert({
+          user_id: evaluatingProject.student_id,
+          title: 'New Examiner Panel Feedback',
+          message: `The examiner panel has completed their review of your project "${evaluatingProject.title}".`,
+          type: 'system',
+          created_at: new Date().toISOString()
+        })
+      if (notifError) console.warn("Live notification write failed:", notifError)
+
+      // 2. Insert message in Supabase
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) {
+        const { error: msgError } = await supabase
+          .from('messages')
+          .insert({
+            sender_id: user.id,
+            receiver_id: evaluatingProject.student_id,
+            content: `[Examiner Panel Feedback]\nNotes: ${evalNotes}\nQuestions:\n${questions}`
+          })
+        if (msgError) console.warn("Live message write failed:", msgError)
       }
+    } catch (err: any) {
+      console.error("Supabase write failed:", err)
+      alert("Failed to submit evaluation: " + (err.message || err))
+    }
+
+    // Notify via email and SMS
+    try {
+      const { sendNotificationEmail } = await import('@/lib/email/emailService')
+      const { sendSMS } = await import('@/lib/sms/smsService')
+
+      const studentEmail = evaluatingProject.student?.email
+      const studentName = evaluatingProject.student?.full_name || 'Student'
+      const loginUrl = typeof window !== 'undefined' ? window.location.origin : ''
+
+      if (studentEmail) {
+        await sendNotificationEmail({
+          toEmail: studentEmail,
+          toName: studentName,
+          subject: '🛡️ Examiner Panel Vetting & Feedback Posted',
+          bodyText: `Hi ${studentName},\n\nThe examiner panel has completed the evaluation of your project proposal: "${evaluatingProject.title}".\n\nReview Notes: ${evalNotes}\n\nDefense Questions to Address:\n${questions}\n\nPlease log in to your Student Dashboard to review this feedback: ${loginUrl}/login\n\nBest regards,\nProject Hub Administration`,
+          bodyHtml: `
+            <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 12px; background: #fff; color: #334155;">
+              <h2 style="color: #4f46e5; margin-bottom: 20px;">🛡️ Examiner Panel Feedback Posted</h2>
+              <p>Hi <strong>${studentName}</strong>,</p>
+              <p>The examiner panel has evaluated your project proposal for <strong>"${evaluatingProject.title}"</strong> and submitted the following feedback:</p>
+              <blockquote style="background: #f8fafc; border-left: 4px solid #4f46e5; padding: 12px; margin: 16px 0;">
+                <strong>Review Notes:</strong><br/>
+                ${evalNotes.replace(/\n/g, '<br/>')}<br/><br/>
+                <strong>Defense Questions:</strong><br/>
+                ${questions.replace(/\n/g, '<br/>')}
+              </blockquote>
+              <p>Please log in to your Student Dashboard to review these notes and prepare your defense responses.</p>
+              <div style="margin: 30px 0; text-align: center;">
+                <a href="${loginUrl}/login" style="background: #4f46e5; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: bold; display: inline-block;">View Feedback</a>
+              </div>
+              <hr style="border: 0; border-top: 1px solid #edf2f7; margin: 20px 0;" />
+              <p style="font-size: 11px; color: #a0aec0; text-align: center;">This is an automated notification from Project Station.</p>
+            </div>
+          `
+        })
+      }
+
+      await sendSMS({
+        recipientId: evaluatingProject.student_id,
+        message: `🛡️ Panel Vetting: Vetting feedback & defense questions have been posted for your capstone project: "${evaluatingProject.title}". Please log in to review.`
+      })
+    } catch (notifyErr) {
+      console.error("Notification dispatch failed:", notifyErr)
     }
 
     setSuccessMessage(`Committee review and questions submitted for "${evaluatingProject.title}"!`)

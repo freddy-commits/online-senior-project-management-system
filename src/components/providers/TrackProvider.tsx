@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react'
 
-export type TrackType = 'industry' | 'thesis' | 'advisor' | 'partner' | 'coordinator' | 'panel' | 'supervisor' | 'admin'
+export type TrackType = 'industry' | 'thesis' | 'advisor' | 'partner' | 'coordinator' | 'panel' | 'supervisor' | 'examiner_panel'
 
 interface TrackContextType {
   trackMode: TrackType
@@ -17,7 +17,7 @@ export function TrackProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem('seniorproj_track_mode') as TrackType
-      if (saved && ['industry', 'thesis', 'advisor', 'partner', 'coordinator', 'panel', 'supervisor', 'admin'].includes(saved)) {
+      if (saved && ['industry', 'thesis', 'advisor', 'partner', 'coordinator', 'panel', 'supervisor', 'examiner_panel'].includes(saved)) {
         setTrackModeState(saved)
       }
     }

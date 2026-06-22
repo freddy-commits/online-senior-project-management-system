@@ -25,7 +25,7 @@
     "student_workspace": "STUDENT WORKSPACE",
     "coordinator_workspace": "COORDINATOR WORKSPACE",
     "supervisor_workspace": "SUPERVISOR WORKSPACE",
-    "admin_workspace": "ADMIN WORKSPACE",
+    "admin_workspace": "PANEL EXAMINER WORKSPACE",
     "notifications": "Notifications",
     "toggle_sidebar": "Toggle Sidebar"
   },

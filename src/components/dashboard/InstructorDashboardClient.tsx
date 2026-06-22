@@ -83,7 +83,7 @@ export default function InstructorDashboardClient({
     // Refresh Projects
     const { data: newProjects } = await supabase
       .from('projects')
-      .select('*, student:student_id(full_name, email), instructor:instructor_id(full_name), supervisor:instructor_id(full_name), partner:industry_partner_id(full_name)')
+      .select('*, student:student_id(full_name, email, department), instructor:instructor_id(full_name), supervisor:instructor_id(full_name), partner:industry_partner_id(full_name)')
       .order('created_at', { ascending: false })
     if (newProjects) {
       const enriched = newProjects.map((p: any) => ({
@@ -108,26 +108,12 @@ export default function InstructorDashboardClient({
     if (newPartners) setPartners(newPartners)
   }
 
-  // Update logic with Local DB Fallback support
-  async function syncLocalDb(updatedState: any) {
-    if (typeof window !== 'undefined') {
-      const storageKey = 'seniorproj_sandbox_db'
-      localStorage.setItem(storageKey, JSON.stringify(updatedState))
-      await fetch('/api/sandbox/sync', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updatedState)
-      }).catch(() => {})
-    }
-  }
-
   // Task: Review & Approve Proposal + Allocate Supervisor
   async function handleApproveProject(e: React.FormEvent) {
     e.preventDefault()
     if (!selectedProjectForApproval || !selectedSupervisorId) return
     setProcessing(selectedProjectForApproval.id)
 
-    let updateError = null
     try {
       const { error } = await supabase
         .from('projects')
@@ -137,25 +123,12 @@ export default function InstructorDashboardClient({
         })
         .eq('id', selectedProjectForApproval.id)
       if (error) throw error
-    } catch (err) {
-      console.warn("Live Supabase write failed, writing to fallback Sandbox:", err)
-      // Fallback
-      if (typeof window !== 'undefined') {
-        const storageKey = 'seniorproj_sandbox_db'
-        const data = localStorage.getItem(storageKey)
-        if (data) {
-          const parsed = JSON.parse(data)
-          parsed.projects = parsed.projects.map((p: any) => 
-            p.id === selectedProjectForApproval.id 
-              ? { ...p, status: 'approved', instructor_id: selectedSupervisorId }
-              : p
-          )
-          await syncLocalDb(parsed)
-        }
-      }
+      setSuccessMessage(`Project "${selectedProjectForApproval.title}" approved and supervisor allocated!`)
+    } catch (err: any) {
+      console.error("Supabase write failed:", err)
+      alert("Failed to approve project: " + (err.message || err))
     }
 
-    setSuccessMessage(`Project "${selectedProjectForApproval.title}" approved and supervisor allocated!`)
     setTimeout(() => setSuccessMessage(''), 5000)
     await refreshData()
     setSelectedProjectForApproval(null)
@@ -166,30 +139,18 @@ export default function InstructorDashboardClient({
     if (!selectedProjectForApproval) return
     setProcessing(selectedProjectForApproval.id)
 
-    let updateError = null
     try {
       const { error } = await supabase
         .from('projects')
         .update({ status: 'rejected' })
         .eq('id', selectedProjectForApproval.id)
       if (error) throw error
-    } catch (err) {
-      console.warn("Live Supabase write failed, writing to fallback Sandbox:", err)
-      // Fallback
-      if (typeof window !== 'undefined') {
-        const storageKey = 'seniorproj_sandbox_db'
-        const data = localStorage.getItem(storageKey)
-        if (data) {
-          const parsed = JSON.parse(data)
-          parsed.projects = parsed.projects.map((p: any) => 
-            p.id === selectedProjectForApproval.id ? { ...p, status: 'rejected' } : p
-          )
-          await syncLocalDb(parsed)
-        }
-      }
+      setSuccessMessage(`Project "${selectedProjectForApproval.title}" rejected.`)
+    } catch (err: any) {
+      console.error("Supabase write failed:", err)
+      alert("Failed to reject project: " + (err.message || err))
     }
 
-    setSuccessMessage(`Project "${selectedProjectForApproval.title}" rejected.`)
     setTimeout(() => setSuccessMessage(''), 5000)
     await refreshData()
     setSelectedProjectForApproval(null)
@@ -216,21 +177,12 @@ export default function InstructorDashboardClient({
         .from('deliverables')
         .insert(newMilestone)
       if (error) throw error
-    } catch (err) {
-      console.warn("Live Supabase write failed, writing to fallback Sandbox:", err)
-      // Fallback
-      if (typeof window !== 'undefined') {
-        const storageKey = 'seniorproj_sandbox_db'
-        const data = localStorage.getItem(storageKey)
-        if (data) {
-          const parsed = JSON.parse(data)
-          parsed.deliverables = [...(parsed.deliverables || []), newMilestone]
-          await syncLocalDb(parsed)
-        }
-      }
+      setSuccessMessage(`Milestone "${newMilestoneTitle}" configured successfully!`)
+    } catch (err: any) {
+      console.error("Supabase write failed:", err)
+      alert("Failed to create milestone: " + (err.message || err))
     }
 
-    setSuccessMessage(`Milestone "${newMilestoneTitle}" configured successfully!`)
     setTimeout(() => setSuccessMessage(''), 5000)
     await refreshData()
     setNewMilestoneTitle('')
@@ -249,21 +201,12 @@ export default function InstructorDashboardClient({
         .delete()
         .eq('id', id)
       if (error) throw error
-    } catch (err) {
-      console.warn("Live Supabase write failed, writing to fallback Sandbox:", err)
-      // Fallback
-      if (typeof window !== 'undefined') {
-        const storageKey = 'seniorproj_sandbox_db'
-        const data = localStorage.getItem(storageKey)
-        if (data) {
-          const parsed = JSON.parse(data)
-          parsed.deliverables = (parsed.deliverables || []).filter((d: any) => d.id !== id)
-          await syncLocalDb(parsed)
-        }
-      }
+      setSuccessMessage("Milestone removed successfully.")
+    } catch (err: any) {
+      console.error("Supabase write failed:", err)
+      alert("Failed to delete milestone: " + (err.message || err))
     }
 
-    setSuccessMessage("Milestone removed successfully.")
     setTimeout(() => setSuccessMessage(''), 4000)
     await refreshData()
   }
@@ -282,23 +225,12 @@ export default function InstructorDashboardClient({
         .update({ examiner_panel: panelList })
         .eq('id', selectedProjectForPanel.id)
       if (error) throw error
-    } catch (err) {
-      console.warn("Live Supabase write failed, writing to fallback Sandbox:", err)
-      // Fallback
-      if (typeof window !== 'undefined') {
-        const storageKey = 'seniorproj_sandbox_db'
-        const data = localStorage.getItem(storageKey)
-        if (data) {
-          const parsed = JSON.parse(data)
-          parsed.projects = parsed.projects.map((p: any) => 
-            p.id === selectedProjectForPanel.id ? { ...p, examiner_panel: panelList } : p
-          )
-          await syncLocalDb(parsed)
-        }
-      }
+      setSuccessMessage("Examiner panel assigned successfully!")
+    } catch (err: any) {
+      console.error("Supabase write failed:", err)
+      alert("Failed to assign examiner panel: " + (err.message || err))
     }
 
-    setSuccessMessage("Examiner panel assigned successfully!")
     setTimeout(() => setSuccessMessage(''), 5000)
     await refreshData()
     setSelectedProjectForPanel(null)
@@ -323,23 +255,12 @@ export default function InstructorDashboardClient({
         })
         .eq('id', editingGradeProject.id)
       if (error) throw error
-    } catch (err) {
-      console.warn("Live Supabase write failed, writing to fallback Sandbox:", err)
-      // Fallback
-      if (typeof window !== 'undefined') {
-        const storageKey = 'seniorproj_sandbox_db'
-        const data = localStorage.getItem(storageKey)
-        if (data) {
-          const parsed = JSON.parse(data)
-          parsed.projects = parsed.projects.map((p: any) => 
-            p.id === editingGradeProject.id ? { ...p, grade: selectedGrade, grade_published: true } : p
-          )
-          await syncLocalDb(parsed)
-        }
-      }
+      setSuccessMessage(`Grade ${selectedGrade} published for "${editingGradeProject.title}"`)
+    } catch (err: any) {
+      console.error("Supabase write failed:", err)
+      alert("Failed to publish grade: " + (err.message || err))
     }
 
-    setSuccessMessage(`Grade ${selectedGrade} published for "${editingGradeProject.title}"`)
     setTimeout(() => setSuccessMessage(''), 5000)
     await refreshData()
     setEditingGradeProject(null)
@@ -357,23 +278,12 @@ export default function InstructorDashboardClient({
         .update({ is_approved: targetState })
         .eq('id', partnerId)
       if (error) throw error
-    } catch (err) {
-      console.warn("Live Supabase write failed, writing to fallback Sandbox:", err)
-      // Fallback
-      if (typeof window !== 'undefined') {
-        const storageKey = 'seniorproj_sandbox_db'
-        const data = localStorage.getItem(storageKey)
-        if (data) {
-          const parsed = JSON.parse(data)
-          parsed.profiles = parsed.profiles.map((p: any) => 
-            p.id === partnerId ? { ...p, is_approved: targetState } : p
-          )
-          await syncLocalDb(parsed)
-        }
-      }
+      setSuccessMessage(`Industry Partner status updated to ${targetState ? 'Approved' : 'Pending'}`)
+    } catch (err: any) {
+      console.error("Supabase write failed:", err)
+      alert("Failed to update industry partner: " + (err.message || err))
     }
 
-    setSuccessMessage(`Industry Partner status updated to ${targetState ? 'Approved' : 'Pending'}`)
     setTimeout(() => setSuccessMessage(''), 4000)
     await refreshData()
     setProcessing(null)
@@ -397,13 +307,19 @@ export default function InstructorDashboardClient({
     setTimeout(() => setSuccessMessage(''), 4500)
   }
 
-  // Filters projects
-  const industryProjects = projects.filter(p => p.origin === 'industry')
-  const soloProjects = projects.filter(p => p.origin === 'academic')
+  // Filters projects based on active switcher track
+  const isIndustryMode = trackMode === 'industry'
+  const filteredProjects = projects.filter(p => {
+    const isProjIndustry = p.industry_partner_id !== null || p.origin === 'industry'
+    return isIndustryMode ? isProjIndustry : !isProjIndustry
+  })
+
+  const industryProjects = projects.filter(p => p.industry_partner_id !== null || p.origin === 'industry')
+  const soloProjects = projects.filter(p => !p.industry_partner_id && p.origin !== 'academic')
 
   const totalTeams = industryProjects.length
-  const queueSize = projects.filter(p => p.status === 'pending').length
-  const approvals = projects.filter(p => p.status === 'approved').length
+  const queueSize = filteredProjects.filter(p => p.status === 'pending').length
+  const approvals = filteredProjects.filter(p => p.status === 'approved').length
   const milestoneCount = deliverables.length
 
   return (
@@ -490,7 +406,7 @@ export default function InstructorDashboardClient({
                 </div>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {projects.map((project, idx) => (
+                {filteredProjects.map((project, idx) => (
                   <div key={project.id} className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm flex flex-col justify-between min-h-52">
                     <div className="space-y-3">
                       <div className="flex justify-between items-start">
@@ -620,7 +536,7 @@ export default function InstructorDashboardClient({
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 text-xs font-semibold text-slate-700">
-                    {projects.map((p) => (
+                    {filteredProjects.map((p) => (
                       <tr key={p.id} className="hover:bg-slate-50/40 transition-colors">
                         <td className="py-4 px-6 font-bold text-slate-900">{p.title}</td>
                         <td className="py-4 px-6">{p.student?.full_name || 'Solo Track'}</td>
@@ -684,7 +600,7 @@ export default function InstructorDashboardClient({
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 text-xs font-semibold text-slate-700">
-                    {projects.filter(p => p.status === 'approved').map((p) => (
+                    {filteredProjects.filter(p => p.status === 'approved').map((p) => (
                       <tr key={p.id} className="hover:bg-slate-50/40 transition-colors">
                         <td className="py-4 px-6">
                           <a 
@@ -1005,117 +921,130 @@ export default function InstructorDashboardClient({
 
       {/* Slide-over Panel Assigner Modal */}
       <AnimatePresence>
-        {selectedProjectForPanel && (
-          <div className="fixed inset-0 z-[100] flex justify-end">
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setSelectedProjectForPanel(null)}
-              className="absolute inset-0 bg-slate-900/20 backdrop-blur-sm cursor-pointer"
-            />
-            
-            <motion.div
-              initial={{ x: '100%' }}
-              animate={{ x: 0 }}
-              exit={{ x: '100%' }}
-              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              className="relative w-full max-w-md bg-white h-full shadow-2xl border-l border-slate-200 flex flex-col"
-            >
-              <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50">
-                <div>
-                  <h3 className="text-lg font-black text-slate-900">Vetting Panel Committee</h3>
-                  <p className="text-[11px] text-slate-500 font-bold uppercase tracking-wider mt-1 truncate max-w-[280px]">
-                    {selectedProjectForPanel.title}
-                  </p>
+        {selectedProjectForPanel && (() => {
+          const projectDept = selectedProjectForPanel.student?.department
+          const filteredSupervisors = supervisors.filter(s => {
+            if (!projectDept) return true
+            return s.department?.toLowerCase() === projectDept.toLowerCase()
+          })
+
+          return (
+            <div className="fixed inset-0 z-[100] flex justify-end">
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                onClick={() => setSelectedProjectForPanel(null)}
+                className="absolute inset-0 bg-slate-900/20 backdrop-blur-sm cursor-pointer"
+              />
+              
+              <motion.div
+                initial={{ x: '100%' }}
+                animate={{ x: 0 }}
+                exit={{ x: '100%' }}
+                transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+                className="relative w-full max-w-md bg-white h-full shadow-2xl border-l border-slate-200 flex flex-col"
+              >
+                <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50">
+                  <div>
+                    <h3 className="text-lg font-black text-slate-900">Vetting Panel Committee</h3>
+                    <p className="text-[11px] text-slate-500 font-bold uppercase tracking-wider mt-1 truncate max-w-[280px]">
+                      {selectedProjectForPanel.title}
+                    </p>
+                    {projectDept && (
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-indigo-50 text-indigo-700 border border-indigo-200 mt-1">
+                        Department: {projectDept}
+                      </span>
+                    )}
+                  </div>
+                  <button 
+                    onClick={() => setSelectedProjectForPanel(null)}
+                    className="p-2 hover:bg-slate-200 rounded-xl transition-all cursor-pointer border border-slate-300"
+                  >
+                    <X className="w-5 h-5 text-slate-500" />
+                  </button>
                 </div>
-                <button 
-                  onClick={() => setSelectedProjectForPanel(null)}
-                  className="p-2 hover:bg-slate-200 rounded-xl transition-all cursor-pointer border border-slate-300"
-                >
-                  <X className="w-5 h-5 text-slate-500" />
-                </button>
-              </div>
 
-              <form onSubmit={handleAssignExaminers} className="flex-1 flex flex-col justify-between overflow-hidden">
-                <div className="p-6 overflow-y-auto flex-1 space-y-6">
-                  <p className="text-xs text-slate-500 font-semibold leading-relaxed">
-                    Allocate up to 3 faculty examiners to serve as the project presentation vetting board.
-                  </p>
+                <form onSubmit={handleAssignExaminers} className="flex-1 flex flex-col justify-between overflow-hidden">
+                  <div className="p-6 overflow-y-auto flex-1 space-y-6">
+                    <p className="text-xs text-slate-500 font-semibold leading-relaxed">
+                      Allocate up to 3 faculty examiners from the student's department to serve as the vetting board.
+                    </p>
 
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-[10px] font-black uppercase text-slate-400 mb-1.5">Examiner 1 (Chair)</label>
-                      <select
-                        required
-                        value={examiner1}
-                        onChange={(e) => setExaminer1(e.target.value)}
-                        className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 px-4 text-slate-800 text-xs font-semibold cursor-pointer"
-                      >
-                        <option value="">Select Faculty...</option>
-                        {supervisors.map(s => (
-                          <option key={s.id} value={s.id}>{s.full_name}</option>
-                        ))}
-                      </select>
-                    </div>
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-[10px] font-black uppercase text-slate-400 mb-1.5">Examiner 1 (Chair)</label>
+                        <select
+                          required
+                          value={examiner1}
+                          onChange={(e) => setExaminer1(e.target.value)}
+                          className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 px-4 text-slate-800 text-xs font-semibold cursor-pointer"
+                        >
+                          <option value="">Select Faculty...</option>
+                          {filteredSupervisors.map(s => (
+                            <option key={s.id} value={s.id}>{s.full_name}</option>
+                          ))}
+                        </select>
+                      </div>
 
-                    <div>
-                      <label className="block text-[10px] font-black uppercase text-slate-400 mb-1.5">Examiner 2</label>
-                      <select
-                        required
-                        value={examiner2}
-                        onChange={(e) => setExaminer2(e.target.value)}
-                        className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 px-4 text-slate-800 text-xs font-semibold cursor-pointer"
-                      >
-                        <option value="">Select Faculty...</option>
-                        {supervisors.map(s => (
-                          <option key={s.id} value={s.id}>{s.full_name}</option>
-                        ))}
-                      </select>
-                    </div>
+                      <div>
+                        <label className="block text-[10px] font-black uppercase text-slate-400 mb-1.5">Examiner 2</label>
+                        <select
+                          required
+                          value={examiner2}
+                          onChange={(e) => setExaminer2(e.target.value)}
+                          className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 px-4 text-slate-800 text-xs font-semibold cursor-pointer"
+                        >
+                          <option value="">Select Faculty...</option>
+                          {filteredSupervisors.map(s => (
+                            <option key={s.id} value={s.id}>{s.full_name}</option>
+                          ))}
+                        </select>
+                      </div>
 
-                    <div>
-                      <label className="block text-[10px] font-black uppercase text-slate-400 mb-1.5">Examiner 3</label>
-                      <select
-                        required
-                        value={examiner3}
-                        onChange={(e) => setExaminer3(e.target.value)}
-                        className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 px-4 text-slate-800 text-xs font-semibold cursor-pointer"
-                      >
-                        <option value="">Select Faculty...</option>
-                        {supervisors.map(s => (
-                          <option key={s.id} value={s.id}>{s.full_name}</option>
-                        ))}
-                      </select>
+                      <div>
+                        <label className="block text-[10px] font-black uppercase text-slate-400 mb-1.5">Examiner 3</label>
+                        <select
+                          required
+                          value={examiner3}
+                          onChange={(e) => setExaminer3(e.target.value)}
+                          className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 px-4 text-slate-800 text-xs font-semibold cursor-pointer"
+                        >
+                          <option value="">Select Faculty...</option>
+                          {filteredSupervisors.map(s => (
+                            <option key={s.id} value={s.id}>{s.full_name}</option>
+                          ))}
+                        </select>
+                      </div>
                     </div>
                   </div>
-                </div>
 
-                <div className="p-6 border-t border-slate-100 bg-slate-50 flex gap-3 shrink-0">
-                  <button
-                    type="button"
-                    onClick={() => setSelectedProjectForPanel(null)}
-                    className="flex-1 py-3 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 font-bold rounded-xl text-[10px] uppercase tracking-widest transition-all cursor-pointer"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={processing === selectedProjectForPanel.id || !examiner1 || !examiner2 || !examiner3}
-                    className="flex-[2] py-3 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white font-bold rounded-xl text-[10px] uppercase tracking-widest shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer"
-                  >
-                    {processing === selectedProjectForPanel.id ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : (
-                      <Check className="w-4 h-4" />
-                    )}
-                    Assign Panel
-                  </button>
-                </div>
-              </form>
-            </motion.div>
-          </div>
-        )}
+                  <div className="p-6 border-t border-slate-100 bg-slate-50 flex gap-3 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => setSelectedProjectForPanel(null)}
+                      className="flex-1 py-3 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 font-bold rounded-xl text-[10px] uppercase tracking-widest transition-all cursor-pointer"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={processing === selectedProjectForPanel.id || !examiner1 || !examiner2 || !examiner3}
+                      className="flex-[2] py-3 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white font-bold rounded-xl text-[10px] uppercase tracking-widest shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer"
+                    >
+                      {processing === selectedProjectForPanel.id ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <Check className="w-4 h-4" />
+                      )}
+                      Assign Panel
+                    </button>
+                  </div>
+                </form>
+              </motion.div>
+            </div>
+          )
+        })()}
       </AnimatePresence>
 
       {/* Grade Entry Dialog Modal */}

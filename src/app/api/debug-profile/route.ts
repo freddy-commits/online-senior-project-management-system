@@ -17,7 +17,7 @@ export async function GET() {
     BEGIN
       v_role := COALESCE(NEW.raw_user_meta_data->>'role', 'student');
       -- Validate role value - default to student if invalid
-      IF v_role NOT IN ('student', 'instructor', 'industry', 'admin', 'supervisor') THEN
+      IF v_role NOT IN ('student', 'instructor', 'industry', 'examiner_panel', 'supervisor') THEN
         v_role := 'student';
       END IF;
       
@@ -47,7 +47,7 @@ export async function GET() {
     -- Also fix the role check constraint to include supervisor
     ALTER TABLE public.profiles DROP CONSTRAINT IF EXISTS profiles_role_check;
     ALTER TABLE public.profiles ADD CONSTRAINT profiles_role_check
-      CHECK (role IN ('student', 'instructor', 'industry', 'admin', 'supervisor'));
+      CHECK (role IN ('student', 'instructor', 'industry', 'examiner_panel', 'supervisor'));
   `
 
   try {

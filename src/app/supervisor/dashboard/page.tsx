@@ -42,6 +42,12 @@ export default async function SupervisorDashboardPage() {
 
   return (
     <div className="p-4 md:p-8 pb-20">
+      {profile?.department && (
+        <div className="mb-6 inline-flex items-center gap-2 px-4 py-2 bg-indigo-50 border border-indigo-200 rounded-full text-xs font-black text-indigo-700 uppercase tracking-wider">
+          <span className="w-2 h-2 rounded-full bg-indigo-500 shrink-0" />
+          Dept: {profile.department}
+        </div>
+      )}
       <SupervisorDashboardClient initialProfile={profile} initialProjects={enrichedProjects} />
     </div>
   )

@@ -1,10 +1,13 @@
 import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
+import { cookies } from 'next/headers'
 
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url)
   const code = searchParams.get('code')
   const role = searchParams.get('role') || 'student'
+  const cookieStore = await cookies()
+  const department = searchParams.get('department') || cookieStore.get('oauth_dept')?.value || null
   const next = searchParams.get('next')
 
   if (code) {
@@ -16,8 +19,15 @@ export async function GET(request: Request) {
     if (!exchangeError && sessionData?.user) {
       const user = sessionData.user
 
-      // Check if profile already exists
-      const { data: existingProfile } = await supabase
+      const { createClient: createAdminClient } = await import('@supabase/supabase-js')
+      const adminSupabase = createAdminClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!,
+        { auth: { autoRefreshToken: false, persistSession: false } }
+      )
+
+      // Check if profile already exists using admin client
+      const { data: existingProfile } = await adminSupabase
         .from('profiles')
         .select('id, role')
         .eq('id', user.id)
@@ -41,21 +51,28 @@ export async function GET(request: Request) {
         return NextResponse.redirect(`${origin}${redirectPath}`)
       }
 
-      // New user — create profile with the selected role
+      // New user — create profile with the selected role using admin client (RLS bypass)
       const fullName = user.user_metadata?.full_name
         || user.user_metadata?.name
         || user.email?.split('@')[0]
         || 'New User'
 
-      const { error: profileError } = await supabase
+      const profilePayload: any = {
+        id: user.id,
+        email: user.email,
+        full_name: fullName,
+        avatar_url: user.user_metadata?.avatar_url || null,
+        role: role
+      }
+
+      // Save department for instructors, students, and supervisors
+      if (department && (role === 'instructor' || role === 'student' || role === 'supervisor')) {
+        profilePayload.department = department
+      }
+
+      const { error: profileError } = await adminSupabase
         .from('profiles')
-        .upsert({
-          id: user.id,
-          email: user.email,
-          full_name: fullName,
-          avatar_url: user.user_metadata?.avatar_url || null,
-          role: role
-        }, { onConflict: 'id' })
+        .upsert(profilePayload, { onConflict: 'id' })
 
       if (profileError) {
         console.error('Failed to create profile for OAuth user:', profileError.message)

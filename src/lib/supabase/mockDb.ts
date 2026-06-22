@@ -6,6 +6,7 @@ export interface MockProfile {
   role: 'student' | 'instructor' | 'industry' | 'admin' | 'supervisor'
   email: string
   phone?: string
+  department?: string
 }
 
 export interface MockProject {
@@ -74,14 +75,14 @@ export interface MockDbState {
 }
 
 const DEFAULT_PROFILES: MockProfile[] = [
-  { id: 'demo-student-id', full_name: 'Alex Carter', role: 'student', email: 'student@university.edu', phone: '+254712345678' },
-  { id: 'demo-instructor-id', full_name: 'Dr. Sarah Johnson', role: 'instructor', email: 'instructor@university.edu', phone: '+254723456789' },
+  { id: 'demo-student-id', full_name: 'Alex Carter', role: 'student', email: 'student@university.edu', phone: '+254712345678', department: 'Information Technology' },
+  { id: 'demo-instructor-id', full_name: 'Dr. Sarah Johnson', role: 'instructor', email: 'instructor@university.edu', phone: '+254723456789', department: 'Information Technology' },
   { id: 'demo-industry-id', full_name: 'TechCorp Mentorship', role: 'industry', email: 'partner@techcorp.com', phone: '+254734567890' },
   { id: 'demo-admin-id', full_name: 'Admin Admin', role: 'admin', email: 'admin@university.edu', phone: '+254745678901' },
-  { id: 'demo-supervisor-id', full_name: 'Dr. James Wilson', role: 'supervisor', email: 'supervisor@university.edu', phone: '+254755555555' },
+  { id: 'demo-supervisor-id', full_name: 'Dr. James Wilson', role: 'supervisor', email: 'supervisor@university.edu', phone: '+254755555555', department: 'Information Technology' },
   // Additional users to act as alternative contacts or student leads
-  { id: 'demo-student-2', full_name: 'Chloe Smith', role: 'student', email: 'chloe@university.edu', phone: '+254756789012' },
-  { id: 'demo-student-3', full_name: 'Marcus Miller', role: 'student', email: 'marcus@university.edu', phone: '+254767890123' }
+  { id: 'demo-student-2', full_name: 'Chloe Smith', role: 'student', email: 'chloe@university.edu', phone: '+254756789012', department: 'Information Technology' },
+  { id: 'demo-student-3', full_name: 'Marcus Miller', role: 'student', email: 'marcus@university.edu', phone: '+254767890123', department: 'Information Technology' }
 ]
 
 const DEFAULT_PROJECTS: MockProject[] = [

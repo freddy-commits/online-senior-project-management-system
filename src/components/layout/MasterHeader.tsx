@@ -53,7 +53,7 @@ export default function MasterHeader({ role = 'student' }: { role?: string }) {
 
       <div className="flex items-center gap-6">
         {/* Dual-pill track switcher + Switch Track button */}
-        <TrackSwitcher />
+        {role !== 'examiner_panel' && <TrackSwitcher />}
 
         {/* Divider */}
         <div className="w-px h-8 bg-slate-200 dark:bg-slate-800 hidden sm:block" />

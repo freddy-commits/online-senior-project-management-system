@@ -382,43 +382,6 @@ export default function InstructorDocumentsClient({
       await updateProjectGradeAdmin(selectedSub.project_id, gradeToSubmit)
     }
 
-    // Sync sandbox fallback
-    if (typeof window !== 'undefined') {
-      const storageKey = 'seniorproj_sandbox_db'
-      const data = localStorage.getItem(storageKey)
-      if (data) {
-        try {
-          const parsed = JSON.parse(data)
-          parsed.deliverables = parsed.deliverables.map((d: any) => {
-            if (d.id === selectedSub.id) {
-              return {
-                ...d,
-                status: status,
-                grade: status === 'graded' ? gradeToSubmit : '',
-                feedback: feedbackInput,
-                updated_at: new Date().toISOString()
-              }
-            }
-            return d
-          })
-          if (selectedSub.type === 'Final document' && status === 'graded' && gradeToSubmit) {
-            parsed.projects = parsed.projects.map((p: any) => 
-              p.id === selectedSub.project_id ? { ...p, grade: gradeToSubmit, grade_published: true } : p
-            )
-          }
-          localStorage.setItem(storageKey, JSON.stringify(parsed))
-          
-          await fetch('/api/sandbox/sync', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(parsed)
-          }).catch(() => {})
-        } catch (e) {
-          console.error("Failed to write mock data:", e)
-        }
-      }
-    }
-
     if (res.success) {
       showToast(status === 'graded' 
         ? `Successfully reviewed "${selectedSub.document_title}"!` 
@@ -444,25 +407,7 @@ export default function InstructorDocumentsClient({
       setIsFeedbackOpen(false)
       setSelectedSub(null)
     } else {
-      showToast("Live save error (synced to sandbox fallback instead).")
-      
-      // Still update local react states for sandbox testing
-      setDeliverables(prev => prev.map((d: any) => {
-        if (d.id === selectedSub.id) {
-          return {
-            ...d,
-            status: status,
-            grade: status === 'graded' ? (selectedSub.type === 'Final document' ? gradeInput : selectedSub.grade) : '',
-            feedback: feedbackInput
-          }
-        }
-        return d
-      }))
-
-      setIsReviewOpen(false)
-      setIsViewOpen(false)
-      setIsFeedbackOpen(false)
-      setSelectedSub(null)
+      showToast("Live save error: " + (res.error || "failed to update live database"))
     }
     setActionProcessing(false)
   }

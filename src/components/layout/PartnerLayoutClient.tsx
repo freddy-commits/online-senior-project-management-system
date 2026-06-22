@@ -81,34 +81,34 @@ export default function PartnerLayoutClient({ children, initialUserName }: Partn
       </div>
 
       {/* Full-width Header with Top Navigation */}
-      <header className="h-20 bg-white/80 backdrop-blur-md border-b border-slate-200 sticky top-0 z-40 px-8 flex items-center justify-between shadow-sm">
-        <div className="flex items-center gap-8">
+      <header className="h-20 bg-white/80 backdrop-blur-md border-b border-slate-200 sticky top-0 z-40 px-4 sm:px-8 flex items-center justify-between shadow-sm gap-4">
+        <div className="flex items-center gap-3 sm:gap-8 min-w-0">
           {/* Brand Logo */}
-          <Link href="/" className="flex items-center gap-3">
+          <Link href="/" className="flex items-center gap-2 sm:gap-3 shrink-0">
             <div className="w-8 h-8 bg-[#e37b2d] rounded-lg flex items-center justify-center shrink-0">
               <span className="text-white font-bold text-lg">P</span>
             </div>
-            <span className="font-bold text-lg tracking-tight text-slate-900 hidden md:inline-block">
+            <span className="font-bold text-sm sm:text-lg tracking-tight text-slate-900 hidden sm:inline-block">
               Project Station
             </span>
           </Link>
 
           {/* Navigation Links in the Header for Partner portal */}
-          <nav className="hidden md:flex items-center gap-1 bg-slate-100/80 p-1.5 rounded-2xl border border-slate-200/50">
+          <nav className="flex items-center gap-0.5 sm:gap-1 bg-slate-100/80 p-1 sm:p-1.5 rounded-xl sm:rounded-2xl border border-slate-200/50 overflow-x-auto whitespace-nowrap scrollbar-none shrink-0 max-w-[45vw] sm:max-w-none">
             {menuItems.map((item) => {
               const isActive = pathname === item.path || (item.path !== '/' && pathname.startsWith(item.path))
               return (
                 <Link
                   key={item.path}
                   href={item.path}
-                  className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all relative ${
+                  className={`flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-4 py-2 sm:py-2.5 rounded-lg sm:rounded-xl text-[10px] sm:text-xs font-bold transition-all shrink-0 relative ${
                     isActive 
                       ? 'text-indigo-600 bg-white shadow-sm shadow-slate-100' 
                       : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50/50'
                   }`}
                 >
-                  {item.icon}
-                  {item.name}
+                  <span className="scale-75 sm:scale-100">{item.icon}</span>
+                  <span>{item.name}</span>
                 </Link>
               )
             })}

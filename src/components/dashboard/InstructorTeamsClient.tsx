@@ -64,13 +64,15 @@ export default function InstructorTeamsClient({
   initialMentors,
   initialProjects,
   initialTeams,
-  initialTeamMembers
+  initialTeamMembers,
+  instructorDepartment = ''
 }: {
   initialStudents: StudentProfile[]
   initialMentors: MentorProfile[]
   initialProjects: any[]
   initialTeams: Team[]
   initialTeamMembers: any[]
+  instructorDepartment?: string
 }) {
   const { trackMode } = useTrack()
   const isCapstone = trackMode === 'thesis' || trackMode === 'advisor' || trackMode === 'supervisor' || trackMode === 'panel'
@@ -116,18 +118,28 @@ export default function InstructorTeamsClient({
 
   // Refresh database states client-side
   async function refreshData() {
+    // Refresh team members
+    const { data: newMembers } = await supabase
+      .from('team_members')
+      .select('*, profiles:user_id(id, full_name, email, avatar_url, department)')
+    if (newMembers) setTeamMembers(newMembers)
+
     // Refresh teams
     const { data: newTeams } = await supabase
       .from('teams')
       .select('*')
       .order('created_at', { ascending: false })
-    if (newTeams) setTeams(newTeams)
-
-    // Refresh team members
-    const { data: newMembers } = await supabase
-      .from('team_members')
-      .select('*, profiles:user_id(id, full_name, email, avatar_url)')
-    if (newMembers) setTeamMembers(newMembers)
+    
+    if (newTeams) {
+      let filtered = newTeams
+      if (instructorDepartment) {
+        filtered = newTeams.filter((team: any) => {
+          const members = (newMembers || []).filter((m: any) => m.team_id === team.id)
+          return members.some((m: any) => m.profiles?.department === instructorDepartment)
+        })
+      }
+      setTeams(filtered)
+    }
 
     // Refresh projects
     const { data: newProjs } = await supabase

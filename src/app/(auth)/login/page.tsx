@@ -116,8 +116,13 @@ export default function LoginPage() {
         if (role !== selectedRole) {
           // Log out from Supabase if role doesn't match to prevent active session in wrong role
           await supabase.auth.signOut()
-          const profileRoleName = role === 'industry' ? 'an Industry Partner' : `a ${role}`
-          const selectedRoleName = selectedRole === 'industry' ? 'an Industry Partner' : `a ${selectedRole}`
+          const getDisplayName = (r: string) => {
+            if (r === 'industry') return 'an Industry Partner'
+            if (r === 'examiner_panel') return 'a Panel Examiner'
+            return `a ${r}`
+          }
+          const profileRoleName = getDisplayName(role)
+          const selectedRoleName = getDisplayName(selectedRole)
           setError(`This account is registered as ${profileRoleName}, but you selected ${selectedRoleName}.`)
           setLoading(false)
           return
@@ -256,7 +261,7 @@ export default function LoginPage() {
                   { role: 'instructor', label: 'Instructor', desc: 'Jury evaluation', icon: <Users className="w-5 h-5" />, color: 'border-emerald-200 text-emerald-600 bg-emerald-50/10' },
                   { role: 'industry', label: 'Industry', desc: 'Sponsor briefs', icon: <Building2 className="w-5 h-5" />, color: 'border-indigo-200 text-indigo-600 bg-indigo-50/10' },
                   { role: 'supervisor', label: 'Supervisor', desc: 'Mentorship', icon: <Briefcase className="w-5 h-5" />, color: 'border-cyan-200 text-cyan-600 bg-cyan-50/10' },
-                  { role: 'admin', label: 'Panel Member', desc: 'Cohort evaluation', icon: <Sliders className="w-5 h-5" />, color: 'border-amber-200 text-amber-600 bg-amber-50/10' }
+                  { role: 'examiner_panel', label: 'Panel Examiner', desc: 'Cohort evaluation', icon: <Sliders className="w-5 h-5" />, color: 'border-amber-200 text-amber-600 bg-amber-50/10' }
                 ].map((r) => {
                   const isSelected = selectedRole === r.role
                   return (

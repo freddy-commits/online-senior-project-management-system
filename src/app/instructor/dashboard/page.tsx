@@ -11,7 +11,7 @@ export default async function InstructorDashboardPage() {
     redirect('/login')
   }
 
-  // Verify the user is an instructor
+  // Verify the user is an instructor and get their department
   const { data: profile } = await supabase
     .from('profiles')
     .select('*')
@@ -22,11 +22,35 @@ export default async function InstructorDashboardPage() {
     redirect('/login') // or an unauthorized page
   }
 
-  // Fetch all projects
-  const { data: projects } = await supabase
+  const instructorDepartment = profile.department || null
+
+  // Fetch students in the same department first (to filter projects)
+  let studentIds: string[] = []
+  if (instructorDepartment) {
+    const { data: deptStudents } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('role', 'student')
+      .eq('department', instructorDepartment)
+    studentIds = (deptStudents || []).map((s: any) => s.id)
+  }
+
+  // Fetch projects — filtered to same-department students if department is set
+  let projectsQuery = supabase
     .from('projects')
-    .select('*, student:student_id(full_name, email), instructor:instructor_id(full_name), supervisor:instructor_id(full_name), partner:industry_partner_id(full_name)')
+    .select('*, student:student_id(full_name, email, department), instructor:instructor_id(full_name), supervisor:instructor_id(full_name), partner:industry_partner_id(full_name)')
     .order('created_at', { ascending: false })
+
+  if (instructorDepartment) {
+    if (studentIds.length > 0) {
+      projectsQuery = projectsQuery.in('student_id', studentIds)
+    } else {
+      // No students in this department yet — show empty
+      projectsQuery = projectsQuery.eq('student_id', '00000000-0000-0000-0000-000000000000')
+    }
+  }
+
+  const { data: projects } = await projectsQuery
 
   const enrichedProjects = projects?.map((p: any) => ({
     ...p,
@@ -36,7 +60,7 @@ export default async function InstructorDashboardPage() {
   // Fetch supervisors
   const { data: supervisors } = await supabase
     .from('profiles')
-    .select('id, full_name, role, email')
+    .select('id, full_name, role, email, department')
     .in('role', ['supervisor', 'instructor'])
 
   // Fetch industry partners
@@ -52,6 +76,13 @@ export default async function InstructorDashboardPage() {
 
   return (
     <div className="p-4 md:p-8 pb-20">
+      {/* Department filter notice */}
+      {instructorDepartment && (
+        <div className="mb-6 inline-flex items-center gap-2 px-4 py-2 bg-indigo-50 border border-indigo-200 rounded-full text-xs font-black text-indigo-700 uppercase tracking-wider">
+          <span className="w-2 h-2 rounded-full bg-indigo-500 shrink-0" />
+          Dept: {instructorDepartment} — showing department projects only
+        </div>
+      )}
       <InstructorDashboardClient 
         initialProjects={enrichedProjects} 
         supervisors={supervisors || []} 

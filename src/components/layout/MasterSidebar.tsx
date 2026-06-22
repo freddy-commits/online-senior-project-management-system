@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { LayoutDashboard, Target, Users, FileText, Settings, LogOut, ChevronLeft, ChevronRight, Archive, X } from 'lucide-react'
+import { LayoutDashboard, Target, Users, FileText, Settings, LogOut, ChevronLeft, ChevronRight, Archive, X, Sliders } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import { useTranslations } from 'next-intl'
 
@@ -16,6 +16,7 @@ export default function MasterSidebar({ role = 'student' }: { role?: string }) {
   const [profile, setProfile] = useState<{ full_name: string; role: string; email: string } | null>(null)
   const [isCollapsed, setIsCollapsed] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
+  const [isExaminer, setIsExaminer] = useState(false)
   
   useEffect(() => {
     async function loadProfile() {
@@ -23,7 +24,28 @@ export default function MasterSidebar({ role = 'student' }: { role?: string }) {
         const { data: { user } } = await supabase.auth.getUser()
         if (user) {
           const { data } = await supabase.from('profiles').select('*').eq('id', user.id).single()
-          if (data) setProfile(data)
+          if (data) {
+            setProfile(data)
+            
+            // Check if supervisor or instructor is assigned as an examiner
+            if (data.role === 'supervisor' || data.role === 'instructor') {
+              let assignedAsExaminer = false
+              
+              // 1. Check Supabase first
+              const { data: examinerProjs } = await supabase
+                .from('projects')
+                .select('id')
+                .contains('examiner_panel', [user.id])
+                .limit(1)
+              if (examinerProjs && examinerProjs.length > 0) {
+                assignedAsExaminer = true
+              }
+
+              if (assignedAsExaminer) {
+                setIsExaminer(true)
+              }
+            }
+          }
         }
       } catch (e) {
         console.error("Supabase user load error:", e)
@@ -58,7 +80,8 @@ export default function MasterSidebar({ role = 'student' }: { role?: string }) {
   }
 
   const activeRole = profile?.role || role
-  const menuItems = activeRole === 'admin'
+  const showAdminMenu = pathname.startsWith('/admin')
+  const menuItems = showAdminMenu
     ? [
         { name: t('dashboard'), path: `/admin`, match: `/admin`, icon: <LayoutDashboard className="w-5 h-5" /> },
         { name: t('allocations'), path: `/admin/projects`, match: `/admin/projects`, icon: <Users className="w-5 h-5" /> },
@@ -81,8 +104,8 @@ export default function MasterSidebar({ role = 'student' }: { role?: string }) {
         ? 'Student Lead' 
         : profile?.role === 'industry' 
           ? 'Industry Partner' 
-          : profile?.role === 'admin'
-            ? 'Panel Member'
+          : profile?.role === 'examiner_panel'
+            ? 'Panel Examiner'
             : profile?.role || role
   const initials = fullName
     .split(' ')
@@ -118,7 +141,7 @@ export default function MasterSidebar({ role = 'student' }: { role?: string }) {
                   Project Station
                 </span>
                 <span className="text-[9px] text-slate-500 dark:text-slate-400 font-extrabold tracking-wider uppercase mt-0.5 leading-tight">
-                  {activeRole.toUpperCase()} WORKSPACE
+                  {showAdminMenu ? 'PANEL EXAMINER' : activeRole.toUpperCase()} WORKSPACE
                 </span>
               </div>
             )}
@@ -178,6 +201,29 @@ export default function MasterSidebar({ role = 'student' }: { role?: string }) {
 
         {/* Footer Settings, Logout & Profile Card */}
         <div className={`p-4 border-t border-slate-200 dark:border-slate-850 shrink-0 space-y-3 ${isCollapsed ? 'px-2' : 'px-4'}`}>
+          {isExaminer && (
+            <div className="pb-2">
+              {showAdminMenu ? (
+                <Link 
+                  href={`/${activeRole}/dashboard`}
+                  className={`flex items-center gap-3 py-2.5 rounded-xl transition-all font-bold text-xs bg-gradient-to-r from-emerald-500/10 to-teal-500/10 border border-emerald-500/20 text-emerald-700 dark:text-emerald-400 hover:from-emerald-500/20 hover:to-teal-500/20 ${isCollapsed ? 'justify-center px-0' : 'px-3'}`}
+                  title={isCollapsed ? "Back to Dashboard" : undefined}
+                >
+                  <Sliders className="w-5 h-5 shrink-0" />
+                  {!isCollapsed && <span className="truncate">Supervisor/Instructor Dashboard</span>}
+                </Link>
+              ) : (
+                <Link 
+                  href="/admin"
+                  className={`flex items-center gap-3 py-2.5 rounded-xl transition-all font-bold text-xs bg-gradient-to-r from-indigo-500/10 to-purple-500/10 border border-indigo-500/20 text-indigo-700 dark:text-indigo-400 hover:from-indigo-500/20 hover:to-purple-500/20 ${isCollapsed ? 'justify-center px-0' : 'px-3'}`}
+                  title={isCollapsed ? "Examiner Portal" : undefined}
+                >
+                  <Sliders className="w-5 h-5 shrink-0" />
+                  {!isCollapsed && <span className="truncate">Switch to Examiner View</span>}
+                </Link>
+              )}
+            </div>
+          )}
           <div className="space-y-1">
           <Link 
             href={`/${activeRole}/settings`} 

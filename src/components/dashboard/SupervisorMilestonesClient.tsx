@@ -51,51 +51,12 @@ export default function SupervisorMilestonesClient({
   const [rescheduleDate, setRescheduleDate] = useState('')
   const [deleteMilestone, setDeleteMilestone] = useState<Deliverable | null>(null)
 
-  // Load sandbox data on mount if demo mode is enabled
+  // Initialize selected project
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const storageKey = 'seniorproj_sandbox_db'
-      const data = localStorage.getItem(storageKey)
-      const isDemoMode = localStorage.getItem('demo_mode') === 'true'
-      
-      if (isDemoMode && data) {
-        try {
-          const parsed = JSON.parse(data)
-          // Find active supervisor profile
-          const activeEmail = localStorage.getItem('active_user_email')
-          const supervisorProfile = (activeEmail ? parsed.profiles.find((p: any) => p.email.toLowerCase() === activeEmail.toLowerCase()) : null) || 
-                                    parsed.profiles.find((p: any) => p.role === 'supervisor') || { id: 'demo-supervisor-id' }
-          
-          // Filter projects assigned to this supervisor
-          const supervisorProjects = parsed.projects.filter((p: any) => p.instructor_id === supervisorProfile.id)
-          const supervisorProjectIds = supervisorProjects.map((p: any) => p.id)
-          
-          const supervisorDeliverables = parsed.deliverables ? parsed.deliverables.filter((d: any) => supervisorProjectIds.includes(d.project_id)) : []
-          
-          // Enrich deliverables with project title
-          const enrichedDeliverables = supervisorDeliverables.map((d: any) => {
-            const proj = supervisorProjects.find((p: any) => p.id === d.project_id)
-            return {
-              ...d,
-              projectTitle: proj ? proj.title : 'Unknown Project'
-            }
-          })
-          
-          setProjects(supervisorProjects)
-          setDeliverables(enrichedDeliverables)
-          if (supervisorProjects.length > 0) {
-            setSelectedProjectId(supervisorProjects[0].id)
-          }
-        } catch (e) {
-          console.error("Failed to parse localStorage sandbox db:", e)
-        }
-      } else {
-        if (projectsList && projectsList.length > 0) {
-          setSelectedProjectId(projectsList[0].id)
-        }
-      }
+    if (projectsList && projectsList.length > 0) {
+      setSelectedProjectId(prev => prev || projectsList[0].id)
     }
-  }, [projectsList, initialDeliverables])
+  }, [projectsList])
 
   function showToast(msg: string) {
     setToast(msg)
@@ -109,39 +70,6 @@ export default function SupervisorMilestonesClient({
   const totalCount = projectDeliverables.length
   const pendingCount = projectDeliverables.filter(d => d.status === 'submitted').length
   const gradedCount = projectDeliverables.filter(d => d.status === 'graded').length
-
-  const syncSandboxDb = async (action: 'add' | 'update' | 'delete', payload: any) => {
-    if (typeof window === 'undefined') return
-    const storageKey = 'seniorproj_sandbox_db'
-    const data = localStorage.getItem(storageKey)
-    if (!data) return
-    try {
-      const parsed = JSON.parse(data)
-      if (!parsed.deliverables) {
-        parsed.deliverables = []
-      }
-      
-      if (action === 'add') {
-        parsed.deliverables.push(payload)
-      } else if (action === 'update') {
-        parsed.deliverables = parsed.deliverables.map((d: any) =>
-          d.id === payload.id ? { ...d, ...payload } : d
-        )
-      } else if (action === 'delete') {
-        parsed.deliverables = parsed.deliverables.filter((d: any) => d.id !== payload.id)
-      }
-
-      localStorage.setItem(storageKey, JSON.stringify(parsed))
-
-      await fetch('/api/sandbox/sync', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(parsed)
-      }).catch(() => {})
-    } catch (e) {
-      console.error("Failed to sync sandbox database:", e)
-    }
-  }
 
   // Action handlers
   const handleAddMilestone = async (e: React.FormEvent) => {
@@ -170,17 +98,6 @@ export default function SupervisorMilestonesClient({
       projectTitle: project ? project.title : 'Unknown Project'
     }
 
-    // Sync sandbox fallback
-    await syncSandboxDb('add', {
-      id: newDeliverable.id,
-      project_id: newDeliverable.project_id,
-      title: newDeliverable.title,
-      description: newDeliverable.description,
-      due_date: newDeliverable.due_date,
-      status: newDeliverable.status,
-      created_at: new Date().toISOString()
-    })
-
     // Update local React state
     setDeliverables(prev => [...prev, newDeliverable])
     showToast(t('toast_added'))
@@ -201,13 +118,6 @@ export default function SupervisorMilestonesClient({
 
     const updatedDateIso = new Date(rescheduleDate).toISOString()
 
-    // Sync sandbox fallback
-    await syncSandboxDb('update', {
-      id: rescheduleMilestone.id,
-      due_date: updatedDateIso,
-      updated_at: new Date().toISOString()
-    })
-
     // Update local React state
     setDeliverables(prev => prev.map(d => 
       d.id === rescheduleMilestone.id ? { ...d, due_date: updatedDateIso } : d
@@ -225,9 +135,6 @@ export default function SupervisorMilestonesClient({
 
     // Call server action to delete from live db
     const res = await deleteSupervisorMilestone(deleteMilestone.id)
-
-    // Sync sandbox fallback
-    await syncSandboxDb('delete', { id: deleteMilestone.id })
 
     // Update local React state
     setDeliverables(prev => prev.filter(d => d.id !== deleteMilestone.id))

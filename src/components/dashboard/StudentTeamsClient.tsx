@@ -90,36 +90,25 @@ export default function StudentTeamsClient() {
 
   const fetchMeetings = async (projectId: string) => {
     try {
-      const isDemoMode = typeof window !== 'undefined' && localStorage.getItem('demo_mode') === 'true'
-      if (isDemoMode) {
-        const storageKey = 'seniorproj_sandbox_db'
-        const data = localStorage.getItem(storageKey)
-        if (data) {
-          const parsed = JSON.parse(data)
-          const teamMeetings = (parsed.meetings || []).filter((m: any) => m.project_id === projectId)
-          setMeetings(teamMeetings)
-        }
-      } else {
-        const { data, error } = await supabase
-          .from('meetings')
-          .select('*')
-          .eq('project_id', projectId)
-        
-        if (error) throw error
-        if (data) {
-          const mapped = data.map((m: any) => ({
-            id: m.id,
-            project_id: m.project_id,
-            student_id: m.student_id,
-            title: m.title,
-            description: m.description,
-            date: new Date(m.meeting_date).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' }),
-            raw_date: m.meeting_date,
-            time: m.meeting_time,
-            type: m.meeting_type === 'virtual' ? 'Virtual (Google Meet)' : m.meeting_type
-          }))
-          setMeetings(mapped)
-        }
+      const { data, error } = await supabase
+        .from('meetings')
+        .select('*')
+        .eq('project_id', projectId)
+      
+      if (error) throw error
+      if (data) {
+        const mapped = data.map((m: any) => ({
+          id: m.id,
+          project_id: m.project_id,
+          student_id: m.student_id,
+          title: m.title,
+          description: m.description,
+          date: new Date(m.meeting_date).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' }),
+          raw_date: m.meeting_date,
+          time: m.meeting_time,
+          type: m.meeting_type === 'virtual' ? 'Virtual (Google Meet)' : m.meeting_type
+        }))
+        setMeetings(mapped)
       }
     } catch (err) {
       console.error("Failed to load meetings:", err)
@@ -218,7 +207,6 @@ export default function StudentTeamsClient() {
       try {
         const { data: { user } } = await supabase.auth.getUser()
         if (!user) {
-          loadMockData()
           return
         }
 
@@ -287,8 +275,7 @@ export default function StudentTeamsClient() {
           }
         }
       } catch (e) {
-        console.warn("Real database fetching failed, loading local storage sandbox state instead:", e)
-        loadMockData()
+        console.error("Database fetching failed:", e)
       } finally {
         setLoading(false)
       }
@@ -296,68 +283,6 @@ export default function StudentTeamsClient() {
 
     loadData()
   }, [trackMode])
-
-  const loadMockData = () => {
-    if (typeof window !== 'undefined') {
-      const storageKey = 'seniorproj_sandbox_db'
-      const data = localStorage.getItem(storageKey)
-      if (data) {
-        try {
-          const parsed = JSON.parse(data)
-          // Find standard demo student or active student profile
-          const activeProfile = parsed.profiles.find((p: any) => p.role === 'student') || parsed.profiles[0]
-          if (activeProfile) {
-            setCurrentUser({
-              id: activeProfile.id,
-              full_name: activeProfile.full_name,
-              email: activeProfile.email
-            })
-          }
-          
-          // Let's find project first
-          // Wait, is there a project in mock projects assigned to this student?
-          const assignedProj = parsed.projects.find((p: any) => 
-            p.origin === 'industry' &&
-            (p.student_id === activeProfile?.id || (p.team_members && p.team_members.includes(activeProfile?.id)))
-          )
-
-          if (assignedProj) {
-            // Build temporary mock team
-            setTeam({
-              id: 'mock-team-id',
-              name: 'Nexus Innovators',
-              created_at: assignedProj.created_at
-            })
-
-             // Teammates: Let's gather other students from profiles table, excluding ourselves
-             const teamProfiles = parsed.profiles.filter((p: any) => 
-               p.role === 'student' && p.id !== activeProfile?.id
-             )
-
-            const mappedMembers = teamProfiles.map((p: any) => ({
-              team_id: 'mock-team-id',
-              user_id: p.id,
-              profiles: p
-            }))
-
-            setMembers(mappedMembers)
-
-            // Setup project details
-            const instructor = parsed.profiles.find((p: any) => p.id === assignedProj.instructor_id)
-            const partner = parsed.profiles.find((p: any) => p.id === assignedProj.industry_partner_id)
-            
-            setProject({
-              ...assignedProj,
-              instructor: instructor ? { full_name: instructor.full_name, email: instructor.email } : undefined,
-              partner: partner ? { full_name: partner.full_name, email: partner.email } : undefined
-            })
-          }
-        } catch (jsonErr) {
-          console.error("Error parsing sandbox mock db:", jsonErr)
-        }
-      }
-    }
-  }
 
   const handleSendMessage = (e: React.FormEvent) => {
     e.preventDefault()
@@ -419,8 +344,6 @@ export default function StudentTeamsClient() {
       alert("Current user profile not found. Please reload or log in again.")
       return
     }
-
-    const isDemoMode = typeof window !== 'undefined' && localStorage.getItem('demo_mode') === 'true'
     
     let parsedDate = new Date(newMeetingDate)
     if (isNaN(parsedDate.getTime())) {
@@ -441,8 +364,6 @@ export default function StudentTeamsClient() {
       return
     }
 
-    // Format for display: e.g. "Jun 17, 2026"
-    const formattedDate = parsedDate.toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' })
     // Format for DB insertion: YYYY-MM-DD
     const yyyy = parsedDate.getFullYear()
     const mm = String(parsedDate.getMonth() + 1).padStart(2, '0')
@@ -460,70 +381,32 @@ export default function StudentTeamsClient() {
       status: 'pending'
     }
 
-    if (isDemoMode) {
-      const item = {
-        id: `mock-mtg-${Date.now()}`,
-        project_id: project.id,
-        student_id: currentUser.id,
-        title: meetingData.title,
-        description: meetingData.description,
-        date: formattedDate,
-        time: meetingData.meeting_time,
-        type: 'Virtual (Google Meet)'
-      }
+    try {
+      const { data, error } = await supabase
+        .from('meetings')
+        .insert([meetingData])
+        .select()
 
-      setMeetings(prev => [...prev, item])
+      if (error) throw error
 
-      if (typeof window !== 'undefined') {
-        const storageKey = 'seniorproj_sandbox_db'
-        const data = localStorage.getItem(storageKey)
-        if (data) {
-          try {
-            const parsed = JSON.parse(data)
-            if (!parsed.meetings) {
-              parsed.meetings = []
-            }
-            parsed.meetings.push(item)
-            localStorage.setItem(storageKey, JSON.stringify(parsed))
-            
-            await fetch('/api/sandbox/sync', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(parsed)
-            }).catch(() => {})
-          } catch (err) {
-            console.error("Failed to sync meeting to sandbox:", err)
-          }
+      if (data && data.length > 0) {
+        const inserted = data[0]
+        const item = {
+          id: inserted.id,
+          project_id: inserted.project_id,
+          student_id: inserted.student_id,
+          title: inserted.title,
+          description: inserted.description,
+          date: new Date(inserted.meeting_date).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' }),
+          time: inserted.meeting_time,
+          type: inserted.meeting_type === 'virtual' ? 'Virtual (Google Meet)' : inserted.meeting_type
         }
+        setMeetings(prev => [...prev, item])
       }
-    } else {
-      try {
-        const { data, error } = await supabase
-          .from('meetings')
-          .insert([meetingData])
-          .select()
-
-        if (error) throw error
-
-        if (data && data.length > 0) {
-          const inserted = data[0]
-          const item = {
-            id: inserted.id,
-            project_id: inserted.project_id,
-            student_id: inserted.student_id,
-            title: inserted.title,
-            description: inserted.description,
-            date: new Date(inserted.meeting_date).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' }),
-            time: inserted.meeting_time,
-            type: inserted.meeting_type === 'virtual' ? 'Virtual (Google Meet)' : inserted.meeting_type
-          }
-          setMeetings(prev => [...prev, item])
-        }
-      } catch (err: any) {
-        console.error("Failed to save live meeting to Supabase:", err)
-        alert("Failed to schedule meeting on the database: " + (err.message || err))
-        return
-      }
+    } catch (err: any) {
+      console.error("Failed to save live meeting to Supabase:", err)
+      alert("Failed to schedule meeting on the database: " + (err.message || err))
+      return
     }
 
     setNewMeetingTitle('')

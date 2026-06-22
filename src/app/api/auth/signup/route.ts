@@ -14,13 +14,13 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const { email, password, fullName, role } = await request.json()
+    const { email, password, fullName, role, department } = await request.json()
 
     if (!email || !password || !fullName || !role) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
     }
 
-    const validRoles = ['student', 'instructor', 'industry', 'admin', 'supervisor']
+    const validRoles = ['student', 'instructor', 'industry', 'examiner_panel', 'supervisor']
     if (!validRoles.includes(role)) {
       return NextResponse.json({ error: 'Invalid role' }, { status: 400 })
     }
@@ -55,14 +55,21 @@ export async function POST(request: NextRequest) {
     const userId = createData.user.id
 
     // Step 2: Upsert profile row using admin client (bypasses RLS)
+    const profileData: Record<string, any> = {
+      id: userId,
+      email: email,
+      full_name: fullName,
+      role: role,
+    }
+
+    // Save department for instructors, students, and supervisors
+    if (department && (role === 'instructor' || role === 'student' || role === 'supervisor')) {
+      profileData.department = department
+    }
+
     const { error: profileError } = await adminSupabase
       .from('profiles')
-      .upsert({
-        id: userId,
-        email: email,
-        full_name: fullName,
-        role: role,
-      }, { onConflict: 'id' })
+      .upsert(profileData, { onConflict: 'id' })
 
     if (profileError) {
       // Profile insert failed — log it but don't block the user

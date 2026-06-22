@@ -260,38 +260,6 @@ export default function SupervisorDocumentsClient({
     // Call server action to update Supabase
     const res = await supervisorUpdateDeliverableStatus(selectedSub.id, status, gradeText, recText)
 
-    // Sync sandbox fallback
-    if (typeof window !== 'undefined') {
-      const storageKey = 'seniorproj_sandbox_db'
-      const data = localStorage.getItem(storageKey)
-      if (data) {
-        try {
-          const parsed = JSON.parse(data)
-          parsed.deliverables = parsed.deliverables.map((d: any) => {
-            if (d.id === selectedSub.id) {
-              return {
-                ...d,
-                status: status,
-                grade: status === 'graded' ? gradeText : null,
-                recommendation: recText,
-                updated_at: new Date().toISOString()
-              }
-            }
-            return d
-          })
-          localStorage.setItem(storageKey, JSON.stringify(parsed))
-          
-          await fetch('/api/sandbox/sync', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(parsed)
-          }).catch(() => {})
-        } catch (e) {
-          console.error("Failed to write mock data:", e)
-        }
-      }
-    }
-
     if (res.success) {
       const logStatus = status === 'graded' ? 'Approved' : 'Flagged'
       showToast(status === 'graded' 
@@ -334,26 +302,7 @@ export default function SupervisorDocumentsClient({
       setGradeInput('')
       setFeedbackInput('')
     } else {
-      showToast("Live save error (synced to sandbox fallback instead).")
-      
-      // Still update local react states for sandbox testing
-      setDeliverables(prev => prev.map((d: any) => {
-        if (d.id === selectedSub.id) {
-          return {
-            ...d,
-            status: status,
-            grade: status === 'graded' ? gradeText : null,
-            recommendation: recText
-          }
-        }
-        return d
-      }))
-
-      setIsApproveOpen(false)
-      setIsFlagOpen(false)
-      setSelectedSub(null)
-      setGradeInput('')
-      setFeedbackInput('')
+      showToast("Live save error: " + (res.error || "failed to update database"))
     }
     setActionProcessing(false)
   }

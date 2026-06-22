@@ -214,7 +214,7 @@ export default function PartnerDashboardPage() {
     <div className="max-w-6xl mx-auto space-y-6">
       
       {/* Dynamic Tab Navigation */}
-      <div className="flex border-b border-slate-200 mb-8 text-sm font-black uppercase tracking-wider items-center flex-wrap">
+      <div className="flex border-b border-slate-200 mb-8 text-sm font-black uppercase tracking-wider items-center overflow-x-auto whitespace-nowrap scrollbar-none">
         <button 
           onClick={() => setActiveTab('my-problems')}
           className={`pb-4 px-6 relative transition-all cursor-pointer ${activeTab === 'my-problems' ? 'text-indigo-600 border-b-2 border-indigo-600' : 'text-slate-400 hover:text-slate-700'}`}

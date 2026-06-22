@@ -25,6 +25,7 @@ export default function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [selectedRole, setSelectedRole] = useState('student')
   const [password, setPassword] = useState('')
+  const [selectedDepartment, setSelectedDepartment] = useState('')
 
   const meetsMinLength = password.length >= 8
   const meetsUppercase = /[A-Z]/.test(password)
@@ -52,6 +53,13 @@ export default function RegisterPage() {
       return
     }
 
+    // Require department for instructors, students, and supervisors
+    if ((selectedRole === 'instructor' || selectedRole === 'student' || selectedRole === 'supervisor') && !selectedDepartment) {
+      setError('Please select your department before continuing.')
+      setLoading(false)
+      return
+    }
+
     try {
       const supabase = createClient()
 
@@ -63,7 +71,8 @@ export default function RegisterPage() {
           email,
           password,
           fullName,
-          role: selectedRole
+          role: selectedRole,
+          department: selectedDepartment || null
         })
       })
 
@@ -111,10 +120,24 @@ export default function RegisterPage() {
   }
 
   async function handleOAuthLogin(provider: 'google' | 'github') {
+    // Require department for instructors, students, and supervisors
+    if ((selectedRole === 'instructor' || selectedRole === 'student' || selectedRole === 'supervisor') && !selectedDepartment) {
+      setError(`Please select your department before continuing with ${provider.charAt(0).toUpperCase() + provider.slice(1)}.`)
+      return
+    }
+
     setLoading(true)
     setError('')
     try {
       const supabase = createClient()
+      
+      // Store selected department in a cookie (expires in 10 minutes)
+      if (selectedDepartment) {
+        document.cookie = `oauth_dept=${encodeURIComponent(selectedDepartment)}; path=/; max-age=600`
+      } else {
+        document.cookie = `oauth_dept=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT`
+      }
+
       const { error: oauthError } = await supabase.auth.signInWithOAuth({
         provider,
         options: {
@@ -219,7 +242,7 @@ export default function RegisterPage() {
                   { role: 'instructor', label: 'Instructor', desc: 'Jury evaluation', icon: <Users className="w-5 h-5" />, color: 'border-emerald-200 text-emerald-600 bg-emerald-50/10' },
                   { role: 'industry', label: 'Industry', desc: 'Sponsor briefs', icon: <Building2 className="w-5 h-5" />, color: 'border-indigo-200 text-indigo-600 bg-indigo-50/10' },
                   { role: 'supervisor', label: 'Supervisor', desc: 'Mentorship', icon: <Briefcase className="w-5 h-5" />, color: 'border-cyan-200 text-cyan-600 bg-cyan-50/10' },
-                  { role: 'admin', label: 'Panel Member', desc: 'Cohort evaluation', icon: <Sliders className="w-5 h-5" />, color: 'border-amber-200 text-amber-600 bg-amber-50/10' }
+                  { role: 'examiner_panel', label: 'Panel Member', desc: 'Cohort evaluation', icon: <Sliders className="w-5 h-5" />, color: 'border-amber-200 text-amber-600 bg-amber-50/10' }
                 ].map((r) => {
                   const isSelected = selectedRole === r.role
                   return (
@@ -267,6 +290,36 @@ export default function RegisterPage() {
                 className="w-full bg-slate-50/50 border border-slate-200 focus:border-blue-500 rounded-xl py-3 px-4 text-slate-900 placeholder:text-slate-300 text-xs font-bold focus:outline-none focus:ring-2 focus:ring-blue-500/10 transition-all"
               />
             </div>
+
+            {/* Department dropdown (for Instructor, Student, and Supervisor) */}
+            {(selectedRole === 'instructor' || selectedRole === 'student' || selectedRole === 'supervisor') && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                className="space-y-1.5"
+              >
+                <label className="text-[10px] text-slate-400 font-black uppercase tracking-wider block ml-1">
+                  Department
+                </label>
+                <select
+                  value={selectedDepartment}
+                  onChange={(e) => setSelectedDepartment(e.target.value)}
+                  required
+                  className="w-full bg-slate-50/50 border border-slate-200 focus:border-blue-500 rounded-xl py-3 px-4 text-slate-900 text-xs font-bold focus:outline-none focus:ring-2 focus:ring-blue-500/10 transition-all appearance-none cursor-pointer"
+                >
+                  <option value="">Select your department</option>
+                  <option value="Computer Science">Computer Science</option>
+                  <option value="Information Technology">Information Technology</option>
+                  <option value="Mathematics">Mathematics</option>
+                  <option value="Engineering">Engineering</option>
+                  <option value="Business Administration">Business Administration</option>
+                  <option value="Education">Education</option>
+                  <option value="Natural Sciences">Natural Sciences</option>
+                  <option value="Social Sciences">Social Sciences</option>
+                  <option value="Other">Other</option>
+                </select>
+              </motion.div>
+            )}
 
             {/* Academic Year & Track dropdown (Only for Student) */}
             {selectedRole === 'student' && (

@@ -63,29 +63,6 @@ export default function ProjectDetailsPage() {
       const res = await submitDeliverable(deliverableId, url)
       if (!res.success) throw new Error(res.error)
 
-      // Sync submission with local sandbox database
-      if (typeof window !== 'undefined') {
-        const storageKey = 'seniorproj_sandbox_db'
-        const dbData = localStorage.getItem(storageKey)
-        if (dbData) {
-          try {
-            const parsed = JSON.parse(dbData)
-            parsed.deliverables = (parsed.deliverables || []).map((d: any) =>
-              d.id === deliverableId ? { ...d, submission_url: url, status: 'submitted', updated_at: new Date().toISOString() } : d
-            )
-            localStorage.setItem(storageKey, JSON.stringify(parsed))
-            // Sync to backend endpoint
-            await fetch('/api/sandbox/sync', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(parsed)
-            }).catch(() => {})
-          } catch (e) {
-            console.error('Failed to sync project deliverable submission to local storage:', e)
-          }
-        }
-      }
-
       setDeliverables(deliverables.map(d => d.id === deliverableId ? { ...d, submission_url: url, status: 'submitted' } : d))
       
       try {

@@ -227,7 +227,22 @@ export default function StudentMilestonesPage() {
         const delivRes = await getDeliverables(activeProj.id)
         if (!delivRes.success) throw new Error(delivRes.error)
 
-        const formattedDelivs = (delivRes.data || []).map((d: any) => ({
+        let dbDelivs = delivRes.data || []
+        if (dbDelivs.length === 0 && activeProj.status === 'approved') {
+          console.log('Seeding default deliverables for approved project...')
+          const defaultDelivs = [
+            { title: 'Project Proposal', due_date: new Date(Date.now() + 7 * 24 * 3600000).toISOString(), status: 'todo' },
+            { title: 'Literature Review', due_date: new Date(Date.now() + 21 * 24 * 3600000).toISOString(), status: 'todo' },
+            { title: 'Progress Report', due_date: new Date(Date.now() + 45 * 24 * 3600000).toISOString(), status: 'todo' },
+            { title: 'Final Defense', due_date: new Date(Date.now() + 90 * 24 * 3600000).toISOString(), status: 'todo' }
+          ]
+          const seedRes = await seedDeliverables(activeProj.id, defaultDelivs)
+          if (seedRes.success) {
+            dbDelivs = seedRes.data || []
+          }
+        }
+
+        const formattedDelivs = dbDelivs.map((d: any) => ({
           ...d,
           description: d.description || getMilestoneDescription(d.title)
         }))
@@ -284,29 +299,6 @@ export default function StudentMilestonesPage() {
       // 2. Submit the deliverable in the database with the static file URL
       const res = await submitDeliverable(selectedMilestone.id, staticUrl)
       if (!res.success) throw new Error(res.error)
-
-      // Sync submission with local sandbox database
-      if (typeof window !== 'undefined') {
-        const storageKey = 'seniorproj_sandbox_db'
-        const dbData = localStorage.getItem(storageKey)
-        if (dbData) {
-          try {
-            const parsed = JSON.parse(dbData)
-            parsed.deliverables = (parsed.deliverables || []).map((d: any) =>
-              d.id === selectedMilestone.id ? { ...d, submission_url: staticUrl, status: 'submitted', updated_at: new Date().toISOString() } : d
-            )
-            localStorage.setItem(storageKey, JSON.stringify(parsed))
-            // Sync to backend endpoint
-            await fetch('/api/sandbox/sync', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(parsed)
-            }).catch(() => {})
-          } catch (e) {
-            console.error('Failed to sync milestone submission to local storage:', e)
-          }
-        }
-      }
 
       setDeliverables(deliverables.map(d => d.id === selectedMilestone.id ? { ...d, submission_url: staticUrl, status: 'submitted' } : d))
       setSelectedMilestone({ ...selectedMilestone, submission_url: staticUrl, status: 'submitted' })

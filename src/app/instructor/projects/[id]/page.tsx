@@ -56,7 +56,7 @@ export default function InstructorReviewPage() {
 
   async function handleStatusChange(status: string) {
     setProcessing(true)
-    let statusError = null
+    let statusError: any = null
     try {
       const { error } = await supabase
         .from('projects')
@@ -64,37 +64,8 @@ export default function InstructorReviewPage() {
         .eq('id', id)
       if (error) throw new Error(error.message)
     } catch (dbErr) {
-      console.warn('Supabase status change failed, performing local database sync fallback:', dbErr)
-      
-      // Fallback: Sync with LocalStorage Mock Database so the UI stays 100% functional
-      if (typeof window !== 'undefined') {
-        const storageKey = 'seniorproj_sandbox_db'
-        const data = localStorage.getItem(storageKey)
-        if (data) {
-          try {
-            const parsed = JSON.parse(data)
-            if (parsed.projects) {
-              parsed.projects = parsed.projects.map((p: any) => 
-                p.id === id ? { ...p, status } : p
-              )
-              localStorage.setItem(storageKey, JSON.stringify(parsed))
-              
-              // Sync to server mock global state
-              await fetch('/api/sandbox/sync', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(parsed)
-              }).catch(() => {})
-            }
-          } catch (jsonErr) {
-            statusError = jsonErr
-          }
-        } else {
-          statusError = dbErr
-        }
-      } else {
-        statusError = dbErr
-      }
+      console.error('Supabase status change failed:', dbErr)
+      statusError = dbErr
     }
     
     if (!statusError) {
@@ -138,7 +109,7 @@ export default function InstructorReviewPage() {
         }
       }
     } else {
-      setProject({ ...project, status })
+      alert("Failed to update status on the database: " + (statusError.message || statusError))
     }
     setProcessing(false)
   }
@@ -153,37 +124,8 @@ export default function InstructorReviewPage() {
         .eq('id', delivId)
       if (error) throw new Error(error.message)
     } catch (dbErr) {
-      console.warn('Supabase grading update failed, performing local database sync fallback:', dbErr)
-      
-      // Fallback: Sync with LocalStorage Mock Database so the UI stays 100% functional
-      if (typeof window !== 'undefined') {
-        const storageKey = 'seniorproj_sandbox_db'
-        const data = localStorage.getItem(storageKey)
-        if (data) {
-          try {
-            const parsed = JSON.parse(data)
-            if (parsed.deliverables) {
-              parsed.deliverables = parsed.deliverables.map((d: any) => 
-                d.id === delivId ? { ...d, grade, status: 'graded' } : d
-              )
-              localStorage.setItem(storageKey, JSON.stringify(parsed))
-              
-              // Sync to server mock global state
-              await fetch('/api/sandbox/sync', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(parsed)
-              }).catch(() => {})
-            }
-          } catch (jsonErr) {
-            gradeError = jsonErr
-          }
-        } else {
-          gradeError = dbErr
-        }
-      } else {
-        gradeError = dbErr
-      }
+      console.error('Supabase grading update failed:', dbErr)
+      gradeError = dbErr
     }
     
     if (!gradeError) {

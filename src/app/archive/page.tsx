@@ -180,7 +180,7 @@ export default function ProjectArchivePage() {
       case 'instructor': return 'Projects You Supervised'
       case 'supervisor': return 'Projects You Mentored'
       case 'industry': return 'Problems You Sponsored'
-      case 'admin': return 'All Evaluated Projects'
+      case 'examiner_panel': return 'All Evaluated Projects'
       default: return 'Completed Projects'
     }
   }
@@ -190,7 +190,7 @@ export default function ProjectArchivePage() {
       case 'instructor': return 'Browse projects you supervised that have been completed and graded.'
       case 'supervisor': return 'Review the final outcomes of projects you mentored.'
       case 'industry': return 'View completed outcomes from the industry problems you submitted.'
-      case 'admin': return 'Full archive of evaluated and completed projects across all cohorts.'
+      case 'examiner_panel': return 'Full archive of evaluated and completed projects across all cohorts.'
       default: return 'Explore completed Capstone theses and Industry projects for inspiration and reference.'
     }
   }

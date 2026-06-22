@@ -89,37 +89,8 @@ export default function InstructorVettingPage() {
         .eq('id', projectId)
       if (error) throw new Error(error.message)
     } catch (dbErr: any) {
-      console.warn('Supabase vetting status update failed, performing local database sync fallback:', dbErr)
-      
-      // Fallback: Sync with LocalStorage Mock Database so the UI stays 100% functional
-      if (typeof window !== 'undefined') {
-        const storageKey = 'seniorproj_sandbox_db'
-        const data = localStorage.getItem(storageKey)
-        if (data) {
-          try {
-            const parsed = JSON.parse(data)
-            if (parsed.projects) {
-              parsed.projects = parsed.projects.map((p: any) => 
-                p.id === projectId ? { ...p, status: status } : p
-              )
-              localStorage.setItem(storageKey, JSON.stringify(parsed))
-              
-              // Sync to server mock global state
-              await fetch('/api/sandbox/sync', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(parsed)
-              }).catch(() => {})
-            }
-          } catch (jsonErr) {
-            vettingError = jsonErr
-          }
-        } else {
-          vettingError = dbErr
-        }
-      } else {
-        vettingError = dbErr
-      }
+      console.error('Supabase vetting status update failed:', dbErr)
+      vettingError = dbErr
     }
 
     if (!vettingError) {
@@ -218,22 +189,6 @@ export default function InstructorVettingPage() {
         setSelectedProposal(newList[0])
       } else {
         setSelectedProposal(null)
-      }
-    } else {
-      // Local sync fallback update
-      if (typeof window !== 'undefined') {
-        const storageKey = 'seniorproj_sandbox_db'
-        const data = localStorage.getItem(storageKey)
-        if (data) {
-          try {
-            const parsed = JSON.parse(data)
-            if (parsed.projects) {
-              setProposals(parsed.projects)
-              const match = parsed.projects.find((p: any) => p.id === projectId)
-              if (match) setSelectedProposal(match)
-            }
-          } catch (e) {}
-        }
       }
     }
     setProcessing(null)

@@ -38,7 +38,8 @@ export default function StudentProfilePage() {
         bio: data.bio,
         dob: data.dob,
         gender: data.gender,
-        avatar_url: data.avatar_url
+        avatar_url: data.avatar_url,
+        department: data.department || null
       })
       .eq('id', user.id)
 

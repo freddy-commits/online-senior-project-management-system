@@ -77,46 +77,8 @@ export default function StudentDashboardClient({
   const [profile, setProfile] = useState<any>(initialProfile)
 
   useEffect(() => {
-    const isDemo = false
-
-    if (isDemo && typeof window !== 'undefined') {
-      const storageKey = 'seniorproj_sandbox_db'
-      const data = localStorage.getItem(storageKey)
-      if (data) {
-        try {
-          const parsed = JSON.parse(data)
-          const activeProfile = parsed.profiles.find((p: any) => p.role === 'student') || parsed.profiles[0]
-          
-          if (activeProfile) {
-            setProfile(activeProfile)
-            
-            const studentProjs = parsed.projects.filter((p: any) => 
-              p.student_id === activeProfile.id || p.team_members.includes(activeProfile.id)
-            )
-
-            const enrichedProjs = studentProjs.map((p: any) => {
-              const supervisor = parsed.profiles.find((prof: any) => prof.id === p.instructor_id)
-              const partner = parsed.profiles.find((prof: any) => prof.id === p.industry_partner_id)
-              
-              // Seed deliverables from mock DB if they exist
-              const delivs = parsed.deliverables ? parsed.deliverables.filter((d: any) => d.project_id === p.id) : []
-              
-              return {
-                ...p,
-                supervisor: supervisor ? { full_name: supervisor.full_name, email: supervisor.email } : null,
-                partner: partner ? { full_name: partner.full_name, email: partner.email } : null,
-                deliverables: delivs
-              }
-            })
-
-            enrichedProjs.sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-            setProjectList(enrichedProjs)
-          }
-        } catch (e) {
-          console.error("Error loading mock projects for student dashboard:", e)
-        }
-      }
-    }
+    if (initialProfile) setProfile(initialProfile)
+    if (initialProjects) setProjectList(initialProjects)
   }, [initialProjects, initialProfile])
 
   // Differentiate projects by track: capstone vs industry
@@ -239,7 +201,7 @@ export default function StudentDashboardClient({
         } else if (query.includes('ind') || query.includes('client')) {
           contextSetTrackMode('industry')
         } else if (query.includes('admin') || query.includes('risk')) {
-          contextSetTrackMode('admin')
+          contextSetTrackMode('examiner_panel')
         } else if (query.includes('coord') || query.includes('pairing')) {
           contextSetTrackMode('coordinator')
         }
@@ -370,100 +332,6 @@ export default function StudentDashboardClient({
                       </div>
                     </div>
                   </div>
-                </div>
-
-                {/* Milestones timeline */}
-                <div className="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm hover:shadow-md transition-shadow space-y-4">
-                  <div className="flex justify-between items-center border-b border-slate-100 pb-3">
-                    <h3 className="text-sm font-black text-slate-900 tracking-tight">Project Milestones &amp; Deliverables Roadmap</h3>
-                    <Link href="/student/milestones" className="text-xs font-bold text-blue-600 hover:underline flex items-center gap-1">
-                      Go to Milestones Workspace <ChevronRight className="w-4 h-4" />
-                    </Link>
-                  </div>
-                  
-                  {deliverables.length === 0 ? (
-                    <div className="text-center py-10 text-slate-400 font-bold text-xs">
-                      No milestones have been seeded for this project. Visit the Milestones workspace to get started.
-                    </div>
-                  ) : (
-                    <div className="space-y-6 relative pl-5 border-l-2 border-slate-100 mt-4">
-                      {deliverables.map((deliv: any) => {
-                        const isOverdue = deliv.status === 'todo' && deliv.due_date && new Date(deliv.due_date).getTime() < Date.now()
-                        
-                        let statusBadge = (
-                          <span className="text-[8px] font-black uppercase px-2 py-0.5 rounded bg-slate-50 text-slate-500 border border-slate-200">
-                            Todo
-                          </span>
-                        )
-                        let dotColor = 'bg-slate-350'
-                        if (deliv.status === 'graded') {
-                          statusBadge = (
-                            <span className="text-[8px] font-black uppercase px-2 py-0.5 rounded bg-emerald-50 text-emerald-600 border border-emerald-150">
-                              Graded
-                            </span>
-                          )
-                          dotColor = 'bg-emerald-500'
-                        } else if (deliv.status === 'submitted') {
-                          statusBadge = (
-                            <span className="text-[8px] font-black uppercase px-2 py-0.5 rounded bg-blue-50 text-blue-600 border border-blue-150">
-                              Submitted
-                            </span>
-                          )
-                          dotColor = 'bg-blue-650'
-                        } else if (isOverdue) {
-                          statusBadge = (
-                            <span className="text-[8px] font-black uppercase px-2 py-0.5 rounded bg-rose-50 text-rose-600 border border-rose-150">
-                              Overdue
-                            </span>
-                          )
-                          dotColor = 'bg-rose-500'
-                        }
-
-                        const formattedDueDate = deliv.due_date 
-                          ? new Date(deliv.due_date).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' })
-                          : 'No Date'
-
-                        return (
-                          <div key={deliv.id} className="relative group">
-                            {/* Dot Node */}
-                            <div className={`absolute -left-[27px] top-1.5 w-3.5 h-3.5 rounded-full border-2 border-white ring-4 ring-white transition-transform group-hover:scale-110 ${dotColor}`} />
-                            
-                            <div className="space-y-1">
-                              <div className="flex items-center gap-2">
-                                <h4 className="text-sm font-bold text-slate-800 leading-snug">{deliv.title}</h4>
-                                {statusBadge}
-                              </div>
-                              <p className="text-xs text-slate-500 font-semibold">
-                                {deliv.description || getMilestoneDescription(deliv.title)}
-                              </p>
-                              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 pt-1 text-[10px] text-slate-400 font-bold">
-                                <span className="flex items-center gap-1">
-                                  <Calendar className="w-3.5 h-3.5 shrink-0" />
-                                  Due: {formattedDueDate}
-                                </span>
-                                {deliv.submission_url && (
-                                  <span className="flex items-center gap-1 text-slate-650">
-                                    <FileText className="w-3.5 h-3.5 shrink-0" />
-                                    Sub: {deliv.submission_url}
-                                  </span>
-                                )}
-                              </div>
-                              {deliv.feedback_partner && (
-                                <div className="mt-2 p-3 bg-slate-50 border border-slate-100 rounded-xl text-xs italic text-slate-600 font-medium">
-                                  <strong>Partner Feedback:</strong> "{deliv.feedback_partner}"
-                                </div>
-                              )}
-                              {deliv.feedback_supervisor && (
-                                <div className="mt-2 p-3 bg-slate-50 border border-slate-100 rounded-xl text-xs italic text-slate-600 font-medium">
-                                  <strong>Supervisor Feedback:</strong> "{deliv.feedback_supervisor}"
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        )
-                      })}
-                    </div>
-                  )}
                 </div>
               </>
             )}
@@ -599,119 +467,56 @@ export default function StudentDashboardClient({
                   </div>
                 </div>
 
-                {/* Academic Milestones timeline */}
-                <div className="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm hover:shadow-md transition-shadow space-y-4">
-                  <div className="flex justify-between items-center border-b border-slate-100 pb-3">
-                    <h3 className="text-sm font-black text-slate-900 tracking-tight">Academic Milestones &amp; Thesis Roadmap</h3>
-                    <Link href="/student/milestones" className="text-xs font-bold text-[#a75d24] hover:underline flex items-center gap-1">
-                      Go to Milestones Workspace <ChevronRight className="w-4 h-4" />
-                    </Link>
+                {/* Panel Member Evaluation Comments & Defense Questions Section */}
+                {activeProject.review_completed && (
+                  <div className="bg-gradient-to-br from-indigo-50/50 to-blue-50/50 border border-indigo-100/80 rounded-[2.5rem] p-8 shadow-sm space-y-6 mt-8">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-2xl bg-indigo-100 text-indigo-650 flex items-center justify-center font-bold shadow-sm shrink-0">
+                        🛡️
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-black text-slate-900 tracking-tight">Examiner Panel Vetting Feedback</h3>
+                        <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mt-0.5">Academic Proposal Review</p>
+                      </div>
+                    </div>
+                    
+                    <div className="grid md:grid-cols-2 gap-6 pt-2">
+                      <div className="bg-white border border-slate-100 rounded-3xl p-6 space-y-3 shadow-inner">
+                        <span className="text-[10px] font-black text-indigo-650 uppercase tracking-widest block">Review Notes</span>
+                        <p className="text-sm font-semibold text-slate-700 leading-relaxed whitespace-pre-line">
+                          {activeProject.review_notes || 'No review comments left.'}
+                        </p>
+                      </div>
+
+                      <div className="bg-white border border-slate-100 rounded-3xl p-6 space-y-3 shadow-inner">
+                        <span className="text-[10px] font-black text-indigo-650 uppercase tracking-widest block">Defense Questions to Address</span>
+                        <p className="text-sm font-semibold text-slate-750 leading-relaxed whitespace-pre-line">
+                          {activeProject.review_questions || 'No defense questions raised.'}
+                        </p>
+                      </div>
+                    </div>
                   </div>
-                  
-                  {deliverables.length === 0 ? (
-                    <div className="text-center py-10 text-slate-400 font-bold text-xs">
-                      No milestones have been seeded for this project. Visit the Milestones workspace to get started.
-                    </div>
-                  ) : (
-                    <div className="space-y-6 relative pl-5 border-l-2 border-slate-100 mt-4">
-                      {deliverables.map((deliv: any) => {
-                        const isOverdue = deliv.status === 'todo' && deliv.due_date && new Date(deliv.due_date).getTime() < Date.now()
-                        
-                        let statusBadge = (
-                          <span className="text-[8px] font-black uppercase px-2 py-0.5 rounded bg-slate-50 text-slate-500 border border-slate-200">
-                            Todo
-                          </span>
-                        )
-                        let dotColor = 'bg-slate-350'
-                        if (deliv.status === 'graded') {
-                          statusBadge = (
-                            <span className="text-[8px] font-black uppercase px-2 py-0.5 rounded bg-emerald-50 text-emerald-600 border border-emerald-150">
-                              Graded
-                            </span>
-                          )
-                          dotColor = 'bg-emerald-500'
-                        } else if (deliv.status === 'submitted') {
-                          statusBadge = (
-                            <span className="text-[8px] font-black uppercase px-2 py-0.5 rounded bg-blue-50 text-blue-600 border border-blue-150">
-                              Submitted
-                            </span>
-                          )
-                          dotColor = 'bg-blue-650'
-                        } else if (isOverdue) {
-                          statusBadge = (
-                            <span className="text-[8px] font-black uppercase px-2 py-0.5 rounded bg-rose-50 text-rose-600 border border-rose-150">
-                              Overdue
-                            </span>
-                          )
-                          dotColor = 'bg-rose-500'
-                        }
-
-                        const formattedDueDate = deliv.due_date 
-                          ? new Date(deliv.due_date).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' })
-                          : 'No Date'
-
-                        return (
-                          <div key={deliv.id} className="relative group">
-                            {/* Dot Node */}
-                            <div className={`absolute -left-[27px] top-1.5 w-3.5 h-3.5 rounded-full border-2 border-white ring-4 ring-white transition-transform group-hover:scale-110 ${dotColor}`} />
-                            
-                            <div className="space-y-1">
-                              <div className="flex items-center gap-2">
-                                <h4 className="text-sm font-bold text-slate-800 leading-snug">{deliv.title}</h4>
-                                {statusBadge}
-                              </div>
-                              <p className="text-xs text-slate-500 font-semibold">
-                                {deliv.description || getMilestoneDescription(deliv.title)}
-                              </p>
-                              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 pt-1 text-[10px] text-slate-400 font-bold">
-                                <span className="flex items-center gap-1">
-                                  <Calendar className="w-3.5 h-3.5 shrink-0" />
-                                  Due: {formattedDueDate}
-                                </span>
-                                {deliv.submission_url && (
-                                  <span className="flex items-center gap-1 text-slate-650">
-                                    <FileText className="w-3.5 h-3.5 shrink-0" />
-                                    Sub: {deliv.submission_url}
-                                  </span>
-                                )}
-                              </div>
-                              {deliv.feedback_partner && (
-                                <div className="mt-2 p-3 bg-slate-50 border border-slate-100 rounded-xl text-xs italic text-slate-600 font-medium">
-                                  <strong>Partner Feedback:</strong> "{deliv.feedback_partner}"
-                                </div>
-                              )}
-                              {deliv.feedback_supervisor && (
-                                <div className="mt-2 p-3 bg-[#fdf5f0] border border-[#a75d24]/10 rounded-xl text-xs italic text-slate-700 font-medium">
-                                  <strong>Supervisor Feedback:</strong> "{deliv.feedback_supervisor}"
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        )
-                      })}
-                    </div>
-                  )}
-                </div>
+                )}
               </>
             )}
           </motion.div>
         )}
 
-        {/* ================== MODE 3: ADMIN COHORT DASHBOARD (Screenshot 6) ================== */}
-        {trackMode === 'admin' && (
+        {/* ================== MODE 3: PANEL EXAMINER COHORT DASHBOARD ================== */}
+        {trackMode === 'examiner_panel' && (
           <motion.div
-            key="admin"
+            key="examiner_panel"
             initial={{ opacity: 0, scale: 0.98 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.98 }}
             className="space-y-6"
           >
             <div>
-              <h1 className="text-2xl font-black text-slate-900 tracking-tight">Admin Dashboard</h1>
+              <h1 className="text-2xl font-black text-slate-900 tracking-tight">Panel Examiner Dashboard</h1>
               <p className="text-xs text-slate-400 font-semibold mt-1">Capstone Program Overview &amp; cohort metrics.</p>
             </div>
 
-            {/* Admin Stats row widgets */}
+            {/* Panel Stats row widgets */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
               <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-sm text-center">
                 <span className="text-[10px] text-slate-400 font-black uppercase tracking-wider block mb-1">Partner Count</span>

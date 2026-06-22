@@ -11,7 +11,9 @@ export default function ProfileSection({ initialProfile, onSave }: { initialProf
     bio: initialProfile?.bio || '',
     dob: initialProfile?.dob || '',
     gender: initialProfile?.gender || 'not_specified',
-    avatar_url: initialProfile?.avatar_url || ''
+    avatar_url: initialProfile?.avatar_url || '',
+    department: initialProfile?.department || '',
+    role: initialProfile?.role || ''
   })
   
   const [saving, setSaving] = useState(false)
@@ -208,6 +210,32 @@ export default function ProfileSection({ initialProfile, onSave }: { initialProf
               <option value="other">Other</option>
             </select>
           </div>
+
+          {/* Department — only for instructors, students, and supervisors */}
+          {(profile.role === 'instructor' || profile.role === 'student' || profile.role === 'supervisor') && (
+            <div>
+              <label className="block text-sm font-semibold text-slate-600 mb-2 ml-1">
+                Department
+                <span className="ml-1 text-xs text-indigo-500 font-bold">(used for project filtering)</span>
+              </label>
+              <select
+                value={profile.department}
+                onChange={(e) => setProfile({ ...profile, department: e.target.value })}
+                className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-3.5 px-4 text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all text-sm font-medium appearance-none"
+              >
+                <option value="">Select your department</option>
+                <option value="Computer Science">Computer Science</option>
+                <option value="Information Technology">Information Technology</option>
+                <option value="Mathematics">Mathematics</option>
+                <option value="Engineering">Engineering</option>
+                <option value="Business Administration">Business Administration</option>
+                <option value="Education">Education</option>
+                <option value="Natural Sciences">Natural Sciences</option>
+                <option value="Social Sciences">Social Sciences</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+          )}
         </div>
 
         <div className="flex items-center gap-4 justify-between pt-4 border-t border-slate-100">

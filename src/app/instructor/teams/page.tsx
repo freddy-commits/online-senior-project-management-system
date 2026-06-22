@@ -11,7 +11,7 @@ export default async function InstructorTeamsPage() {
     redirect('/login')
   }
 
-  // Verify the user is an instructor
+  // Verify the user is an instructor and get their department
   const { data: profile } = await supabase
     .from('profiles')
     .select('*')
@@ -22,12 +22,20 @@ export default async function InstructorTeamsPage() {
     redirect('/login')
   }
 
-  // Fetch all students (profiles where role = 'student')
-  const { data: students } = await supabase
+  const instructorDepartment = profile.department || null
+
+  // Fetch students — filtered by department if the instructor has one set
+  let studentsQuery = supabase
     .from('profiles')
     .select('*')
     .eq('role', 'student')
     .order('full_name', { ascending: true })
+
+  if (instructorDepartment) {
+    studentsQuery = studentsQuery.eq('department', instructorDepartment)
+  }
+
+  const { data: students } = await studentsQuery
 
   // Fetch all industry partners / mentors
   const { data: mentors } = await supabase
@@ -36,11 +44,24 @@ export default async function InstructorTeamsPage() {
     .eq('role', 'industry')
     .order('full_name', { ascending: true })
 
-  // Fetch all projects (including supervisor and partner details)
-  const { data: projects } = await supabase
+  // Fetch projects — filtered to those belonging to same-department students
+  let projectsQuery = supabase
     .from('projects')
-    .select('*, student:student_id(full_name, email), instructor:instructor_id(full_name), supervisor:instructor_id(full_name), partner:industry_partner_id(full_name, email)')
+    .select('*, student:student_id(full_name, email, department), instructor:instructor_id(full_name), supervisor:instructor_id(full_name), partner:industry_partner_id(full_name, email)')
     .order('created_at', { ascending: false })
+
+  if (instructorDepartment) {
+    // Get IDs of students in this department first
+    const studentIds = (students || []).map((s: any) => s.id)
+    if (studentIds.length > 0) {
+      projectsQuery = projectsQuery.in('student_id', studentIds)
+    } else {
+      // No students in this department — return empty
+      projectsQuery = projectsQuery.eq('student_id', '00000000-0000-0000-0000-000000000000')
+    }
+  }
+
+  const { data: projects } = await projectsQuery
 
   // Fetch all teams
   const { data: teams } = await supabase
@@ -51,16 +72,33 @@ export default async function InstructorTeamsPage() {
   // Fetch all team members
   const { data: teamMembers } = await supabase
     .from('team_members')
-    .select('*, profiles:user_id(id, full_name, email, avatar_url)')
+    .select('*, profiles:user_id(id, full_name, email, avatar_url, department)')
+
+  // Filter teams by the instructor's department
+  let filteredTeams = teams || []
+  if (instructorDepartment) {
+    filteredTeams = (teams || []).filter((team: any) => {
+      const members = (teamMembers || []).filter((m: any) => m.team_id === team.id)
+      return members.some((m: any) => m.profiles?.department === instructorDepartment)
+    })
+  }
 
   return (
     <div className="p-8 pb-20">
+      {/* Department badge for the instructor */}
+      {instructorDepartment && (
+        <div className="mb-6 inline-flex items-center gap-2 px-4 py-2 bg-indigo-50 border border-indigo-200 rounded-full text-xs font-black text-indigo-700 uppercase tracking-wider">
+          <span className="w-2 h-2 rounded-full bg-indigo-500 shrink-0" />
+          Showing: {instructorDepartment} Department Only
+        </div>
+      )}
       <InstructorTeamsClient 
         initialStudents={students || []}
         initialMentors={mentors || []}
         initialProjects={projects || []}
-        initialTeams={teams || []}
+        initialTeams={filteredTeams}
         initialTeamMembers={teamMembers || []}
+        instructorDepartment={instructorDepartment || ''}
       />
     </div>
   )
