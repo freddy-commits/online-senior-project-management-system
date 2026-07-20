@@ -32,3 +32,7 @@ export default async function ApprovalsPage() {
           <h2 className="text-lg font-black tracking-tight text-slate-900 dark:text-white">Pending Requests</h2>
         </div>
         <ApprovalClient initialRequests={(requests as any) || []} />
+      </div>
+    </div>
+  );
+}
