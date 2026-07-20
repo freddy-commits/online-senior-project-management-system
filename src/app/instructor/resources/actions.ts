@@ -1,6 +1,7 @@
 'use server'
 
 import { createAdminClient } from '@/lib/supabase/admin'
+import { requireInstructor } from '@/lib/auth-guard'
 
 /**
  * Fetch all instructor resource files from Supabase.
@@ -8,6 +9,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
  */
 export async function fetchInstructorResources() {
   try {
+    await requireInstructor()
     const adminClient = createAdminClient()
     const { data, error } = await adminClient
       .from('instructor_resources')
@@ -32,6 +34,7 @@ export async function saveInstructorResource(resource: {
   uploaded_by?: string
 }) {
   try {
+    await requireInstructor()
     const adminClient = createAdminClient()
     const { data, error } = await adminClient
       .from('instructor_resources')
@@ -58,6 +61,7 @@ export async function saveInstructorResource(resource: {
  */
 export async function deleteInstructorResource(id: string, storagePath?: string) {
   try {
+    await requireInstructor()
     const adminClient = createAdminClient()
 
     // Delete from storage if path provided

@@ -1,8 +1,17 @@
 import { NextResponse } from 'next/server'
 import { createClient as createAdminSupabase } from '@supabase/supabase-js'
+import { createClient as createServerClient } from '@/lib/supabase/server'
 
 export async function POST(request: Request) {
   try {
+    // SECURITY: Verify the user is authenticated before allowing uploads
+    const supabase = await createServerClient()
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user) {
+      return NextResponse.json({ success: false, error: 'Unauthorized: You must be logged in to upload files.' }, { status: 401 })
+    }
+
     const formData = await request.formData()
     const file = formData.get('file') as File | null
     const bucket = (formData.get('bucket') as string) || 'project-documents'

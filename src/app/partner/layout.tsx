@@ -16,8 +16,15 @@ export default async function PartnerLayout({ children }: { children: React.Reac
     .eq('id', user.id)
     .single()
 
-  if (profile?.role !== 'industry') {
-    redirect(`/${profile?.role === 'industry' ? 'partner' : profile?.role || 'student'}/dashboard`)
+  if (profile?.role !== 'industry_partner') {
+    const roleRouteMap: Record<string, string> = {
+      student: '/student/dashboard',
+      instructor: '/instructor/dashboard',
+      supervisor: '/supervisor/dashboard',
+      examiner: '/admin/dashboard',
+      admin: '/admin/dashboard',
+    }
+    redirect(roleRouteMap[profile?.role ?? ''] ?? '/student/dashboard')
   }
 
   return (

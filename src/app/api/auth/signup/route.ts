@@ -1,5 +1,11 @@
 import { createClient } from '@supabase/supabase-js'
 import { NextRequest, NextResponse } from 'next/server'
+import { validateEmailForRole, validateInstitutionalId, STUDENT_ID_ROLES, STAFF_ID_ROLES } from '@/lib/email-validation'
+
+// ELEVATED_ROLES: users who select these roles during signup will be registered
+// as 'student' in the profiles table (security default), but a role_request row
+// will be created with status='pending' so an admin/instructor can approve them.
+const ELEVATED_ROLES = ['instructor', 'supervisor', 'industry_partner', 'examiner']
 
 // This route uses the service role to create users server-side,
 // completely bypassing any broken database trigger issues.
@@ -14,15 +20,36 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const { email, password, fullName, role, department } = await request.json()
+    const { email, password, fullName, role: requestedRole, department, studentId, staffId } = await request.json()
 
-    if (!email || !password || !fullName || !role) {
+    if (!email || !password || !fullName || !requestedRole) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
     }
 
-    const validRoles = ['student', 'instructor', 'industry', 'examiner_panel', 'supervisor']
-    if (!validRoles.includes(role)) {
-      return NextResponse.json({ error: 'Invalid role' }, { status: 400 })
+    // SECURITY: The `role` field from the client is used ONLY to determine whether
+    // to create a role_request row. The actual profile.role is ALWAYS 'student'.
+    // This prevents privilege escalation: no matter what role a user claims in the
+    // signup form, they always start as a student until explicitly approved.
+    const validRoles = ['student', 'industry_partner', ...ELEVATED_ROLES]
+    if (!validRoles.includes(requestedRole)) {
+      return NextResponse.json(
+        { error: 'Invalid role specified.' },
+        { status: 400 }
+      )
+    }
+
+    // SECURITY: Validate email domain for the selected role.
+    // Students must use @ueab.ac.ke emails. Industry partners can use any domain.
+    const emailError = validateEmailForRole(email, requestedRole)
+    if (emailError) {
+      return NextResponse.json({ error: emailError }, { status: 400 })
+    }
+
+    // SECURITY: Validate Student ID / Staff ID for academic roles.
+    const institutionalId = STUDENT_ID_ROLES.includes(requestedRole) ? studentId : STAFF_ID_ROLES.includes(requestedRole) ? staffId : null
+    const idError = validateInstitutionalId(institutionalId, requestedRole)
+    if (idError) {
+      return NextResponse.json({ error: idError }, { status: 400 })
     }
 
     // Create admin Supabase client using service role key
@@ -33,11 +60,14 @@ export async function POST(request: NextRequest) {
     )
 
     // Step 1: Create the auth user using admin API (email auto-confirmed)
+    // SECURITY: Do NOT store role in user_metadata — user_metadata is writable by
+    // the user via supabase.auth.updateUser() and is read by middleware as a shortcut.
+    // Storing role there creates a privilege escalation vector.
     const { data: createData, error: createError } = await adminSupabase.auth.admin.createUser({
       email,
       password,
       email_confirm: true,
-      user_metadata: { full_name: fullName, role },
+      user_metadata: { full_name: fullName },
     })
 
     if (createError) {
@@ -55,16 +85,27 @@ export async function POST(request: NextRequest) {
     const userId = createData.user.id
 
     // Step 2: Upsert profile row using admin client (bypasses RLS)
+    // SECURITY: profile.role is ALWAYS hardcoded to 'student' here.
+    // The user's selected role (if elevated) is handled in Step 3 via role_requests.
+    // Never trust the requestedRole from the client for setting profiles.role.
     const profileData: Record<string, any> = {
       id: userId,
       email: email,
       full_name: fullName,
-      role: role,
+      role: 'student', // ALWAYS 'student' — never set from client input
     }
 
-    // Save department for instructors, students, and supervisors
-    if (department && (role === 'instructor' || role === 'student' || role === 'supervisor')) {
+    // Save department for all roles that have a department concept
+    if (department && (requestedRole === 'instructor' || requestedRole === 'student' || requestedRole === 'supervisor')) {
       profileData.department = department
+    }
+
+    // Save Student ID or Staff ID as university_id
+    if (STUDENT_ID_ROLES.includes(requestedRole) && studentId) {
+      profileData.university_id = studentId.trim()
+    }
+    if (STAFF_ID_ROLES.includes(requestedRole) && staffId) {
+      profileData.university_id = staffId.trim()
     }
 
     const { error: profileError } = await adminSupabase
@@ -76,13 +117,37 @@ export async function POST(request: NextRequest) {
       console.error('Profile upsert error (non-fatal):', profileError.message)
     }
 
-    // Step 3: Now sign the user in on the client side
-    // We return the credentials so the client can call signInWithPassword
-    return NextResponse.json({ 
+    // Step 3: If the user selected an elevated role, create a role_request row.
+    // The user will see a "Pending Approval" screen at /hub until an admin approves.
+    let pendingApproval = false
+    if (ELEVATED_ROLES.includes(requestedRole)) {
+      const { error: roleRequestError } = await adminSupabase
+        .from('role_requests')
+        .insert({
+          user_id: userId,
+          requested_role: requestedRole,
+          department: department || null,
+          status: 'pending',
+        })
+
+      if (roleRequestError) {
+        console.error('role_requests insert error (non-fatal):', roleRequestError.message)
+      } else {
+        pendingApproval = true
+        console.log(`Role request created for user ${userId}: ${requestedRole} (pending approval)`)
+      }
+    }
+
+    // Step 4: Return success — client will sign in and be routed via /hub
+    return NextResponse.json({
       success: true,
       userId,
       email,
-      role,
+      // SECURITY: Return the actual profile role ('student'), not the requested role.
+      // The client should redirect to /hub, which handles the routing logic.
+      role: 'student',
+      pendingApproval,
+      requestedRole: pendingApproval ? requestedRole : null,
     })
 
   } catch (e: any) {

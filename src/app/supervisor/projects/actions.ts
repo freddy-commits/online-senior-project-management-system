@@ -1,13 +1,11 @@
 'use server'
 
 import { createAdminClient } from '@/lib/supabase/admin'
-import { createClient as createServerUserClient } from '@/lib/supabase/server'
+import { requireInstructorOrSupervisor } from '@/lib/auth-guard'
 
 export async function getSupervisorProjectDetails(projectId: string) {
   try {
-    const userClient = await createServerUserClient()
-    const { data: { user } } = await userClient.auth.getUser()
-    if (!user) return { success: false, error: 'Unauthorized' }
+    await requireInstructorOrSupervisor()
 
     const adminClient = createAdminClient()
     const { data: project, error } = await adminClient
@@ -26,9 +24,7 @@ export async function getSupervisorProjectDetails(projectId: string) {
 
 export async function getSupervisorProjectDeliverables(projectId: string) {
   try {
-    const userClient = await createServerUserClient()
-    const { data: { user } } = await userClient.auth.getUser()
-    if (!user) return { success: false, error: 'Unauthorized' }
+    await requireInstructorOrSupervisor()
 
     const adminClient = createAdminClient()
     const { data: deliverables, error } = await adminClient
@@ -47,9 +43,7 @@ export async function getSupervisorProjectDeliverables(projectId: string) {
 
 export async function supervisorGradeDeliverableAction(deliverableId: string, grade: string) {
   try {
-    const userClient = await createServerUserClient()
-    const { data: { user } } = await userClient.auth.getUser()
-    if (!user) return { success: false, error: 'Unauthorized' }
+    await requireInstructorOrSupervisor()
 
     // Validate grade input: must be a number between 0 and 20
     let numericGrade = parseFloat(grade)
@@ -145,15 +139,13 @@ export async function supervisorSubmitFeedbackAction(
   deliverableTitle: string
 ) {
   try {
-    const userClient = await createServerUserClient()
-    const { data: { user } } = await userClient.auth.getUser()
-    if (!user) return { success: false, error: 'Unauthorized' }
+    const { userId } = await requireInstructorOrSupervisor()
 
     const adminClient = createAdminClient()
 
     // 1. Insert recommendation comment message to the student
     const { error: msgErr } = await adminClient.from('messages').insert({
-      sender_id: user.id,
+      sender_id: userId,
       receiver_id: studentId,
       content: `[Supervisor Recommendation] Milestone "${deliverableTitle}": ${feedback}`
     })
@@ -172,7 +164,7 @@ export async function supervisorSubmitFeedbackAction(
     const { data: profile } = await adminClient
       .from('profiles')
       .select('full_name')
-      .eq('id', user.id)
+      .eq('id', userId)
       .single()
 
     // 3. Send email to student

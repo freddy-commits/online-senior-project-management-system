@@ -1,9 +1,11 @@
 'use server'
 
 import { createAdminClient } from '@/lib/supabase/admin'
+import { requireInstructor } from '@/lib/auth-guard'
 
 export async function fetchInstructorDocumentsData() {
   try {
+    await requireInstructor()
     const adminClient = createAdminClient()
     
     const { data: projects, error: projErr } = await adminClient
@@ -42,6 +44,7 @@ export async function updateDeliverableStatusAdmin(
   feedback: string
 ) {
   try {
+    await requireInstructor()
     const adminClient = createAdminClient()
     const { data, error } = await adminClient
       .from('deliverables')
@@ -118,6 +121,7 @@ export async function updateDeliverableStatusAdmin(
 
 export async function updateProjectGradeAdmin(projectId: string, grade: string) {
   try {
+    await requireInstructor()
     const adminClient = createAdminClient()
     const { error } = await adminClient
       .from('projects')

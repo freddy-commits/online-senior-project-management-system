@@ -19,7 +19,14 @@ export default async function StudentLayout({ children }: { children: React.Reac
     .single()
 
   if (profile?.role !== 'student') {
-    redirect(`/${profile?.role === 'industry' ? 'partner' : profile?.role || 'student'}/dashboard`)
+    const roleRouteMap: Record<string, string> = {
+      instructor: '/instructor/dashboard',
+      supervisor: '/supervisor/dashboard',
+      industry_partner: '/partner/dashboard',
+      examiner: '/admin/dashboard',
+      admin: '/admin/dashboard',
+    }
+    redirect(roleRouteMap[profile?.role ?? ''] ?? '/student/dashboard')
   }
 
   return (

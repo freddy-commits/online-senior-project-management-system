@@ -1,7 +1,7 @@
 'use server'
 
 import { createClient as createSupabaseClient } from '@supabase/supabase-js'
-import { createClient as createServerUserClient } from '@/lib/supabase/server'
+import { requireInstructorOrSupervisor } from '@/lib/auth-guard'
 
 function createAdminClient() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -19,26 +19,9 @@ function createAdminClient() {
   })
 }
 
-async function verifySupervisor() {
-  const userClient = await createServerUserClient()
-  const { data: { user } } = await userClient.auth.getUser()
-  if (!user) throw new Error('Unauthorized user session.')
-
-  const { data: profile } = await userClient
-    .from('profiles')
-    .select('role')
-    .eq('id', user.id)
-    .single()
-
-  if (!profile || (profile.role !== 'supervisor' && profile.role !== 'instructor')) {
-    throw new Error('Access denied. Supervisor role required.')
-  }
-  return user.id
-}
-
 export async function addSupervisorMilestone(projectId: string, title: string, description: string, dueDate: string) {
   try {
-    await verifySupervisor()
+    await requireInstructorOrSupervisor()
     const adminClient = createAdminClient()
 
     const dbPayload = {
@@ -65,7 +48,7 @@ export async function addSupervisorMilestone(projectId: string, title: string, d
 
 export async function updateSupervisorMilestone(milestoneId: string, title: string, description: string, dueDate: string) {
   try {
-    await verifySupervisor()
+    await requireInstructorOrSupervisor()
     const adminClient = createAdminClient()
 
     const { data, error } = await adminClient
@@ -88,7 +71,7 @@ export async function updateSupervisorMilestone(milestoneId: string, title: stri
 
 export async function deleteSupervisorMilestone(milestoneId: string) {
   try {
-    await verifySupervisor()
+    await requireInstructorOrSupervisor()
     const adminClient = createAdminClient()
 
     const { error } = await adminClient

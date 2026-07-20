@@ -1,9 +1,19 @@
 'use server'
 
 import { createAdminClient } from '@/lib/supabase/admin'
+import { requireInstructorOrSupervisor } from '@/lib/auth-guard'
 
 export async function fetchSupervisorDocumentsData(supervisorId: string) {
   try {
+    // SECURITY: Verify caller is an instructor or supervisor
+    const { userId } = await requireInstructorOrSupervisor()
+
+    // SECURITY: Verify the supervisorId matches the authenticated user
+    // (prevents a supervisor from viewing another supervisor's data)
+    if (supervisorId !== userId) {
+      return { success: false, error: 'Access denied. You can only view your own project documents.' }
+    }
+
     const adminClient = createAdminClient()
 
     // Fetch projects where supervisor is assigned (instructor_id = supervisorId)
@@ -52,6 +62,8 @@ export async function supervisorUpdateDeliverableStatus(
   feedback: string
 ) {
   try {
+    // SECURITY: Verify caller is an instructor or supervisor
+    await requireInstructorOrSupervisor()
     let formattedGrade: string | null = null
     if (status === 'graded') {
       if (!grade) {

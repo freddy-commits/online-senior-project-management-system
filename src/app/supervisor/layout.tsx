@@ -19,7 +19,14 @@ export default async function SupervisorLayout({ children }: { children: React.R
     .single()
 
   if (profile?.role !== 'supervisor') {
-    redirect(`/${profile?.role === 'industry' ? 'partner' : profile?.role || 'student'}/dashboard`)
+    const roleRouteMap: Record<string, string> = {
+      student: '/student/dashboard',
+      instructor: '/instructor/dashboard',
+      industry_partner: '/partner/dashboard',
+      examiner: '/admin/dashboard',
+      admin: '/admin/dashboard',
+    }
+    redirect(roleRouteMap[profile?.role ?? ''] ?? '/student/dashboard')
   }
 
   return (

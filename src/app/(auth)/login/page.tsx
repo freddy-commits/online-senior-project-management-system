@@ -7,18 +7,12 @@ import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { resetUserPasswordByEmail, checkEmailExists } from '../actions'
 import { 
-  Users, 
-  GraduationCap, 
-  Building2, 
   Loader2, 
   Check, 
   Eye, 
   EyeOff, 
-  Sliders,
-  Briefcase,
   KeyRound,
   X,
-  Lock,
   Mail,
   AlertCircle
 } from 'lucide-react'
@@ -28,7 +22,6 @@ export default function LoginPage() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
-  const [selectedRole, setSelectedRole] = useState('student')
 
   // Forgot password modal state
   const [isForgotOpen, setIsForgotOpen] = useState(false)
@@ -90,67 +83,55 @@ export default function LoginPage() {
       }
 
       const { data: { user } } = await supabase.auth.getUser()
-      
-      let role = null
+
+      let role = 'student'
       if (user) {
         const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single()
-        role = profile?.role
+        role = profile?.role || 'student'
 
-        // Ensure the profile row exists in the profiles database table
-        if (!role) {
-          role = user.user_metadata?.role || selectedRole
-          const { error: upsertError } = await supabase.from('profiles').upsert({
+        // Fallback: create profile row if missing
+        if (!profile) {
+          await supabase.from('profiles').upsert({
             id: user.id,
             email: user.email,
             full_name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'New User',
-            role: role
+            role: 'student'
           }, { onConflict: 'id' })
-          if (upsertError) {
-            console.error('Failed to create user profile row in login fallback:', upsertError.message)
-          }
         }
       }
 
-      if (role) {
-        // Enforce role matching under live/real Supabase session
-        if (role !== selectedRole) {
-          // Log out from Supabase if role doesn't match to prevent active session in wrong role
-          await supabase.auth.signOut()
-          const getDisplayName = (r: string) => {
-            if (r === 'industry') return 'an Industry Partner'
-            if (r === 'examiner_panel') return 'a Panel Examiner'
-            return `a ${r}`
-          }
-          const profileRoleName = getDisplayName(role)
-          const selectedRoleName = getDisplayName(selectedRole)
-          setError(`This account is registered as ${profileRoleName}, but you selected ${selectedRoleName}.`)
-          setLoading(false)
+      // Clear demo mode
+      document.cookie = 'demo_mode=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;'
+      if (typeof window !== 'undefined') localStorage.removeItem('demo_mode')
+
+      // Redirect based on actual database role — no client-side role selection needed
+      const roleRouteMap: Record<string, string> = {
+        student:          '/student/dashboard',
+        instructor:       '/instructor/dashboard',
+        supervisor:       '/supervisor/dashboard',
+        industry_partner: '/partner/dashboard',
+        examiner:         '/admin/dashboard',
+        admin:            '/admin/dashboard',
+      }
+
+      // Users with pending role requests go to /hub
+      if (role === 'student') {
+        // Check if they have a pending role request (i.e., they are waiting for approval)
+        const { data: roleReq } = await supabase
+          .from('role_requests')
+          .select('status')
+          .eq('user_id', user!.id)
+          .eq('status', 'pending')
+          .maybeSingle()
+
+        if (roleReq) {
+          router.push('/hub')
           return
         }
-
-        // Clear demo mode cookie & localStorage
-        document.cookie = 'demo_mode=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;'
-        if (typeof window !== 'undefined') {
-          localStorage.removeItem('demo_mode')
-        }
-
-        // Set live cookies
-        document.cookie = `demo_role=${role}; path=/`
-
-        if (role === 'student') {
-          router.push('/student/dashboard')
-        } else if (role === 'instructor') {
-          router.push('/instructor/dashboard')
-        } else if (role === 'industry') {
-          router.push('/partner/dashboard')
-        } else if (role === 'supervisor') {
-          router.push('/supervisor/dashboard')
-        } else {
-          router.push('/admin')
-        }
-      } else {
-        router.push('/')
       }
+
+      router.push(roleRouteMap[role] ?? '/student/dashboard')
+
     } catch (err: any) {
       console.error("Auth signin failed:", err.message || err)
       setError(err.message || 'Authentication failed. Please check your credentials.')
@@ -167,7 +148,7 @@ export default function LoginPage() {
       const { error: oauthError } = await supabase.auth.signInWithOAuth({
         provider,
         options: {
-          redirectTo: `${window.location.origin}/api/auth/callback?role=${selectedRole}`
+          redirectTo: `${window.location.origin}/api/auth/callback`
         }
       })
       if (oauthError) throw oauthError
@@ -251,40 +232,6 @@ export default function LoginPage() {
           )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
-            
-            {/* Interactive Role Selection Grid */}
-            <div className="space-y-1.5 pb-2">
-              <label className="text-[10px] text-slate-400 font-black uppercase tracking-wider block ml-1">I am signing in as</label>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                {[
-                  { role: 'student', label: 'Student', desc: 'Capstone tracks', icon: <GraduationCap className="w-5 h-5" />, color: 'border-blue-200 text-blue-600 bg-blue-50/10' },
-                  { role: 'instructor', label: 'Instructor', desc: 'Jury evaluation', icon: <Users className="w-5 h-5" />, color: 'border-emerald-200 text-emerald-600 bg-emerald-50/10' },
-                  { role: 'industry', label: 'Industry', desc: 'Sponsor briefs', icon: <Building2 className="w-5 h-5" />, color: 'border-indigo-200 text-indigo-600 bg-indigo-50/10' },
-                  { role: 'supervisor', label: 'Supervisor', desc: 'Mentorship', icon: <Briefcase className="w-5 h-5" />, color: 'border-cyan-200 text-cyan-600 bg-cyan-50/10' },
-                  { role: 'examiner_panel', label: 'Panel Examiner', desc: 'Cohort evaluation', icon: <Sliders className="w-5 h-5" />, color: 'border-amber-200 text-amber-600 bg-amber-50/10' }
-                ].map((r) => {
-                  const isSelected = selectedRole === r.role
-                  return (
-                    <button
-                      key={r.role}
-                      type="button"
-                      onClick={() => setSelectedRole(r.role)}
-                      className={`flex flex-col items-center justify-center p-2.5 rounded-2xl border text-center transition-all cursor-pointer select-none space-y-1 ${
-                        isSelected 
-                          ? `${r.color} ring-2 ring-offset-2 ring-blue-500/20 scale-[1.02] border-blue-500 font-black` 
-                          : 'border-slate-100 bg-slate-50/30 hover:border-slate-300 hover:bg-slate-50'
-                      }`}
-                    >
-                      <div className={`p-1.5 rounded-xl ${isSelected ? 'bg-white shadow-sm' : 'text-slate-400'}`}>
-                        {r.icon}
-                      </div>
-                      <span className="text-[10px] font-black uppercase tracking-wider block leading-none">{r.label}</span>
-                      <span className="text-[7.5px] text-slate-400 font-bold block leading-none pt-0.5">{r.desc}</span>
-                    </button>
-                  )
-                })}
-              </div>
-            </div>
 
             {/* University Email input */}
             <div className="space-y-1.5">

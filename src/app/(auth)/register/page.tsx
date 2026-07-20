@@ -6,16 +6,14 @@ import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { 
-  Users, 
   GraduationCap, 
   Building2, 
   Loader2, 
   Check, 
   Eye, 
-  EyeOff, 
-  Sliders,
-  Briefcase
+  EyeOff
 } from 'lucide-react'
+import { SCHOOL_EMAIL_DOMAIN } from '@/lib/email-validation'
 
 export default function RegisterPage() {
   const router = useRouter()
@@ -26,6 +24,8 @@ export default function RegisterPage() {
   const [selectedRole, setSelectedRole] = useState('student')
   const [password, setPassword] = useState('')
   const [selectedDepartment, setSelectedDepartment] = useState('')
+  const [studentId, setStudentId] = useState('')
+  const [staffId, setStaffId] = useState('')
 
   const meetsMinLength = password.length >= 8
   const meetsUppercase = /[A-Z]/.test(password)
@@ -53,8 +53,29 @@ export default function RegisterPage() {
       return
     }
 
-    // Require department for instructors, students, and supervisors
-    if ((selectedRole === 'instructor' || selectedRole === 'student' || selectedRole === 'supervisor') && !selectedDepartment) {
+    // SECURITY: Validate UEAB email domain for students
+    if (selectedRole === 'student' && !email.toLowerCase().endsWith(`@${SCHOOL_EMAIL_DOMAIN}`)) {
+      setError(`Only UEAB school emails (@${SCHOOL_EMAIL_DOMAIN}) are accepted for student registration.`)
+      setLoading(false)
+      return
+    }
+
+    // SECURITY: Require Student ID for students
+    if (selectedRole === 'student' && !studentId.trim()) {
+      setError('Student ID is required for student registration.')
+      setLoading(false)
+      return
+    }
+
+    // SECURITY: Require Staff ID for instructors, supervisors, and examiners
+    if ((selectedRole === 'instructor' || selectedRole === 'supervisor' || selectedRole === 'examiner') && !staffId.trim()) {
+      setError('Staff ID is required for staff registration.')
+      setLoading(false)
+      return
+    }
+
+    // Require department for roles that need it
+    if ((selectedRole === 'student' || selectedRole === 'instructor' || selectedRole === 'supervisor' || selectedRole === 'examiner') && !selectedDepartment) {
       setError('Please select your department before continuing.')
       setLoading(false)
       return
@@ -72,7 +93,9 @@ export default function RegisterPage() {
           password,
           fullName,
           role: selectedRole,
-          department: selectedDepartment || null
+          department: selectedDepartment || null,
+          studentId: selectedRole === 'student' ? studentId.trim() : null,
+          staffId: (selectedRole === 'instructor' || selectedRole === 'supervisor' || selectedRole === 'examiner') ? staffId.trim() : null
         })
       })
 
@@ -101,14 +124,9 @@ export default function RegisterPage() {
       // Redirect to the right dashboard
       if (selectedRole === 'student') {
         router.push('/student/dashboard')
-      } else if (selectedRole === 'instructor') {
-        router.push('/instructor/dashboard')
-      } else if (selectedRole === 'industry') {
-        router.push('/partner/dashboard')
-      } else if (selectedRole === 'supervisor') {
-        router.push('/supervisor/dashboard')
       } else {
-        router.push('/admin')
+        // Any elevated role requires approval and should go to the hub
+        router.push('/hub')
       }
 
     } catch (err: any) {
@@ -120,10 +138,16 @@ export default function RegisterPage() {
   }
 
   async function handleOAuthLogin(provider: 'google' | 'github') {
-    // Require department for instructors, students, and supervisors
-    if ((selectedRole === 'instructor' || selectedRole === 'student' || selectedRole === 'supervisor') && !selectedDepartment) {
+    // Require department for roles that need it
+    if ((selectedRole === 'student' || selectedRole === 'instructor' || selectedRole === 'supervisor') && !selectedDepartment) {
       setError(`Please select your department before continuing with ${provider.charAt(0).toUpperCase() + provider.slice(1)}.`)
       return
+    }
+
+    // SECURITY: Warn about UEAB email requirement for OAuth
+    if (selectedRole === 'student') {
+      // Note: server-side validation in callback/route.ts will enforce @ueab.ac.ke
+      // This is just a helpful client-side reminder
     }
 
     setLoading(true)
@@ -236,13 +260,13 @@ export default function RegisterPage() {
             {/* Interactive Role Selection Grid */}
             <div className="space-y-1.5 pb-2">
               <label className="text-[10px] text-slate-400 font-black uppercase tracking-wider block ml-1">Select your role</label>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+              <div className="grid grid-cols-2 gap-2">
                 {[
                   { role: 'student', label: 'Student', desc: 'Capstone tracks', icon: <GraduationCap className="w-5 h-5" />, color: 'border-blue-200 text-blue-600 bg-blue-50/10' },
-                  { role: 'instructor', label: 'Instructor', desc: 'Jury evaluation', icon: <Users className="w-5 h-5" />, color: 'border-emerald-200 text-emerald-600 bg-emerald-50/10' },
-                  { role: 'industry', label: 'Industry', desc: 'Sponsor briefs', icon: <Building2 className="w-5 h-5" />, color: 'border-indigo-200 text-indigo-600 bg-indigo-50/10' },
-                  { role: 'supervisor', label: 'Supervisor', desc: 'Mentorship', icon: <Briefcase className="w-5 h-5" />, color: 'border-cyan-200 text-cyan-600 bg-cyan-50/10' },
-                  { role: 'examiner_panel', label: 'Panel Member', desc: 'Cohort evaluation', icon: <Sliders className="w-5 h-5" />, color: 'border-amber-200 text-amber-600 bg-amber-50/10' }
+                  { role: 'instructor', label: 'Instructor', desc: 'Course coordinators', icon: <GraduationCap className="w-5 h-5" />, color: 'border-emerald-200 text-emerald-600 bg-emerald-50/10' },
+                  { role: 'supervisor', label: 'Supervisor', desc: 'Project guides', icon: <GraduationCap className="w-5 h-5" />, color: 'border-purple-200 text-purple-600 bg-purple-50/10' },
+                  { role: 'industry_partner', label: 'Industry Partner', desc: 'Sponsor briefs', icon: <Building2 className="w-5 h-5" />, color: 'border-indigo-200 text-indigo-600 bg-indigo-50/10' },
+                  { role: 'examiner', label: 'Examiner Panel', desc: 'Review & grade', icon: <Eye className="w-5 h-5" />, color: 'border-rose-200 text-rose-600 bg-rose-50/10' }
                 ].map((r) => {
                   const isSelected = selectedRole === r.role
                   return (
@@ -252,7 +276,7 @@ export default function RegisterPage() {
                       onClick={() => setSelectedRole(r.role)}
                       className={`flex flex-col items-center justify-center p-2.5 rounded-2xl border text-center transition-all cursor-pointer select-none space-y-1 ${
                         isSelected 
-                          ? `${r.color} ring-2 ring-offset-2 ring-blue-500/20 scale-[1.02] border-blue-500 font-black` 
+                          ? `${r.color} ring-2 ring-offset-2 ring-blue-500/20 scale-[1.02] border-current font-black` 
                           : 'border-slate-100 bg-slate-50/30 hover:border-slate-300 hover:bg-slate-50'
                       }`}
                     >
@@ -265,6 +289,7 @@ export default function RegisterPage() {
                   )
                 })}
               </div>
+              <p className="text-[9px] text-slate-400 font-semibold ml-1 mt-1">Instructor, Supervisor, Examiner, and Industry accounts require administrator approval after registration.</p>
             </div>
 
             {/* Full Name input */}
@@ -279,20 +304,69 @@ export default function RegisterPage() {
               />
             </div>
 
-            {/* University Email input */}
+            {/* Email input — UEAB email required for students */}
             <div className="space-y-1.5">
-              <label className="text-[10px] text-slate-400 font-black uppercase tracking-wider block ml-1">University Email</label>
+              <label className="text-[10px] text-slate-400 font-black uppercase tracking-wider block ml-1">
+                {selectedRole === 'student' ? `UEAB Email (@${SCHOOL_EMAIL_DOMAIN})` : 'Email Address'}
+              </label>
               <input
                 name="email"
                 type="email"
                 required
-                placeholder="alex.rivera@university.edu"
+                placeholder={selectedRole === 'student' ? `firstname.lastname@${SCHOOL_EMAIL_DOMAIN}` : 'contact@company.com'}
                 className="w-full bg-slate-50/50 border border-slate-200 focus:border-blue-500 rounded-xl py-3 px-4 text-slate-900 placeholder:text-slate-300 text-xs font-bold focus:outline-none focus:ring-2 focus:ring-blue-500/10 transition-all"
               />
+              {selectedRole === 'student' && (
+                <p className="text-[9px] text-amber-600 font-semibold ml-1">Only @{SCHOOL_EMAIL_DOMAIN} emails are accepted for student registration.</p>
+              )}
             </div>
 
-            {/* Department dropdown (for Instructor, Student, and Supervisor) */}
-            {(selectedRole === 'instructor' || selectedRole === 'student' || selectedRole === 'supervisor') && (
+            {/* Student ID — Required for students */}
+            {selectedRole === 'student' && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                className="space-y-1.5"
+              >
+                <label className="text-[10px] text-slate-400 font-black uppercase tracking-wider block ml-1">
+                  Student ID
+                </label>
+                <input
+                  name="studentId"
+                  type="text"
+                  required
+                  value={studentId}
+                  onChange={(e) => setStudentId(e.target.value)}
+                  placeholder="e.g., 2024-01-0123"
+                  className="w-full bg-slate-50/50 border border-slate-200 focus:border-blue-500 rounded-xl py-3 px-4 text-slate-900 placeholder:text-slate-300 text-xs font-bold focus:outline-none focus:ring-2 focus:ring-blue-500/10 transition-all"
+                />
+              </motion.div>
+            )}
+
+            {/* Staff ID — Required for instructors, supervisors, examiners */}
+            {(selectedRole === 'instructor' || selectedRole === 'supervisor' || selectedRole === 'examiner') && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                className="space-y-1.5"
+              >
+                <label className="text-[10px] text-slate-400 font-black uppercase tracking-wider block ml-1">
+                  Staff ID
+                </label>
+                <input
+                  name="staffId"
+                  type="text"
+                  required
+                  value={staffId}
+                  onChange={(e) => setStaffId(e.target.value)}
+                  placeholder="e.g., EMP-2024-5678"
+                  className="w-full bg-slate-50/50 border border-slate-200 focus:border-blue-500 rounded-xl py-3 px-4 text-slate-900 placeholder:text-slate-300 text-xs font-bold focus:outline-none focus:ring-2 focus:ring-blue-500/10 transition-all"
+                />
+              </motion.div>
+            )}
+
+            {/* Department dropdown (for Students, Instructors, Supervisors, Examiners) */}
+            {(selectedRole === 'student' || selectedRole === 'instructor' || selectedRole === 'supervisor' || selectedRole === 'examiner') && (
               <motion.div
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: 'auto' }}

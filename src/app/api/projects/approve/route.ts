@@ -1,8 +1,31 @@
 import { createClient } from '@supabase/supabase-js'
+import { createClient as createServerClient } from '@/lib/supabase/server'
 import { NextRequest, NextResponse } from 'next/server'
 
 export async function POST(request: NextRequest) {
   try {
+    // SECURITY: Verify the user is authenticated
+    const supabase = await createServerClient()
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized: No active session.' }, { status: 401 })
+    }
+
+    // SECURITY: Verify the user has the instructor role
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .single()
+
+    if (!profile || profile.role !== 'instructor') {
+      return NextResponse.json(
+        { error: 'Access denied. Only instructors can approve or reject projects.' },
+        { status: 403 }
+      )
+    }
+
     const { projectId, supervisorId, action } = await request.json()
 
     if (!projectId) {
