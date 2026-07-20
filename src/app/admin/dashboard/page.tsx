@@ -42,7 +42,7 @@ export default async function AdminDashboardPage() {
       value: totalUsers ?? 0,
       icon: <Users className="w-5 h-5" />,
       color: 'bg-blue-50 text-blue-600 border-blue-100',
-      href: null,
+      href: '/admin/users',
     },
     {
       label: 'Total Projects',

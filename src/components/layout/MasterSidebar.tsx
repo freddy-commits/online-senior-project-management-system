@@ -86,6 +86,7 @@ export default function MasterSidebar({ role = 'student' }: { role?: string }) {
         { name: 'Dashboard', path: `/admin/dashboard`, match: `/admin/dashboard`, icon: <LayoutDashboard className="w-5 h-5" /> },
         { name: 'Role Approvals', path: `/admin/approvals`, match: `/admin/approvals`, icon: <Sliders className="w-5 h-5" /> },
         { name: 'All Projects', path: `/admin/projects`, match: `/admin/projects`, icon: <FileText className="w-5 h-5" /> },
+        { name: 'User Management', path: `/admin/users`, match: `/admin/users`, icon: <Users className="w-5 h-5" /> },
       ]
     : [
         { name: t('dashboard'), path: `/${activeRole}/dashboard`, match: `/${activeRole}/dashboard`, icon: <LayoutDashboard className="w-5 h-5" /> },
