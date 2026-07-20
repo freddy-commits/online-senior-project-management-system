@@ -16,35 +16,40 @@ function getAdminClient() {
 }
 
 /**
- * Fetch all pending role requests, joined with the user's profile data.
+ * Fetch all pending role requests.
+ * Uses a two-step query to avoid foreign key join issues in PostgREST.
  */
 export async function getPendingRequests() {
   const adminSupabase = getAdminClient()
 
-  const { data, error } = await adminSupabase
+  // Step 1: Get all pending role requests
+  const { data: requests, error: reqError } = await adminSupabase
     .from('role_requests')
-    .select(`
-      id,
-      user_id,
-      requested_role,
-      department,
-      status,
-      created_at,
-      profiles (
-        full_name,
-        email,
-        university_id
-      )
-    `)
+    .select('id, user_id, requested_role, department, status, created_at')
     .eq('status', 'pending')
     .order('created_at', { ascending: true })
 
-  if (error) {
-    console.error('getPendingRequests error:', error.message)
+  if (reqError) {
+    console.error('getPendingRequests error:', reqError.message)
     return []
   }
 
-  return data || []
+  if (!requests || requests.length === 0) return []
+
+  // Step 2: Fetch profiles for all the user_ids
+  const userIds = requests.map((r: any) => r.user_id)
+  const { data: profiles } = await adminSupabase
+    .from('profiles')
+    .select('id, full_name, email, university_id')
+    .in('id', userIds)
+
+  const profileMap = Object.fromEntries((profiles || []).map((p: any) => [p.id, p]))
+
+  // Step 3: Merge
+  return requests.map((r: any) => ({
+    ...r,
+    profiles: profileMap[r.user_id] || { full_name: 'Unknown', email: 'N/A', university_id: null }
+  }))
 }
 
 /**

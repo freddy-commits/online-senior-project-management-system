@@ -83,9 +83,9 @@ export default function MasterSidebar({ role = 'student' }: { role?: string }) {
   const showAdminMenu = pathname.startsWith('/admin')
   const menuItems = showAdminMenu
     ? [
-        { name: t('dashboard'), path: `/admin`, match: `/admin`, icon: <LayoutDashboard className="w-5 h-5" /> },
-        { name: t('allocations'), path: `/admin/projects`, match: `/admin/projects`, icon: <Users className="w-5 h-5" /> },
-        { name: t('archive'), path: `/archive`, match: `/archive`, icon: <Archive className="w-5 h-5" /> },
+        { name: 'Dashboard', path: `/admin/dashboard`, match: `/admin/dashboard`, icon: <LayoutDashboard className="w-5 h-5" /> },
+        { name: 'Role Approvals', path: `/admin/approvals`, match: `/admin/approvals`, icon: <Sliders className="w-5 h-5" /> },
+        { name: 'All Projects', path: `/admin/projects`, match: `/admin/projects`, icon: <FileText className="w-5 h-5" /> },
       ]
     : [
         { name: t('dashboard'), path: `/${activeRole}/dashboard`, match: `/${activeRole}/dashboard`, icon: <LayoutDashboard className="w-5 h-5" /> },
@@ -102,11 +102,13 @@ export default function MasterSidebar({ role = 'student' }: { role?: string }) {
       ? 'Academic Supervisor' 
       : profile?.role === 'student' 
         ? 'Student Lead' 
-        : profile?.role === 'industry' 
+        : profile?.role === 'industry_partner' || profile?.role === 'industry'
           ? 'Industry Partner' 
-          : profile?.role === 'examiner_panel'
+          : profile?.role === 'examiner'
             ? 'Panel Examiner'
-            : profile?.role || role
+            : profile?.role === 'admin'
+              ? 'System Administrator'
+              : profile?.role || role
   const initials = fullName
     .split(' ')
     .map((n) => n[0])
@@ -141,7 +143,9 @@ export default function MasterSidebar({ role = 'student' }: { role?: string }) {
                   Project Station
                 </span>
                 <span className="text-[9px] text-slate-500 dark:text-slate-400 font-extrabold tracking-wider uppercase mt-0.5 leading-tight">
-                  {showAdminMenu ? 'PANEL EXAMINER' : activeRole.toUpperCase()} WORKSPACE
+                  {showAdminMenu 
+                    ? (profile?.role === 'admin' ? 'ADMIN' : 'PANEL EXAMINER') 
+                    : activeRole.replace('_', ' ').toUpperCase()} WORKSPACE
                 </span>
               </div>
             )}
