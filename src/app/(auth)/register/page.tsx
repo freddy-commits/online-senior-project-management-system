@@ -162,6 +162,13 @@ export default function RegisterPage() {
         document.cookie = `oauth_dept=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT`
       }
 
+      // Store selected role in a cookie (expires in 10 minutes)
+      if (selectedRole) {
+        document.cookie = `oauth_role=${encodeURIComponent(selectedRole)}; path=/; max-age=600`
+      } else {
+        document.cookie = `oauth_role=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT`
+      }
+
       const { error: oauthError } = await supabase.auth.signInWithOAuth({
         provider,
         options: {
@@ -180,46 +187,46 @@ export default function RegisterPage() {
     <div className="min-h-screen grid grid-cols-1 lg:grid-cols-12 bg-white font-sans overflow-hidden">
       
       {/* LEFT COLUMN: BRAND SHOWCASE (Takes 5 cols on lg) */}
-      <div className="lg:col-span-5 bg-[#0b192f] text-white p-8 lg:p-12 flex flex-col justify-between relative overflow-hidden min-h-[30rem] lg:min-h-screen select-none">
-        
-        {/* Background glow meshes */}
-        <div className="absolute top-[-10%] left-[-10%] w-[70%] h-[70%] bg-blue-600/10 blur-[130px] rounded-full pointer-events-none" />
-        <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-indigo-500/10 blur-[120px] rounded-full pointer-events-none" />
-        
-        {/* Logo at the top */}
-        <div className="relative z-10">
-          <Link href="/" className="inline-flex items-center gap-3">
-            <span className="text-xl font-extrabold tracking-tight text-white">Project Station</span>
-          </Link>
-        </div>
-
-        {/* Center showcase text */}
-        <div className="relative z-10 my-auto max-w-md space-y-6">
-          <h1 className="text-3xl lg:text-4xl font-black text-white leading-tight tracking-tight">
-            Bridge the gap between academia and industry.
-          </h1>
-          <p className="text-xs text-slate-300 font-semibold leading-relaxed">
-            Manage your capstone journey or industry track with professional-grade project tools designed for the next generation of innovators.
-          </p>
-
-          {/* Features Checkbox Bullet list matching Screenshot 8 */}
-          <div className="space-y-3.5 pt-4">
-            {[
-              'Structured Milestone Tracking',
-              'Industry Partnership Portal',
-              'Collaborative Document Station'
-            ].map((feature, i) => (
-              <div key={i} className="flex items-center gap-3">
-                <div className="w-5 h-5 rounded-full border border-[#e37b2d] flex items-center justify-center shrink-0 text-[#e37b2d]">
-                  <Check className="w-3.5 h-3.5 stroke-[3]" />
-                </div>
-                <span className="text-xs text-slate-200 font-extrabold">
-                  {feature}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
+      <div className="lg:col-span-5 bg-[#111827] text-white p-8 lg:p-12 flex flex-col justify-between relative overflow-hidden min-h-[30rem] lg:min-h-screen select-none">
+         
+         {/* Background glow meshes */}
+         <div className="absolute top-[-10%] left-[-10%] w-[70%] h-[70%] bg-blue-600/10 blur-[130px] rounded-full pointer-events-none" />
+         <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-indigo-500/10 blur-[120px] rounded-full pointer-events-none" />
+         
+         {/* Logo at the top */}
+         <div className="relative z-10">
+           <Link href="/" className="inline-flex items-center gap-3">
+             <span className="text-xl font-extrabold tracking-tight text-white">Project Station</span>
+           </Link>
+         </div>
+ 
+         {/* Center showcase text */}
+         <div className="relative z-10 my-auto max-w-md space-y-6">
+           <h1 className="text-3xl lg:text-4xl font-black text-white leading-tight tracking-tight">
+             Bridge the gap between academia and industry.
+           </h1>
+           <p className="text-xs text-slate-300 font-semibold leading-relaxed">
+             Manage your capstone journey or industry track with professional-grade project tools designed for the next generation of innovators.
+           </p>
+ 
+           {/* Features Checkbox Bullet list matching Screenshot 8 */}
+           <div className="space-y-3.5 pt-4">
+             {[
+               'Structured Milestone Tracking',
+               'Industry Partnership Portal',
+               'Collaborative Document Station'
+             ].map((feature, i) => (
+               <div key={i} className="flex items-center gap-3">
+                 <div className="w-5 h-5 rounded-full border border-[#F59E0B] flex items-center justify-center shrink-0 text-[#F59E0B]">
+                   <Check className="w-3.5 h-3.5 stroke-[3]" />
+                 </div>
+                 <span className="text-xs text-slate-200 font-extrabold">
+                   {feature}
+                 </span>
+               </div>
+             ))}
+           </div>
+         </div>
 
         {/* Footer info tag */}
         <div className="relative z-10 text-[10px] text-slate-400 font-bold uppercase tracking-wider">
@@ -307,17 +314,17 @@ export default function RegisterPage() {
             {/* Email input — UEAB email required for students */}
             <div className="space-y-1.5">
               <label className="text-[10px] text-slate-400 font-black uppercase tracking-wider block ml-1">
-                {selectedRole === 'student' ? `UEAB Email (@${SCHOOL_EMAIL_DOMAIN})` : 'Email Address'}
+                Email Address
               </label>
               <input
                 name="email"
                 type="email"
                 required
-                placeholder={selectedRole === 'student' ? `firstname.lastname@${SCHOOL_EMAIL_DOMAIN}` : 'contact@company.com'}
+                placeholder="firstname.lastname@example.com"
                 className="w-full bg-slate-50/50 border border-slate-200 focus:border-blue-500 rounded-xl py-3 px-4 text-slate-900 placeholder:text-slate-300 text-xs font-bold focus:outline-none focus:ring-2 focus:ring-blue-500/10 transition-all"
               />
               {selectedRole === 'student' && (
-                <p className="text-[9px] text-amber-600 font-semibold ml-1">Only @{SCHOOL_EMAIL_DOMAIN} emails are accepted for student registration.</p>
+                <p className="text-[9px] text-amber-600 font-semibold ml-1">Note: Email signup requires @{SCHOOL_EMAIL_DOMAIN}. Google/GitHub OAuth accepts any email domain.</p>
               )}
             </div>
 

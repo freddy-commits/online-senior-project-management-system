@@ -1,18 +1,48 @@
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
-## Getting Started
+## Installation & Setup
 
-First, run the development server:
+1. **Clone the repository:**
+   ```bash
+   git clone <repository_url>
+   cd online-senior-project-management-system
+   ```
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+2. **Install dependencies:**
+   ```bash
+   npm install
+   ```
+
+3. **Set up environment variables:**
+   Copy the `.env.example` file to `.env.local` and add your Supabase credentials:
+   ```env
+   NEXT_PUBLIC_SUPABASE_URL=your-supabase-url
+   NEXT_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key
+   SUPABASE_SERVICE_ROLE_KEY=your-supabase-service-role-key
+   ```
+
+4. **Run database migrations (Role Security Hardening):**
+   To secure the role system and implement the role approval process, run the following SQL script in your Supabase SQL Editor:
+   - File: `supabase/migrations/20260718_role_security.sql`
+
+5. **Bootstrap your first Admin User:**
+   After creating your first user (who will default to the 'student' role):
+   - Run the bootstrap script to escalate their privileges to 'admin':
+     ```bash
+     node scripts/seed-admin.mjs <user-email-or-uuid>
+     ```
+   - *Note: Ensure your `.env.local` has `SUPABASE_SERVICE_ROLE_KEY` set before running this script.*
+
+6. **Start the development server:**
+   ```bash
+   npm run dev
+   # or
+   yarn dev
+   # or
+   pnpm dev
+   # or
+   bun dev
+   ```
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 

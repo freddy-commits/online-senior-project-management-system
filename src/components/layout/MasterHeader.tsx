@@ -71,8 +71,8 @@ export default function MasterHeader({ role = 'student' }: { role?: string }) {
           href={`/${role}/profile`}
           className={`flex items-center gap-3 p-1.5 rounded-xl transition-colors cursor-pointer border ${
             pathname.startsWith(`/${role}/profile`)
-              ? 'bg-indigo-50 border-indigo-200 dark:bg-indigo-950/20 dark:border-indigo-900'
-              : 'bg-transparent border-transparent hover:bg-slate-50 dark:hover:bg-slate-800/60'
+              ? 'bg-amber-50 border-amber-200 dark:bg-amber-950/20 dark:border-amber-900'
+              : 'bg-transparent border-transparent hover:bg-slate-50 dark:hover:bg-slate-850/60'
           }`}
         >
           <div className="w-9 h-9 bg-slate-900 dark:bg-slate-800 rounded-xl flex items-center justify-center text-white font-bold text-xs shadow-sm select-none shrink-0">

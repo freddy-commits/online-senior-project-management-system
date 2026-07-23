@@ -5,8 +5,8 @@ import { cookies } from 'next/headers'
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url)
   const code = searchParams.get('code')
-  const role = searchParams.get('role') || 'student'
   const cookieStore = await cookies()
+  const role = searchParams.get('role') || cookieStore.get('oauth_role')?.value || 'student'
   const department = searchParams.get('department') || cookieStore.get('oauth_dept')?.value || null
   const next = searchParams.get('next')
 

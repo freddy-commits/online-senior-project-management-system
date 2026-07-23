@@ -127,23 +127,23 @@ export default function MasterSidebar({ role = 'student' }: { role?: string }) {
         />
       )}
 
-      <aside className={`bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-850 flex flex-col h-screen shrink-0 shadow-sm z-50 transition-all duration-300 
+      <aside className={`bg-[#111827] border-r border-white/5 flex flex-col h-screen shrink-0 shadow-sm z-50 transition-all duration-300 
         fixed md:sticky top-0 left-0 h-full
         ${mobileOpen ? 'translate-x-0 w-64' : '-translate-x-full w-64 md:translate-x-0'}
         ${isCollapsed ? 'md:w-20' : 'md:w-64'}
       `}>
         {/* Brand Logo Container */}
-        <div className={`h-20 flex items-center justify-between border-b border-slate-200 dark:border-slate-850 shrink-0 ${isCollapsed ? 'px-4 justify-center' : 'px-6'}`}>
+        <div className={`h-20 flex items-center justify-between border-b border-white/5 shrink-0 ${isCollapsed ? 'px-4 justify-center' : 'px-6'}`}>
           <Link href="/" className="flex items-center gap-3">
-            <div className="w-9 h-9 bg-gradient-to-br from-indigo-600 to-purple-700 rounded-xl flex items-center justify-center text-white shrink-0 shadow-sm">
-              <span className="text-white font-bold text-lg">P</span>
+            <div className="w-9 h-9 bg-[#F59E0B] rounded-xl flex items-center justify-center text-[#111827] shrink-0 shadow-sm font-black text-lg">
+              P
             </div>
             {(!isCollapsed || mobileOpen) && (
               <div className="flex flex-col">
-                <span className="font-extrabold text-sm text-slate-900 dark:text-white tracking-tight leading-tight">
+                <span className="font-extrabold text-sm text-white tracking-tight leading-tight">
                   Project Station
                 </span>
-                <span className="text-[9px] text-slate-500 dark:text-slate-400 font-extrabold tracking-wider uppercase mt-0.5 leading-tight">
+                <span className="text-[9px] text-slate-400 font-extrabold tracking-wider uppercase mt-0.5 leading-tight">
                   {showAdminMenu 
                     ? (profile?.role === 'admin' ? 'ADMIN' : 'PANEL EXAMINER') 
                     : activeRole.replace('_', ' ').toUpperCase()} WORKSPACE
@@ -155,7 +155,7 @@ export default function MasterSidebar({ role = 'student' }: { role?: string }) {
           {/* Mobile close button */}
           <button 
             onClick={() => setMobileOpen(false)}
-            className="md:hidden p-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg text-slate-400 hover:text-slate-650 transition-colors border border-slate-200 dark:border-slate-700 cursor-pointer"
+            className="md:hidden p-1.5 hover:bg-white/5 rounded-lg text-slate-450 hover:text-white transition-colors border border-white/10 cursor-pointer"
           >
             <X className="w-4 h-4" />
           </button>
@@ -163,7 +163,7 @@ export default function MasterSidebar({ role = 'student' }: { role?: string }) {
           {(!isCollapsed && !mobileOpen) && (
             <button 
               onClick={toggleCollapse}
-              className="hidden md:block p-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
+              className="hidden md:block p-1.5 hover:bg-white/5 rounded-lg text-slate-400 hover:text-white transition-colors cursor-pointer"
               title="Collapse Sidebar"
             >
               <ChevronLeft className="w-4 h-4" />
@@ -171,10 +171,10 @@ export default function MasterSidebar({ role = 'student' }: { role?: string }) {
           )}
         </div>
         {(isCollapsed && !mobileOpen) && (
-          <div className="hidden md:flex justify-center py-2 border-b border-slate-100 dark:border-slate-800">
+          <div className="hidden md:flex justify-center py-2 border-b border-white/5">
             <button 
               onClick={toggleCollapse}
-              className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
+              className="p-1.5 hover:bg-white/5 rounded-lg text-slate-400 hover:text-white transition-colors cursor-pointer"
               title="Expand Sidebar"
             >
               <ChevronRight className="w-4 h-4" />
@@ -192,8 +192,8 @@ export default function MasterSidebar({ role = 'student' }: { role?: string }) {
                 href={item.path}
                 className={`flex items-center gap-3 py-2.5 rounded-xl transition-all font-bold text-sm ${isCollapsed ? 'justify-center px-0' : 'px-3'} ${
                   isActive 
-                    ? 'bg-indigo-700 text-white shadow-md shadow-indigo-700/20' 
-                    : 'text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white'
+                    ? 'bg-[#F59E0B] text-[#111827] shadow-md shadow-[#F59E0B]/10' 
+                    : 'text-slate-400 hover:bg-white/5 hover:text-white'
                 }`}
                 title={isCollapsed ? item.name : undefined}
               >
@@ -205,22 +205,22 @@ export default function MasterSidebar({ role = 'student' }: { role?: string }) {
         </nav>
 
         {/* Footer Settings, Logout & Profile Card */}
-        <div className={`p-4 border-t border-slate-200 dark:border-slate-850 shrink-0 space-y-3 ${isCollapsed ? 'px-2' : 'px-4'}`}>
+        <div className={`p-4 border-t border-white/5 shrink-0 space-y-3 ${isCollapsed ? 'px-2' : 'px-4'}`}>
           {isExaminer && (
             <div className="pb-2">
               {showAdminMenu ? (
                 <Link 
                   href={`/${activeRole}/dashboard`}
-                  className={`flex items-center gap-3 py-2.5 rounded-xl transition-all font-bold text-xs bg-gradient-to-r from-emerald-500/10 to-teal-500/10 border border-emerald-500/20 text-emerald-700 dark:text-emerald-400 hover:from-emerald-500/20 hover:to-teal-500/20 ${isCollapsed ? 'justify-center px-0' : 'px-3'}`}
+                  className={`flex items-center gap-3 py-2.5 rounded-xl transition-all font-bold text-xs bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/20 ${isCollapsed ? 'justify-center px-0' : 'px-3'}`}
                   title={isCollapsed ? "Back to Dashboard" : undefined}
                 >
                   <Sliders className="w-5 h-5 shrink-0" />
-                  {!isCollapsed && <span className="truncate">Supervisor/Instructor Dashboard</span>}
+                  {!isCollapsed && <span className="truncate">Supervisor/Instructor View</span>}
                 </Link>
               ) : (
                 <Link 
                   href="/admin"
-                  className={`flex items-center gap-3 py-2.5 rounded-xl transition-all font-bold text-xs bg-gradient-to-r from-indigo-500/10 to-purple-500/10 border border-indigo-500/20 text-indigo-700 dark:text-indigo-400 hover:from-indigo-500/20 hover:to-purple-500/20 ${isCollapsed ? 'justify-center px-0' : 'px-3'}`}
+                  className={`flex items-center gap-3 py-2.5 rounded-xl transition-all font-bold text-xs bg-amber-500/10 border border-amber-500/20 text-amber-400 hover:bg-amber-500/20 ${isCollapsed ? 'justify-center px-0' : 'px-3'}`}
                   title={isCollapsed ? "Examiner Portal" : undefined}
                 >
                   <Sliders className="w-5 h-5 shrink-0" />
@@ -234,8 +234,8 @@ export default function MasterSidebar({ role = 'student' }: { role?: string }) {
             href={`/${activeRole}/settings`} 
             className={`flex items-center gap-3 py-2.5 rounded-xl transition-all font-bold text-sm ${isCollapsed ? 'justify-center px-0' : 'px-3'} ${
               pathname.startsWith(`/${activeRole}/settings`)
-                ? 'bg-indigo-700 text-white shadow-md shadow-indigo-700/20' 
-                : 'text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white'
+                ? 'bg-[#F59E0B] text-[#111827] shadow-md shadow-[#F59E0B]/10' 
+                : 'text-slate-400 hover:bg-white/5 hover:text-white'
             }`}
             title={isCollapsed ? t('settings') : undefined}
           >
@@ -244,7 +244,7 @@ export default function MasterSidebar({ role = 'student' }: { role?: string }) {
           </Link>
           <button 
             onClick={handleLogout}
-            className={`w-full flex items-center gap-3 py-2.5 rounded-xl transition-all font-bold text-sm text-slate-500 dark:text-slate-400 hover:bg-red-50 dark:hover:bg-red-950/20 hover:text-red-600 cursor-pointer ${isCollapsed ? 'justify-center px-0' : 'px-3'}`}
+            className={`w-full flex items-center gap-3 py-2.5 rounded-xl transition-all font-bold text-sm text-slate-400 hover:bg-red-500/10 hover:text-red-400 cursor-pointer ${isCollapsed ? 'justify-center px-0' : 'px-3'}`}
             title={isCollapsed ? t('logout') : undefined}
           >
             <LogOut className="w-5 h-5 shrink-0" />

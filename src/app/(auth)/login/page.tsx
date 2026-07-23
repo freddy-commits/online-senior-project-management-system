@@ -163,7 +163,7 @@ export default function LoginPage() {
     <div className="min-h-screen grid grid-cols-1 lg:grid-cols-12 bg-white font-sans overflow-hidden">
       
       {/* LEFT COLUMN: BRAND SHOWCASE (Takes 5 cols on lg) */}
-      <div className="lg:col-span-5 bg-[#0b192f] text-white p-8 lg:p-12 flex flex-col justify-between relative overflow-hidden min-h-[30rem] lg:min-h-screen select-none">
+      <div className="lg:col-span-5 bg-[#111827] text-white p-8 lg:p-12 flex flex-col justify-between relative overflow-hidden min-h-[30rem] lg:min-h-screen select-none">
         
         {/* Background glow meshes */}
         <div className="absolute top-[-10%] left-[-10%] w-[70%] h-[70%] bg-blue-600/10 blur-[130px] rounded-full pointer-events-none" />
@@ -193,7 +193,7 @@ export default function LoginPage() {
               'Collaborative Document Station'
             ].map((feature, i) => (
               <div key={i} className="flex items-center gap-3">
-                <div className="w-5 h-5 rounded-full border border-[#e37b2d] flex items-center justify-center shrink-0 text-[#e37b2d]">
+                <div className="w-5 h-5 rounded-full border border-[#F59E0B] flex items-center justify-center shrink-0 text-[#F59E0B]">
                   <Check className="w-3.5 h-3.5 stroke-[3]" />
                 </div>
                 <span className="text-xs text-slate-200 font-extrabold">
