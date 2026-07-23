@@ -4,281 +4,241 @@ import Link from 'next/link'
 import {
   GraduationCap,
   Users,
+  MessageSquare,
+  ShieldCheck,
+  ChevronRight,
+  BookOpen,
   Briefcase,
-  Building2,
-  ClipboardList,
-  CheckCircle2,
-  ChevronRight
+  ClipboardCheck
 } from 'lucide-react'
 
-const ROLES = [
+const FEATURES = [
   {
     icon: <GraduationCap className="w-5 h-5" />,
-    title: 'Student',
-    desc: 'Submit proposals, track milestones, and collaborate with your team.',
+    iconBg: '#DBEAFE',
+    iconColor: '#2563EB',
+    title: 'Student Portal',
+    desc: 'Submit proposals and track milestones in one place.',
   },
   {
-    icon: <Users className="w-5 h-5" />,
-    title: 'Instructor',
-    desc: 'Vet, assign, and grade projects across your department.',
+    icon: <ClipboardCheck className="w-5 h-5" />,
+    iconBg: '#EDE9FE',
+    iconColor: '#7C3AED',
+    title: 'Instructor Vetting',
+    desc: 'Approve projects and roles with a clear audit trail.',
   },
   {
-    icon: <Briefcase className="w-5 h-5" />,
-    title: 'Supervisor',
-    desc: 'Mentor teams, monitor progress, and grade deliverables.',
+    icon: <MessageSquare className="w-5 h-5" />,
+    iconBg: '#FEF3C7',
+    iconColor: '#D97706',
+    title: 'Real-Time Messaging',
+    desc: 'Supervisors and teams stay in sync, no email chains.',
   },
   {
-    icon: <Building2 className="w-5 h-5" />,
-    title: 'Industry Partner',
-    desc: 'Post real-world problems and monitor assigned student teams.',
-  },
-  {
-    icon: <ClipboardList className="w-5 h-5" />,
-    title: 'Examiner Panel',
-    desc: 'Review and evaluate submissions before the final defense.',
+    icon: <ShieldCheck className="w-5 h-5" />,
+    iconBg: '#D1FAE5',
+    iconColor: '#059669',
+    title: 'Role-Based Security',
+    desc: 'Every permission verified server-side, never self-assigned.',
   },
 ]
 
 const STAGES = [
-  { step: 1, label: 'Pending' },
-  { step: 2, label: 'Approved' },
-  { step: 3, label: 'In Progress' },
-  { step: 4, label: 'Under Review' },
-  { step: 5, label: 'Completed' },
+  { step: 1, label: 'Propose',  bg: '#3B82F6', text: '#fff' },
+  { step: 2, label: 'Approve',  bg: '#8B5CF6', text: '#fff' },
+  { step: 3, label: 'Build',    bg: '#F59E0B', text: '#fff' },
+  { step: 4, label: 'Review',   bg: '#10B981', text: '#fff' },
+  { step: 5, label: 'Defend',   bg: '#1E293B', text: '#fff' },
 ]
+
+const NAVY = '#111827'
 
 export default function LandingContent() {
   return (
-    <div className="min-h-screen bg-white text-slate-800 font-sans">
+    <div className="min-h-screen font-sans" style={{ background: '#F9FAFB' }}>
 
       {/* ===== NAVBAR ===== */}
-      <header className="bg-white border-b border-slate-200 sticky top-0 z-50">
-        <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
-          
+      <header style={{ background: NAVY }} className="sticky top-0 z-50">
+        <div className="max-w-5xl mx-auto px-6 h-16 flex items-center justify-between">
+
           {/* Logo */}
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-              <span className="text-white font-black text-sm">P</span>
+            <div
+              className="w-8 h-8 rounded-lg flex items-center justify-center font-black text-sm"
+              style={{ background: '#F59E0B', color: '#111827' }}
+            >
+              P
             </div>
-            <span className="font-extrabold text-slate-900 text-base tracking-tight">Project Station</span>
+            <span className="font-extrabold text-white text-base tracking-tight">Project Station</span>
           </div>
 
-          {/* Nav Links */}
-          <div className="hidden md:flex items-center gap-8 text-xs font-bold text-slate-500 uppercase tracking-wider">
+          {/* Nav links */}
+          <div className="hidden md:flex items-center gap-8 text-sm font-semibold text-slate-300">
             <button
-              onClick={() => document.getElementById('stages')?.scrollIntoView({ behavior: 'smooth' })}
-              className="hover:text-blue-600 transition-colors cursor-pointer"
+              onClick={() => document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' })}
+              className="hover:text-white transition-colors"
             >
-              How It Works
+              Features
             </button>
             <button
               onClick={() => document.getElementById('roles')?.scrollIntoView({ behavior: 'smooth' })}
-              className="hover:text-blue-600 transition-colors cursor-pointer"
+              className="hover:text-white transition-colors"
             >
-              Portals
+              Roles
+            </button>
+            <button
+              onClick={() => document.getElementById('workflow')?.scrollIntoView({ behavior: 'smooth' })}
+              className="hover:text-white transition-colors"
+            >
+              Workflow
             </button>
           </div>
 
-          {/* Auth Buttons */}
-          <div className="flex items-center gap-3">
-            <Link
-              href="/login"
-              className="px-4 py-2 text-xs font-bold uppercase tracking-wider text-slate-600 hover:text-blue-600 border border-slate-200 hover:border-blue-200 rounded-lg transition-all"
-            >
-              Sign In
-            </Link>
-            <Link
-              href="/register"
-              className="px-4 py-2 text-xs font-bold uppercase tracking-wider text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-all shadow-sm"
-            >
-              Get Started
-            </Link>
-          </div>
+          {/* CTA */}
+          <Link
+            href="/register"
+            className="px-5 py-2.5 rounded-lg text-sm font-bold transition-all shadow-sm hover:opacity-90 active:scale-95"
+            style={{ background: '#F59E0B', color: '#111827' }}
+          >
+            Get Started
+          </Link>
         </div>
       </header>
 
       {/* ===== HERO SECTION ===== */}
-      <section className="border-b border-slate-100">
-        <div className="max-w-6xl mx-auto px-6 py-20 md:py-28">
-          <div className="max-w-3xl">
+      <section style={{ background: NAVY }} className="border-b border-white/5">
+        <div className="max-w-5xl mx-auto px-6 py-20 md:py-28 text-center space-y-8">
 
-            {/* Badge */}
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-amber-300 bg-amber-50 text-amber-700 text-[10px] font-black uppercase tracking-wider mb-6">
-              <span className="w-1.5 h-1.5 bg-amber-500 rounded-full"></span>
-              Senior Capstone Platform
-            </div>
+          {/* Headline */}
+          <h1 className="text-3xl md:text-5xl font-black text-white leading-tight tracking-tight max-w-3xl mx-auto">
+            Manage Your Senior Capstone<br />
+            From Proposal to Defense
+          </h1>
 
-            {/* Headline */}
-            <h1 className="text-4xl md:text-6xl font-black text-slate-900 leading-[1.1] tracking-tight mb-6">
-              One system, five roles,{' '}
-              <span className="relative inline-block">
-                <span className="relative z-10">one finish line.</span>
-                <span
-                  className="absolute bottom-1 left-0 w-full h-3 -z-10 rounded"
-                  style={{ background: 'rgba(245,158,11,0.25)' }}
-                />
-              </span>
-            </h1>
+          {/* Subtext */}
+          <p className="text-sm md:text-base text-slate-400 max-w-xl mx-auto leading-relaxed">
+            One platform for students, instructors, supervisors, industry partners,
+            and examiners — every milestone tracked, every role verified.
+          </p>
 
-            {/* Subtext */}
-            <p className="text-sm md:text-base text-slate-600 max-w-xl leading-relaxed mb-8">
-              From proposal to final defense — students, instructors, supervisors,
-              industry partners and examiners work off the same record, not five different inboxes.
-            </p>
+          {/* CTA Buttons */}
+          <div className="flex flex-wrap gap-4 justify-center">
+            <Link
+              href="/register"
+              className="px-7 py-3 rounded-lg text-sm font-bold transition-all shadow hover:opacity-90 active:scale-95"
+              style={{ background: '#F59E0B', color: '#111827' }}
+            >
+              Get Started Free
+            </Link>
+            <button
+              onClick={() => document.getElementById('workflow')?.scrollIntoView({ behavior: 'smooth' })}
+              className="px-7 py-3 rounded-lg text-sm font-bold border border-white/20 text-white hover:bg-white/5 transition-all"
+            >
+              Watch Demo
+            </button>
+          </div>
 
-            {/* CTA Buttons */}
-            <div className="flex flex-wrap gap-3">
-              <Link
-                href="/register"
-                className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold rounded-lg shadow-sm transition-all"
-              >
-                Get started
-                <ChevronRight className="w-4 h-4" />
-              </Link>
-              <Link
-                href="/login"
-                className="inline-flex items-center gap-2 px-6 py-3 border border-slate-300 hover:border-blue-300 text-slate-700 hover:text-blue-600 text-sm font-bold rounded-lg transition-all"
-              >
-                Sign in to your account
-              </Link>
-            </div>
-
+          {/* Stats */}
+          <div
+            className="border-t mt-10 pt-8 grid grid-cols-3 gap-6 max-w-sm mx-auto"
+            style={{ borderColor: 'rgba(255,255,255,0.08)' }}
+          >
+            {[
+              { value: '5', label: 'User Roles' },
+              { value: '100%', label: 'Auditable' },
+              { value: '1', label: 'Single Record' },
+            ].map((s, i) => (
+              <div key={i} className="text-center">
+                <span className="block text-2xl font-black" style={{ color: '#F59E0B' }}>
+                  {s.value}
+                </span>
+                <span className="block text-xs text-slate-400 mt-1 font-semibold">{s.label}</span>
+              </div>
+            ))}
           </div>
         </div>
       </section>
 
-      {/* ===== PROJECT STAGES ===== */}
-      <section id="stages" className="border-b border-slate-100 py-16 px-6 bg-white">
-        <div className="max-w-6xl mx-auto space-y-10">
+      {/* ===== FEATURES SECTION ===== */}
+      <section id="features" className="py-16 px-6 bg-white border-b border-slate-100">
+        <div className="max-w-5xl mx-auto space-y-10">
 
-          <div>
-            <p className="text-[10px] font-black text-blue-600 uppercase tracking-widest mb-2">
-              Every project moves through the same five stages
-            </p>
-          </div>
-
-          {/* Timeline */}
-          <div className="relative flex items-start justify-between gap-2">
-            {/* connecting line */}
-            <div className="absolute top-4 left-4 right-4 h-0.5 bg-slate-200 z-0" />
-
-            {STAGES.map((s, i) => {
-              const isLast = i === STAGES.length - 1
-              return (
-                <div key={s.step} className="flex flex-col items-center gap-2 z-10 flex-1">
-                  <div
-                    className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-black border-2 transition-all ${
-                      isLast
-                        ? 'bg-amber-500 border-amber-500 text-white shadow-md shadow-amber-200'
-                        : 'bg-white border-blue-300 text-blue-600'
-                    }`}
-                  >
-                    {isLast ? <CheckCircle2 className="w-4 h-4" /> : s.step}
-                  </div>
-                  <span className={`text-[10px] font-bold text-center leading-tight ${
-                    isLast ? 'text-amber-600' : 'text-slate-600'
-                  }`}>
-                    {s.label}
-                  </span>
-                </div>
-              )
-            })}
-          </div>
-
-        </div>
-      </section>
-
-      {/* ===== ROLE PORTALS ===== */}
-      <section id="roles" className="border-b border-slate-100 py-16 px-6 bg-slate-50/40">
-        <div className="max-w-6xl mx-auto space-y-8">
-
-          <div>
-            <p className="text-[10px] font-black text-blue-600 uppercase tracking-widest mb-2">
-              One portal per role
-            </p>
-            <h2 className="text-2xl font-extrabold text-slate-900 tracking-tight">
-              Every stakeholder has a dedicated workspace
-            </h2>
-          </div>
+          <p
+            className="text-xs font-black tracking-widest text-center uppercase"
+            style={{ color: '#2563EB' }}
+          >
+            Everything your department needs
+          </p>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {ROLES.map((role, i) => (
+            {FEATURES.map((f, i) => (
               <div
                 key={i}
-                className="bg-white border border-slate-200 rounded-2xl p-6 space-y-3 hover:border-blue-200 hover:shadow-sm transition-all"
+                className="bg-white border border-slate-200 rounded-2xl p-6 space-y-4 hover:shadow-sm hover:border-slate-300 transition-all"
               >
-                <div className="w-10 h-10 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-600">
-                  {role.icon}
+                <div
+                  className="w-10 h-10 rounded-xl flex items-center justify-center"
+                  style={{ background: f.iconBg, color: f.iconColor }}
+                >
+                  {f.icon}
                 </div>
                 <div>
-                  <h3 className="font-bold text-slate-900 text-sm mb-1">{role.title}</h3>
-                  <p className="text-xs text-slate-500 leading-relaxed">{role.desc}</p>
+                  <h3 className="font-bold text-slate-900 text-sm mb-1">{f.title}</h3>
+                  <p className="text-xs text-slate-500 leading-relaxed">{f.desc}</p>
                 </div>
               </div>
             ))}
           </div>
-
         </div>
       </section>
 
-      {/* ===== PARTNER / CTA BANNER ===== */}
-      <section className="py-16 px-6 bg-white">
-        <div className="max-w-6xl mx-auto">
-          <div
-            className="rounded-2xl border-2 p-8 md:p-12 flex flex-col md:flex-row items-start md:items-center justify-between gap-6"
-            style={{ borderColor: '#F59E0B', background: 'rgba(245,158,11,0.04)' }}
+      {/* ===== WORKFLOW / STAGES SECTION ===== */}
+      <section id="workflow" className="py-16 px-6 bg-white">
+        <div className="max-w-5xl mx-auto space-y-10">
+
+          <p
+            className="text-xs font-black tracking-widest text-center uppercase"
+            style={{ color: '#2563EB' }}
           >
-            <div className="space-y-1.5 max-w-lg">
-              <div
-                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-[10px] font-black uppercase tracking-wider mb-2"
-                style={{ borderColor: '#F59E0B', color: '#B45309', background: 'rgba(245,158,11,0.08)' }}
-              >
-                <span className="w-1.5 h-1.5 rounded-full" style={{ background: '#F59E0B' }} />
-                For Organizations
+            From proposal to defense
+          </p>
+
+          {/* Stages row */}
+          <div className="relative flex items-start justify-between gap-2 max-w-2xl mx-auto">
+            {/* connecting line */}
+            <div
+              className="absolute top-5 left-5 right-5 h-0.5"
+              style={{ background: '#E2E8F0', zIndex: 0 }}
+            />
+
+            {STAGES.map((s) => (
+              <div key={s.step} className="flex flex-col items-center gap-2 z-10 flex-1">
+                <div
+                  className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-black shadow-sm"
+                  style={{ background: s.bg, color: s.text }}
+                >
+                  {s.step}
+                </div>
+                <span className="text-xs font-bold text-slate-700 text-center">{s.label}</span>
               </div>
-              <h3 className="text-xl font-extrabold text-slate-900 tracking-tight">
-                Become a Partner Organization
-              </h3>
-              <p className="text-xs text-slate-600 leading-relaxed">
-                Post real-world challenges, mentor student teams, and source talent before graduation.
-              </p>
-            </div>
-            <div className="flex flex-wrap gap-3 shrink-0">
-              <Link
-                href="/register"
-                className="px-6 py-3 text-white text-xs font-bold uppercase tracking-wider rounded-lg transition-all shadow-sm"
-                style={{ background: '#F59E0B' }}
-              >
-                Register as Partner
-              </Link>
-              <Link
-                href="/login"
-                className="px-6 py-3 border border-slate-300 text-slate-700 hover:border-blue-300 hover:text-blue-600 text-xs font-bold uppercase tracking-wider rounded-lg transition-all"
-              >
-                Partner Login
-              </Link>
-            </div>
+            ))}
           </div>
         </div>
       </section>
 
       {/* ===== FOOTER ===== */}
-      <footer className="border-t border-slate-200 bg-white">
-        <div className="max-w-6xl mx-auto px-6 py-8 flex flex-col md:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
-            <div className="w-6 h-6 bg-blue-600 rounded flex items-center justify-center">
-              <span className="text-white font-black text-[10px]">P</span>
-            </div>
-            <span className="text-xs font-bold text-slate-900">Project Station</span>
-          </div>
-          <div className="flex items-center gap-6 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-            <Link href="/register" className="hover:text-blue-600 transition-colors">Dashboards</Link>
-            <Link href="/register" className="hover:text-blue-600 transition-colors">Milestones</Link>
-            <span className="cursor-pointer hover:text-blue-600 transition-colors">Privacy</span>
-          </div>
-          <p className="text-[10px] text-slate-400 font-semibold">
-            © {new Date().getFullYear()} Project Station. All rights reserved.
+      <footer style={{ background: NAVY }} className="border-t border-white/5">
+        <div className="max-w-5xl mx-auto px-6 py-6 flex flex-col sm:flex-row items-center justify-between gap-3">
+          <p className="text-xs text-slate-400 font-semibold">
+            © {new Date().getFullYear()} Project Station · Senior Capstone Platform
           </p>
+          <div className="flex items-center gap-4 text-xs text-slate-400 font-semibold">
+            <span className="cursor-pointer hover:text-white transition-colors">English</span>
+            <span className="text-slate-600">·</span>
+            <span className="cursor-pointer hover:text-white transition-colors">Français</span>
+            <span className="text-slate-600">·</span>
+            <span className="cursor-pointer hover:text-white transition-colors">Kiswahili</span>
+          </div>
         </div>
       </footer>
 
