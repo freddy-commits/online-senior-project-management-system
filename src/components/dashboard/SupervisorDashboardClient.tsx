@@ -21,7 +21,8 @@ import {
   Bookmark,
   Mail,
   Calendar,
-  Check
+  Check,
+  X
 } from 'lucide-react'
 import { useTrack } from '@/components/providers/TrackProvider'
 
@@ -46,14 +47,11 @@ export default function SupervisorDashboardClient({
   const [projectList, setProjectList] = useState<any[]>(initialProjects || [])
   const [searchQuery, setSearchQuery] = useState('')
   const [assignModalOpen, setAssignModalOpen] = useState(false)
-  const [todos, setTodos] = useState<TodoTask[]>([
-    { id: '1', text: 'Grade Mid-Term Presentations', completed: false },
-    { id: '2', text: 'Review HIPAA Patient Portal Brief', completed: true },
-    { id: '3', text: 'Approve thesis chapter drafts', completed: false },
-    { id: '4', text: 'Weekly check-in with Team Alpha', completed: true },
-  ])
+  const [todos, setTodos] = useState<TodoTask[]>([])
   const [newTaskText, setNewTaskText] = useState('')
   const [isAddingTask, setIsAddingTask] = useState(false)
+  const [isCalendarCollapsed, setIsCalendarCollapsed] = useState(false)
+  const [isProfileClosed, setIsProfileClosed] = useState(false)
 
   useEffect(() => {
     if (initialProfile) setProfile(initialProfile)
@@ -368,57 +366,85 @@ export default function SupervisorDashboardClient({
         <div className="lg:col-span-4 space-y-6">
           
           {/* PROFILE CARD */}
-          <div className="bg-[#111827] text-white border border-white/5 rounded-[2rem] p-6 shadow-sm space-y-6 relative overflow-hidden select-none">
-            <div className="absolute top-[-20%] right-[-20%] w-32 h-32 bg-blue-600/20 blur-2xl rounded-full" />
-            <div className="absolute bottom-[-20%] left-[-20%] w-24 h-24 bg-amber-500/10 blur-xl rounded-full" />
-            
-            <div className="relative z-10 text-center space-y-4">
-              <div className="w-16 h-16 bg-[#F59E0B] text-[#111827] rounded-2xl flex items-center justify-center mx-auto shadow-md font-black text-xl">
-                {profile?.full_name?.split(' ').map((n: string) => n[0]).slice(0, 2).join('').toUpperCase() || 'SP'}
-              </div>
-              <div className="space-y-1">
-                <h3 className="text-base font-black text-white leading-tight tracking-tight">{profile?.full_name || 'Dr. James Wilson'}</h3>
-                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-white/10 text-slate-350 rounded-full text-[8.5px] font-black uppercase tracking-wider">
-                  Academic Supervisor
-                </span>
-              </div>
-            </div>
+          {!isProfileClosed ? (
+            <div className="bg-[#111827] text-white border border-white/5 rounded-[2rem] p-6 shadow-sm space-y-6 relative overflow-hidden">
+              <div className="absolute top-[-20%] right-[-20%] w-32 h-32 bg-blue-600/20 blur-2xl rounded-full" />
+              <div className="absolute bottom-[-20%] left-[-20%] w-24 h-24 bg-amber-500/10 blur-xl rounded-full" />
+              
+              {/* Close Button */}
+              <button
+                onClick={() => setIsProfileClosed(true)}
+                className="absolute top-4 right-4 z-20 w-6 h-6 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors cursor-pointer"
+                title="Close profile"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
 
-            <div className="relative z-10 border-t border-white/10 pt-4 space-y-2 text-xs text-slate-300">
-              <div className="flex items-center gap-2">
-                <Mail className="w-4 h-4 text-slate-400 shrink-0" />
-                <span className="truncate">{profile?.email || 'supervisor@ueab.ac.ke'}</span>
+              <div className="relative z-10 text-center space-y-4">
+                <div className="w-16 h-16 bg-[#F59E0B] text-[#111827] rounded-2xl flex items-center justify-center mx-auto shadow-md font-black text-xl">
+                  {profile?.full_name?.split(' ').map((n: string) => n[0]).slice(0, 2).join('').toUpperCase() || 'SP'}
+                </div>
+                <div className="space-y-1">
+                  <h3 className="text-base font-black text-white leading-tight tracking-tight">{profile?.full_name || 'Dr. James Wilson'}</h3>
+                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-white/10 text-slate-350 rounded-full text-[8.5px] font-black uppercase tracking-wider">
+                    Academic Supervisor
+                  </span>
+                </div>
+              </div>
+
+              <div className="relative z-10 border-t border-white/10 pt-4 space-y-2 text-xs text-slate-300">
+                <div className="flex items-center gap-2">
+                  <Mail className="w-4 h-4 text-slate-400 shrink-0" />
+                  <span className="truncate">{profile?.email || 'supervisor@ueab.ac.ke'}</span>
+                </div>
               </div>
             </div>
-          </div>
+          ) : (
+            <button
+              onClick={() => setIsProfileClosed(false)}
+              className="w-full py-3 bg-[#111827] border border-white/10 text-white rounded-[2rem] text-xs font-black uppercase tracking-wider hover:bg-slate-800 transition-colors cursor-pointer"
+            >
+              Show Profile
+            </button>
+          )}
 
           {/* CALENDAR CARD */}
-          <div className="bg-white border border-slate-200 rounded-[2rem] p-5 shadow-sm space-y-4">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+          <div className="bg-white border border-slate-200 rounded-[2rem] shadow-sm overflow-hidden">
+            <button
+              onClick={() => setIsCalendarCollapsed(!isCalendarCollapsed)}
+              className="w-full flex items-center justify-between px-5 py-4 border-b border-slate-100 cursor-pointer hover:bg-slate-50 transition-colors"
+            >
               <span className="text-[10px] font-black text-slate-400 tracking-wider uppercase">July 2026</span>
-              <Calendar className="w-4 h-4 text-blue-600" />
-            </div>
-            <div className="grid grid-cols-7 gap-1 text-center text-[10px] font-extrabold text-slate-400 uppercase">
-              <span>S</span><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span>
-            </div>
-            <div className="grid grid-cols-7 gap-1 text-center text-xs font-semibold text-slate-700">
-              <span></span><span></span><span></span>
-              {daysInMonth.map((day) => {
-                const isToday = day === currentDay
-                return (
-                  <span 
-                    key={day} 
-                    className={`h-6 w-6 flex items-center justify-center rounded-lg mx-auto ${
-                      isToday 
-                        ? 'bg-blue-600 text-white font-black shadow-sm' 
-                        : 'hover:bg-slate-100 cursor-pointer'
-                    }`}
-                  >
-                    {day}
-                  </span>
-                )
-              })}
-            </div>
+              <div className="flex items-center gap-2">
+                <Calendar className="w-4 h-4 text-blue-600" />
+                <ChevronRight className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-200 ${isCalendarCollapsed ? '' : 'rotate-90'}`} />
+              </div>
+            </button>
+            {!isCalendarCollapsed && (
+              <div className="p-5 space-y-3">
+                <div className="grid grid-cols-7 gap-1 text-center text-[10px] font-extrabold text-slate-400 uppercase">
+                  <span>S</span><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span>
+                </div>
+                <div className="grid grid-cols-7 gap-1 text-center text-xs font-semibold text-slate-700">
+                  <span></span><span></span><span></span>
+                  {daysInMonth.map((day) => {
+                    const isToday = day === currentDay
+                    return (
+                      <span 
+                        key={day} 
+                        className={`h-6 w-6 flex items-center justify-center rounded-lg mx-auto ${
+                          isToday 
+                            ? 'bg-blue-600 text-white font-black shadow-sm' 
+                            : 'hover:bg-slate-100 cursor-pointer'
+                        }`}
+                      >
+                        {day}
+                      </span>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* TO-DO CHECKLIST CARD */}

@@ -104,6 +104,10 @@ export default function StudentDashboardClient({
   const [pairingMtgId, setPairingMtgId] = useState<string | null>(null)
   const [pairingSuccess, setPairingSuccess] = useState(false)
 
+  // Collapsible and Closeable Sidebar Widget States
+  const [isCalendarCollapsed, setIsCalendarCollapsed] = useState(false)
+  const [isProfileClosed, setIsProfileClosed] = useState(false)
+
   // Solo Task Checklist (localStorage persisted)
   const [soloTasks, setSoloTasks] = useState<SoloTask[]>([
     { id: '1', text: 'Scrape Dialect-A Dataset', desc: 'Gathering 10k sentences from verified archives.', completed: true },
@@ -112,9 +116,6 @@ export default function StudentDashboardClient({
     { id: '4', text: 'Write Ch. 3: Methodology', desc: 'Document architectural changes to Transformer layers.', completed: false },
     { id: '5', text: 'Final Evaluation Metrics', desc: 'Calculate F1 scores across three linguistic subsets.', completed: false }
   ])
-  const [isAddingTask, setIsAddingTask] = useState(false)
-  const [newTaskText, setNewTaskText] = useState('')
-  const [newTaskDesc, setNewTaskDesc] = useState('')
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -139,24 +140,6 @@ export default function StudentDashboardClient({
   const handleToggleTask = (id: string) => {
     const updated = soloTasks.map(t => t.id === id ? { ...t, completed: !t.completed } : t)
     saveSoloTasks(updated)
-  }
-
-  const handleAddTask = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!newTaskText.trim()) return
-
-    const newItem: SoloTask = {
-      id: Date.now().toString(),
-      text: newTaskText.trim(),
-      desc: newTaskDesc.trim() || 'Custom added task.',
-      completed: false
-    }
-
-    const updated = [...soloTasks, newItem]
-    saveSoloTasks(updated)
-    setNewTaskText('')
-    setNewTaskDesc('')
-    setIsAddingTask(false)
   }
 
   // Hook global search bridge triggers to switch dashboard displays dynamically
@@ -191,9 +174,9 @@ export default function StudentDashboardClient({
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-white border border-slate-200 rounded-[2rem] p-6 shadow-sm">
         <div>
           <h1 className="text-xl font-black text-slate-900 tracking-tight">
-            Hello, {profile?.full_name || 'Student'} 👋
+            Hello, {profile?.full_name || 'Student'}
           </h1>
-          <p className="text-xs text-slate-400 font-semibold mt-0.5">Let's learn something new today!</p>
+          <p className="text-xs text-slate-400 font-semibold mt-0.5">Let's make progress on your project today.</p>
         </div>
         <div className="relative w-full sm:w-64">
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
@@ -608,112 +591,98 @@ export default function StudentDashboardClient({
         <div className="lg:col-span-4 space-y-6">
           
           {/* PROFILE CARD */}
-          <div className="bg-[#111827] text-white border border-white/5 rounded-[2rem] p-6 shadow-sm space-y-6 relative overflow-hidden select-none">
-            <div className="absolute top-[-20%] right-[-20%] w-32 h-32 bg-blue-600/20 blur-2xl rounded-full" />
-            <div className="absolute bottom-[-20%] left-[-20%] w-24 h-24 bg-amber-500/10 blur-xl rounded-full" />
-            
-            <div className="relative z-10 text-center space-y-4">
-              {/* Custom Initial Avatar */}
-              <div className="w-16 h-16 bg-[#F59E0B] text-[#111827] rounded-2xl flex items-center justify-center mx-auto shadow-md font-black text-xl">
-                {profile?.full_name?.split(' ').map((n: string) => n[0]).slice(0, 2).join('').toUpperCase() || 'S'}
-              </div>
-              <div className="space-y-1">
-                <h3 className="text-base font-black text-white leading-tight tracking-tight">{profile?.full_name || 'Student'}</h3>
-                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-white/10 text-slate-350 rounded-full text-[8.5px] font-black uppercase tracking-wider">
-                  Student Lead
-                </span>
-              </div>
-            </div>
+          {!isProfileClosed && (
+            <div className="bg-[#111827] text-white border border-white/5 rounded-[2rem] p-6 shadow-sm space-y-6 relative overflow-hidden">
+              <div className="absolute top-[-20%] right-[-20%] w-32 h-32 bg-blue-600/20 blur-2xl rounded-full" />
+              <div className="absolute bottom-[-20%] left-[-20%] w-24 h-24 bg-amber-500/10 blur-xl rounded-full" />
+              
+              {/* Close Button */}
+              <button
+                onClick={() => setIsProfileClosed(true)}
+                className="absolute top-4 right-4 z-20 w-6 h-6 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors cursor-pointer"
+                title="Close profile card"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
 
-            <div className="relative z-10 border-t border-white/10 pt-4 space-y-2.5 text-xs text-slate-300">
-              <div className="flex items-center gap-2">
-                <Mail className="w-4 h-4 text-slate-400 shrink-0" />
-                <span className="truncate">{profile?.email || 'student@ueab.ac.ke'}</span>
+              <div className="relative z-10 text-center space-y-4">
+                <div className="w-16 h-16 bg-[#F59E0B] text-[#111827] rounded-2xl flex items-center justify-center mx-auto shadow-md font-black text-xl">
+                  {profile?.full_name?.split(' ').map((n: string) => n[0]).slice(0, 2).join('').toUpperCase() || 'S'}
+                </div>
+                <div className="space-y-1">
+                  <h3 className="text-base font-black text-white leading-tight tracking-tight">{profile?.full_name || 'Student'}</h3>
+                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-white/10 text-slate-350 rounded-full text-[8.5px] font-black uppercase tracking-wider">
+                    Student Lead
+                  </span>
+                </div>
               </div>
-              <div className="flex items-center gap-2">
-                <BookOpen className="w-4 h-4 text-slate-400 shrink-0" />
-                <span className="truncate">{profile?.department || 'Computer Science'}</span>
+
+              <div className="relative z-10 border-t border-white/10 pt-4 space-y-2.5 text-xs text-slate-300">
+                <div className="flex items-center gap-2">
+                  <Mail className="w-4 h-4 text-slate-400 shrink-0" />
+                  <span className="truncate">{profile?.email || 'student@ueab.ac.ke'}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <BookOpen className="w-4 h-4 text-slate-400 shrink-0" />
+                  <span className="truncate">{profile?.department || 'Computer Science'}</span>
+                </div>
               </div>
             </div>
-          </div>
+          )}
+          {isProfileClosed && (
+            <button
+              onClick={() => setIsProfileClosed(false)}
+              className="w-full py-3 bg-[#111827] border border-white/10 text-white rounded-[2rem] text-xs font-black uppercase tracking-wider hover:bg-slate-800 transition-colors cursor-pointer"
+            >
+              Show Profile
+            </button>
+          )}
 
           {/* CALENDAR CARD */}
-          <div className="bg-white border border-slate-200 rounded-[2rem] p-5 shadow-sm space-y-4">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+          <div className="bg-white border border-slate-200 rounded-[2rem] shadow-sm overflow-hidden">
+            <button
+              onClick={() => setIsCalendarCollapsed(!isCalendarCollapsed)}
+              className="w-full flex items-center justify-between px-5 py-4 border-b border-slate-100 cursor-pointer hover:bg-slate-50 transition-colors"
+            >
               <span className="text-[10px] font-black text-slate-400 tracking-wider uppercase">July 2026</span>
-              <Calendar className="w-4 h-4 text-blue-600" />
-            </div>
-            <div className="grid grid-cols-7 gap-1 text-center text-[10px] font-extrabold text-slate-400 uppercase">
-              <span>S</span><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span>
-            </div>
-            <div className="grid grid-cols-7 gap-1 text-center text-xs font-semibold text-slate-700">
-              {/* Offset for starting day (July 1, 2026 was a Wednesday -> 3 blank spaces) */}
-              <span></span><span></span><span></span>
-              {daysInMonth.map((day) => {
-                const isToday = day === currentDay
-                return (
-                  <span 
-                    key={day} 
-                    className={`h-6 w-6 flex items-center justify-center rounded-lg mx-auto ${
-                      isToday 
-                        ? 'bg-blue-600 text-white font-black shadow-sm shadow-blue-500/20' 
-                        : 'hover:bg-slate-100 cursor-pointer'
-                    }`}
-                  >
-                    {day}
-                  </span>
-                )
-              })}
-            </div>
+              <div className="flex items-center gap-2">
+                <Calendar className="w-4 h-4 text-blue-600" />
+                <ChevronRight className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-200 ${isCalendarCollapsed ? '' : 'rotate-90'}`} />
+              </div>
+            </button>
+            {!isCalendarCollapsed && (
+              <div className="p-5 space-y-3">
+                <div className="grid grid-cols-7 gap-1 text-center text-[10px] font-extrabold text-slate-400 uppercase">
+                  <span>S</span><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span>
+                </div>
+                <div className="grid grid-cols-7 gap-1 text-center text-xs font-semibold text-slate-700">
+                  <span></span><span></span><span></span>
+                  {daysInMonth.map((day) => {
+                    const isToday = day === currentDay
+                    return (
+                      <span 
+                        key={day} 
+                        className={`h-6 w-6 flex items-center justify-center rounded-lg mx-auto ${
+                          isToday 
+                            ? 'bg-blue-600 text-white font-black shadow-sm' 
+                            : 'hover:bg-slate-100 cursor-pointer'
+                        }`}
+                      >
+                        {day}
+                      </span>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
           </div>
 
-          {/* TO-DO CHECKLIST CARD */}
+          {/* TO-DO CHECKLIST CARD - Tasks assigned by Supervisor */}
           <div className="bg-white border border-slate-200 rounded-[2rem] p-6 shadow-sm space-y-4">
             <div className="flex items-center justify-between">
-              <span className="text-[10px] font-black text-slate-400 tracking-wider uppercase">To Do List</span>
-              <button 
-                onClick={() => setIsAddingTask(!isAddingTask)}
-                className="w-5 h-5 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-600 border border-blue-100 flex items-center justify-center transition-colors cursor-pointer"
-              >
-                <Plus className="w-3.5 h-3.5" />
-              </button>
+              <span className="text-[10px] font-black text-slate-400 tracking-wider uppercase">Assigned Tasks</span>
+              <span className="text-[9px] font-black text-blue-500 uppercase tracking-wider">Supervisor Assigned</span>
             </div>
-
-            {/* Add Task Box */}
-            {isAddingTask && (
-              <form onSubmit={handleAddTask} className="p-3 bg-slate-50 border border-slate-100 rounded-2xl space-y-2 animate-in fade-in duration-200">
-                <input
-                  required
-                  type="text"
-                  placeholder="Task title..."
-                  value={newTaskText}
-                  onChange={(e) => setNewTaskText(e.target.value)}
-                  className="w-full bg-white border border-slate-200 rounded-lg p-2 text-xs font-bold text-slate-900 focus:outline-none focus:border-blue-500"
-                />
-                <input
-                  type="text"
-                  placeholder="Short description..."
-                  value={newTaskDesc}
-                  onChange={(e) => setNewTaskDesc(e.target.value)}
-                  className="w-full bg-white border border-slate-200 rounded-lg p-2 text-[10px] font-semibold text-slate-700 focus:outline-none focus:border-blue-500"
-                />
-                <div className="flex justify-end gap-1.5">
-                  <button 
-                    type="button" 
-                    onClick={() => setIsAddingTask(false)}
-                    className="px-2 py-1 text-[9px] font-bold text-slate-400 hover:text-slate-600 uppercase"
-                  >
-                    Cancel
-                  </button>
-                  <button 
-                    type="submit" 
-                    className="px-3 py-1 bg-blue-600 text-white rounded-lg text-[9px] font-black uppercase tracking-wider"
-                  >
-                    Add Task
-                  </button>
-                </div>
-              </form>
-            )}
 
             <div className="space-y-3">
               {soloTasks.map((t) => (

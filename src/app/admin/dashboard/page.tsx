@@ -102,7 +102,7 @@ export default async function AdminDashboardPage() {
             <span>{profile.role === 'admin' ? 'System Administrator' : 'Examiner Panel'}</span>
           </div>
           <h1 className="text-xl font-black text-slate-900 tracking-tight mt-0.5">
-            Welcome back, {profile.full_name?.split(' ')[0] || 'Admin'} 👋
+            Welcome back, {profile.full_name?.split(' ')[0] || 'Admin'}
           </h1>
         </div>
         <div className="relative w-full sm:w-64">
