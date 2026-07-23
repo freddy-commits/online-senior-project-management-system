@@ -75,7 +75,7 @@ export default function MasterHeader({ role = 'student' }: { role?: string }) {
               : 'bg-transparent border-transparent hover:bg-slate-50 dark:hover:bg-slate-850/60'
           }`}
         >
-          <div className="w-9 h-9 bg-slate-900 dark:bg-slate-800 rounded-xl flex items-center justify-center text-white font-bold text-xs shadow-sm select-none shrink-0">
+          <div className="w-9 h-9 bg-[#F59E0B] text-[#111827] rounded-xl flex items-center justify-center font-black text-xs shadow-sm select-none shrink-0">
             {initials}
           </div>
           <span className="hidden sm:block text-xs font-black text-slate-900 dark:text-white leading-none">

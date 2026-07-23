@@ -118,6 +118,7 @@ export default function RegisterPage() {
       document.cookie = 'demo_mode=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT;'
       if (typeof window !== 'undefined') {
         localStorage.removeItem('demo_mode')
+        sessionStorage.setItem('dashboard_session_active', 'true')
       }
       document.cookie = `demo_role=${selectedRole}; path=/`
 
@@ -153,6 +154,9 @@ export default function RegisterPage() {
     setLoading(true)
     setError('')
     try {
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem('dashboard_session_active', 'true')
+      }
       const supabase = createClient()
       
       // Store selected department in a cookie (expires in 10 minutes)

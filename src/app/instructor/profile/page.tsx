@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import { Loader2 } from 'lucide-react'
+import { Loader2, X } from 'lucide-react'
+import Link from 'next/link'
 import ProfileSection from '@/components/settings/ProfileSection'
 import SecuritySection from '@/components/settings/SecuritySection'
 import SocialLinksSection from '@/components/settings/SocialLinksSection'
@@ -54,11 +55,20 @@ export default function InstructorProfilePage() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto pb-20 p-4 md:p-8">
+    <div className="max-w-4xl mx-auto pb-20 p-4 md:p-8 relative">
       {/* Header */}
-      <div className="mb-10">
-        <h1 className="text-3xl font-black text-slate-900 mb-2">Account Settings</h1>
-        <p className="text-slate-500">Manage your profile details, social links, and security credentials.</p>
+      <div className="mb-10 flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-black text-slate-900 dark:text-white mb-2">Account Settings</h1>
+          <p className="text-slate-500 dark:text-slate-400">Manage your profile details, social links, and security credentials.</p>
+        </div>
+        <Link 
+          href="/instructor/dashboard" 
+          className="w-10 h-10 rounded-full bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 flex items-center justify-center transition-all shadow-sm cursor-pointer shrink-0"
+          title="Close Settings & Return to Dashboard"
+        >
+          <X className="w-5 h-5" />
+        </Link>
       </div>
 
       <div className="space-y-8">

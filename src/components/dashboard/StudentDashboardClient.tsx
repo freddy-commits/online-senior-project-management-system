@@ -38,13 +38,6 @@ interface StudentDashboardClientProps {
   initialProjects: any[] | null
 }
 
-interface SoloTask {
-  id: string
-  text: string
-  desc: string
-  completed: boolean
-}
-
 export default function StudentDashboardClient({ 
   initialProfile, 
   initialProjects 
@@ -108,39 +101,11 @@ export default function StudentDashboardClient({
   const [isCalendarCollapsed, setIsCalendarCollapsed] = useState(false)
   const [isProfileClosed, setIsProfileClosed] = useState(false)
 
-  // Solo Task Checklist (localStorage persisted)
-  const [soloTasks, setSoloTasks] = useState<SoloTask[]>([
-    { id: '1', text: 'Scrape Dialect-A Dataset', desc: 'Gathering 10k sentences from verified archives.', completed: true },
-    { id: '2', text: 'Baseline Model Config', desc: 'Initial training run with vanilla BERT.', completed: true },
-    { id: '3', text: 'Optimize Hyperparameters', desc: 'Iterate on learning rate and dropout ratios.', completed: false },
-    { id: '4', text: 'Write Ch. 3: Methodology', desc: 'Document architectural changes to Transformer layers.', completed: false },
-    { id: '5', text: 'Final Evaluation Metrics', desc: 'Calculate F1 scores across three linguistic subsets.', completed: false }
-  ])
-
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('projectstation_solo_tasks')
-      if (saved) {
-        try {
-          setSoloTasks(JSON.parse(saved))
-        } catch (e) {
-          console.warn('Failed to parse saved solo tasks', e)
-        }
-      }
+      localStorage.removeItem('projectstation_solo_tasks')
     }
   }, [])
-
-  const saveSoloTasks = (newTasks: SoloTask[]) => {
-    setSoloTasks(newTasks)
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('projectstation_solo_tasks', JSON.stringify(newTasks))
-    }
-  }
-
-  const handleToggleTask = (id: string) => {
-    const updated = soloTasks.map(t => t.id === id ? { ...t, completed: !t.completed } : t)
-    saveSoloTasks(updated)
-  }
 
   // Hook global search bridge triggers to switch dashboard displays dynamically
   useEffect(() => {
@@ -592,32 +557,29 @@ export default function StudentDashboardClient({
           
           {/* PROFILE CARD */}
           {!isProfileClosed && (
-            <div className="bg-[#111827] text-white border border-white/5 rounded-[2rem] p-6 shadow-sm space-y-6 relative overflow-hidden">
-              <div className="absolute top-[-20%] right-[-20%] w-32 h-32 bg-blue-600/20 blur-2xl rounded-full" />
-              <div className="absolute bottom-[-20%] left-[-20%] w-24 h-24 bg-amber-500/10 blur-xl rounded-full" />
-              
+            <div className="bg-white border border-slate-200 rounded-[2rem] p-6 shadow-sm space-y-6 relative overflow-hidden">
               {/* Close Button */}
               <button
                 onClick={() => setIsProfileClosed(true)}
-                className="absolute top-4 right-4 z-20 w-6 h-6 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors cursor-pointer"
-                title="Close profile card"
+                className="absolute top-4 right-4 z-20 w-7 h-7 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 flex items-center justify-center transition-colors cursor-pointer border border-slate-200"
+                title="Close Profile Card"
               >
-                <X className="w-3.5 h-3.5" />
+                <X className="w-4 h-4" />
               </button>
 
-              <div className="relative z-10 text-center space-y-4">
-                <div className="w-16 h-16 bg-[#F59E0B] text-[#111827] rounded-2xl flex items-center justify-center mx-auto shadow-md font-black text-xl">
+              <div className="relative z-10 text-center space-y-3">
+                <div className="w-16 h-16 bg-[#F59E0B] text-[#111827] rounded-2xl flex items-center justify-center mx-auto shadow-sm font-black text-xl">
                   {profile?.full_name?.split(' ').map((n: string) => n[0]).slice(0, 2).join('').toUpperCase() || 'S'}
                 </div>
                 <div className="space-y-1">
-                  <h3 className="text-base font-black text-white leading-tight tracking-tight">{profile?.full_name || 'Student'}</h3>
-                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-white/10 text-slate-350 rounded-full text-[8.5px] font-black uppercase tracking-wider">
+                  <h3 className="text-base font-black text-slate-900 leading-tight tracking-tight">{profile?.full_name || 'Student'}</h3>
+                  <span className="inline-flex items-center gap-1 px-3 py-0.5 bg-blue-50 text-blue-700 border border-blue-100 rounded-full text-[9px] font-black uppercase tracking-wider">
                     Student Lead
                   </span>
                 </div>
               </div>
 
-              <div className="relative z-10 border-t border-white/10 pt-4 space-y-2.5 text-xs text-slate-300">
+              <div className="relative z-10 border-t border-slate-100 pt-4 space-y-2.5 text-xs text-slate-600">
                 <div className="flex items-center gap-2">
                   <Mail className="w-4 h-4 text-slate-400 shrink-0" />
                   <span className="truncate">{profile?.email || 'student@ueab.ac.ke'}</span>
@@ -632,9 +594,9 @@ export default function StudentDashboardClient({
           {isProfileClosed && (
             <button
               onClick={() => setIsProfileClosed(false)}
-              className="w-full py-3 bg-[#111827] border border-white/10 text-white rounded-[2rem] text-xs font-black uppercase tracking-wider hover:bg-slate-800 transition-colors cursor-pointer"
+              className="w-full py-3 bg-white border border-slate-200 text-slate-700 rounded-[2rem] text-xs font-black uppercase tracking-wider hover:bg-slate-50 transition-colors shadow-sm cursor-pointer"
             >
-              Show Profile
+              Show Profile Details
             </button>
           )}
 
@@ -685,29 +647,36 @@ export default function StudentDashboardClient({
             </div>
 
             <div className="space-y-3">
-              {soloTasks.map((t) => (
-                <div 
-                  key={t.id} 
-                  onClick={() => handleToggleTask(t.id)}
-                  className="flex items-start gap-3 cursor-pointer group"
-                >
-                  <div className={`mt-0.5 w-4 h-4 rounded border flex items-center justify-center shrink-0 transition-colors ${
-                    t.completed 
-                      ? 'bg-blue-600 border-blue-600 text-white' 
-                      : 'border-slate-300 group-hover:border-blue-500 bg-white'
-                  }`}>
-                    {t.completed && <Check className="w-3 h-3 stroke-[3]" />}
-                  </div>
-                  <div>
-                    <span className={`text-xs font-extrabold block leading-tight ${
-                      t.completed ? 'text-slate-400 line-through' : 'text-slate-800'
+              {deliverables.map((t: any) => {
+                const isCompleted = t.status === 'graded' || t.status === 'completed'
+                return (
+                  <div 
+                    key={t.id} 
+                    className="flex items-start gap-3"
+                  >
+                    <div className={`mt-0.5 w-4 h-4 rounded border flex items-center justify-center shrink-0 transition-colors ${
+                      isCompleted 
+                        ? 'bg-blue-600 border-blue-600 text-white' 
+                        : 'border-slate-300 bg-white'
                     }`}>
-                      {t.text}
-                    </span>
-                    <span className="text-[10px] text-slate-400 font-semibold leading-none">{t.desc}</span>
+                      {isCompleted && <Check className="w-3 h-3 stroke-[3]" />}
+                    </div>
+                    <div>
+                      <span className={`text-xs font-extrabold block leading-tight ${
+                        isCompleted ? 'text-slate-400 line-through' : 'text-slate-800'
+                      }`}>
+                        {t.title}
+                      </span>
+                      <span className="text-[10px] text-slate-400 font-semibold leading-none block mt-0.5">{t.description}</span>
+                    </div>
                   </div>
+                )
+              })}
+              {deliverables.length === 0 && (
+                <div className="text-[11px] text-slate-400 font-bold italic text-center py-4">
+                  No tasks assigned by supervisor yet.
                 </div>
-              ))}
+              )}
             </div>
           </div>
 

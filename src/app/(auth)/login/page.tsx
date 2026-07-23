@@ -125,11 +125,17 @@ export default function LoginPage() {
           .maybeSingle()
 
         if (roleReq) {
+          if (typeof window !== 'undefined') {
+            sessionStorage.setItem('dashboard_session_active', 'true')
+          }
           router.push('/hub')
           return
         }
       }
 
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem('dashboard_session_active', 'true')
+      }
       router.push(roleRouteMap[role] ?? '/student/dashboard')
 
     } catch (err: any) {
@@ -144,6 +150,9 @@ export default function LoginPage() {
     setLoading(true)
     setError('')
     try {
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem('dashboard_session_active', 'true')
+      }
       const supabase = createClient()
       const { error: oauthError } = await supabase.auth.signInWithOAuth({
         provider,

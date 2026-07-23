@@ -4,6 +4,7 @@ import "./globals.css";
 import { ThemeProvider } from '@/components/providers/ThemeProvider';
 import { I18nProvider } from '@/components/providers/I18nProvider';
 import { getUserLocale } from '@/lib/i18n';
+import SessionController from '@/components/providers/SessionController';
 
 const outfit = Outfit({
   subsets: ["latin"],
@@ -49,6 +50,7 @@ export default async function RootLayout({
       <body className="min-h-full flex flex-col">
         <I18nProvider locale={locale} messages={messages}>
           <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+            <SessionController />
             {children}
           </ThemeProvider>
         </I18nProvider>

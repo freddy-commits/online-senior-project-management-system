@@ -244,22 +244,20 @@ export default async function AdminDashboardPage() {
         <div className="lg:col-span-4 space-y-6">
           
           {/* PROFILE CARD */}
-          <div className="bg-[#111827] text-white border border-white/5 rounded-[2rem] p-6 shadow-sm space-y-6 relative overflow-hidden select-none">
-            <div className="absolute top-[-20%] right-[-20%] w-32 h-32 bg-blue-600/20 blur-2xl rounded-full" />
-            
-            <div className="relative z-10 text-center space-y-4">
-              <div className="w-16 h-16 bg-[#F59E0B] text-[#111827] rounded-2xl flex items-center justify-center mx-auto shadow-md font-black text-xl">
+          <div className="bg-white border border-slate-200 rounded-[2rem] p-6 shadow-sm space-y-6 relative overflow-hidden select-none">
+            <div className="relative z-10 text-center space-y-3">
+              <div className="w-16 h-16 bg-[#F59E0B] text-[#111827] rounded-2xl flex items-center justify-center mx-auto shadow-sm font-black text-xl">
                 {profile?.full_name?.split(' ').map((n: string) => n[0]).slice(0, 2).join('').toUpperCase() || 'AD'}
               </div>
               <div className="space-y-1">
-                <h3 className="text-base font-black text-white leading-tight tracking-tight">{profile?.full_name || 'Administrator'}</h3>
-                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-white/10 text-slate-350 rounded-full text-[8.5px] font-black uppercase tracking-wider">
+                <h3 className="text-base font-black text-slate-900 leading-tight tracking-tight">{profile?.full_name || 'Administrator'}</h3>
+                <span className="inline-flex items-center gap-1 px-3 py-0.5 bg-blue-50 text-blue-700 border border-blue-100 rounded-full text-[9px] font-black uppercase tracking-wider">
                   {profile?.role === 'admin' ? 'System Administrator' : 'Examiner Panel'}
                 </span>
               </div>
             </div>
 
-            <div className="relative z-10 border-t border-white/10 pt-4 space-y-2 text-xs text-slate-300">
+            <div className="relative z-10 border-t border-slate-100 pt-4 space-y-2 text-xs text-slate-600">
               <div className="flex items-center gap-2">
                 <Mail className="w-4 h-4 text-slate-400 shrink-0" />
                 <span className="truncate">{profile?.email || 'admin@ueab.ac.ke'}</span>
