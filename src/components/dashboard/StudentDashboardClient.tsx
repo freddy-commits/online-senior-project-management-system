@@ -640,45 +640,42 @@ export default function StudentDashboardClient({
           </div>
 
           {/* TO-DO CHECKLIST CARD - Tasks assigned by Supervisor */}
-          <div className="bg-white border border-slate-200 rounded-[2rem] p-6 shadow-sm space-y-4">
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] font-black text-slate-400 tracking-wider uppercase">Assigned Tasks</span>
-              <span className="text-[9px] font-black text-blue-500 uppercase tracking-wider">Supervisor Assigned</span>
-            </div>
+          {deliverables.length > 0 && (
+            <div className="bg-white border border-slate-200 rounded-[2rem] p-6 shadow-sm space-y-4">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-black text-slate-400 tracking-wider uppercase">Assigned Tasks</span>
+                <span className="text-[9px] font-black text-blue-500 uppercase tracking-wider">Supervisor Assigned</span>
+              </div>
 
-            <div className="space-y-3">
-              {deliverables.map((t: any) => {
-                const isCompleted = t.status === 'graded' || t.status === 'completed'
-                return (
-                  <div 
-                    key={t.id} 
-                    className="flex items-start gap-3"
-                  >
-                    <div className={`mt-0.5 w-4 h-4 rounded border flex items-center justify-center shrink-0 transition-colors ${
-                      isCompleted 
-                        ? 'bg-blue-600 border-blue-600 text-white' 
-                        : 'border-slate-300 bg-white'
-                    }`}>
-                      {isCompleted && <Check className="w-3 h-3 stroke-[3]" />}
-                    </div>
-                    <div>
-                      <span className={`text-xs font-extrabold block leading-tight ${
-                        isCompleted ? 'text-slate-400 line-through' : 'text-slate-800'
+              <div className="space-y-3">
+                {deliverables.map((t: any) => {
+                  const isCompleted = t.status === 'graded' || t.status === 'completed'
+                  return (
+                    <div 
+                      key={t.id} 
+                      className="flex items-start gap-3"
+                    >
+                      <div className={`mt-0.5 w-4 h-4 rounded border flex items-center justify-center shrink-0 transition-colors ${
+                        isCompleted 
+                          ? 'bg-blue-600 border-blue-600 text-white' 
+                          : 'border-slate-300 bg-white'
                       }`}>
-                        {t.title}
-                      </span>
-                      <span className="text-[10px] text-slate-400 font-semibold leading-none block mt-0.5">{t.description}</span>
+                        {isCompleted && <Check className="w-3 h-3 stroke-[3]" />}
+                      </div>
+                      <div>
+                        <span className={`text-xs font-extrabold block leading-tight ${
+                          isCompleted ? 'text-slate-400 line-through' : 'text-slate-800'
+                        }`}>
+                          {t.title}
+                        </span>
+                        <span className="text-[10px] text-slate-400 font-semibold leading-none block mt-0.5">{t.description}</span>
+                      </div>
                     </div>
-                  </div>
-                )
-              })}
-              {deliverables.length === 0 && (
-                <div className="text-[11px] text-slate-400 font-bold italic text-center py-4">
-                  No tasks assigned by supervisor yet.
-                </div>
-              )}
+                  )
+                })}
+              </div>
             </div>
-          </div>
+          )}
 
         </div>
 

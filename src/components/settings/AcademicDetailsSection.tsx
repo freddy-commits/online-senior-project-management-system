@@ -45,7 +45,7 @@ export default function AcademicDetailsSection({ initialData, onSave }: { initia
   return (
     <div className="bg-white border border-slate-200 rounded-[2.5rem] p-8 md:p-10 shadow-sm">
       <h2 className="text-xl font-bold flex items-center gap-2 mb-6 text-slate-900">
-        <GraduationCap className="w-5 h-5 text-indigo-600" />
+        <GraduationCap className="w-5 h-5 text-blue-600" />
         Academic Details
       </h2>
 
@@ -57,7 +57,7 @@ export default function AcademicDetailsSection({ initialData, onSave }: { initia
               type="text"
               value={data.student_id}
               onChange={(e) => setData({ ...data, student_id: e.target.value })}
-              className={`w-full bg-slate-50 border ${errors.student_id ? 'border-red-500' : 'border-slate-200'} rounded-2xl py-3.5 px-4 text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all text-sm font-medium`}
+              className={`w-full bg-slate-50 border ${errors.student_id ? 'border-red-500' : 'border-slate-200'} rounded-2xl py-3.5 px-4 text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all text-sm font-medium`}
               placeholder="e.g. CS/1234/2026"
             />
           </div>
@@ -67,7 +67,7 @@ export default function AcademicDetailsSection({ initialData, onSave }: { initia
               type="text"
               value={data.institution}
               onChange={(e) => setData({ ...data, institution: e.target.value })}
-              className={`w-full bg-slate-50 border ${errors.institution ? 'border-red-500' : 'border-slate-200'} rounded-2xl py-3.5 px-4 text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all text-sm font-medium`}
+              className={`w-full bg-slate-50 border ${errors.institution ? 'border-red-500' : 'border-slate-200'} rounded-2xl py-3.5 px-4 text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all text-sm font-medium`}
             />
           </div>
         </div>
@@ -79,7 +79,7 @@ export default function AcademicDetailsSection({ initialData, onSave }: { initia
               type="text"
               value={data.course}
               onChange={(e) => setData({ ...data, course: e.target.value })}
-              className={`w-full bg-slate-50 border ${errors.course ? 'border-red-500' : 'border-slate-200'} rounded-2xl py-3.5 px-4 text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all text-sm font-medium`}
+              className={`w-full bg-slate-50 border ${errors.course ? 'border-red-500' : 'border-slate-200'} rounded-2xl py-3.5 px-4 text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all text-sm font-medium`}
               placeholder="e.g. Computer Science"
             />
           </div>
@@ -89,7 +89,7 @@ export default function AcademicDetailsSection({ initialData, onSave }: { initia
               type="text"
               value={data.department}
               onChange={(e) => setData({ ...data, department: e.target.value })}
-              className={`w-full bg-slate-50 border ${errors.department ? 'border-red-500' : 'border-slate-200'} rounded-2xl py-3.5 px-4 text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all text-sm font-medium`}
+              className={`w-full bg-slate-50 border ${errors.department ? 'border-red-500' : 'border-slate-200'} rounded-2xl py-3.5 px-4 text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all text-sm font-medium`}
             />
           </div>
         </div>
@@ -100,7 +100,7 @@ export default function AcademicDetailsSection({ initialData, onSave }: { initia
             <select
               value={data.year_of_study}
               onChange={(e) => setData({ ...data, year_of_study: e.target.value })}
-              className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-3.5 px-4 text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all text-sm font-medium appearance-none"
+              className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-3.5 px-4 text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all text-sm font-medium appearance-none"
             >
               <option value="1">Year 1</option>
               <option value="2">Year 2</option>
@@ -114,7 +114,7 @@ export default function AcademicDetailsSection({ initialData, onSave }: { initia
             <select
               value={data.graduation_year}
               onChange={(e) => setData({ ...data, graduation_year: e.target.value })}
-              className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-3.5 px-4 text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all text-sm font-medium appearance-none"
+              className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-3.5 px-4 text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all text-sm font-medium appearance-none"
             >
               <option value="2024">2024</option>
               <option value="2025">2025</option>
@@ -137,7 +137,7 @@ export default function AcademicDetailsSection({ initialData, onSave }: { initia
           <button
             type="submit"
             disabled={saving}
-            className="px-6 py-3.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-bold rounded-2xl text-xs uppercase tracking-widest shadow-lg shadow-indigo-600/20 transition-all active:scale-[0.98] flex items-center gap-2 cursor-pointer"
+            className="px-6 py-3.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-bold rounded-2xl text-xs uppercase tracking-widest shadow-lg shadow-blue-600/20 transition-all active:scale-[0.98] flex items-center gap-2 cursor-pointer"
           >
             {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
             Save Academics

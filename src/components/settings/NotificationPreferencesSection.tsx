@@ -46,7 +46,7 @@ export default function NotificationPreferencesSection({ onSave }: { onSave?: (d
       <button
         type="button"
         onClick={() => toggle(flag)}
-        className={`w-12 h-6 rounded-full p-1 transition-colors shrink-0 ${prefs[flag] ? 'bg-indigo-600' : 'bg-slate-200'}`}
+        className={`w-12 h-6 rounded-full p-1 transition-colors shrink-0 ${prefs[flag] ? 'bg-blue-600' : 'bg-slate-200'}`}
       >
         <div className={`w-4 h-4 bg-white rounded-full shadow-sm transition-transform ${prefs[flag] ? 'translate-x-6' : 'translate-x-0'}`} />
       </button>
@@ -56,7 +56,7 @@ export default function NotificationPreferencesSection({ onSave }: { onSave?: (d
   return (
     <div className="bg-white border border-slate-200 rounded-[2.5rem] p-8 md:p-10 shadow-sm">
       <h2 className="text-xl font-bold flex items-center gap-2 mb-6 text-slate-900">
-        <Bell className="w-5 h-5 text-indigo-600" />
+        <Bell className="w-5 h-5 text-blue-600" />
         Notification Preferences
       </h2>
 
@@ -92,7 +92,7 @@ export default function NotificationPreferencesSection({ onSave }: { onSave?: (d
           <button
             type="submit"
             disabled={saving}
-            className="px-6 py-3.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-bold rounded-2xl text-xs uppercase tracking-widest shadow-lg shadow-indigo-600/20 transition-all active:scale-[0.98] flex items-center gap-2 cursor-pointer"
+            className="px-6 py-3.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-bold rounded-2xl text-xs uppercase tracking-widest shadow-lg shadow-blue-600/20 transition-all active:scale-[0.98] flex items-center gap-2 cursor-pointer"
           >
             {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
             Save Preferences

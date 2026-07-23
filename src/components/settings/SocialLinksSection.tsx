@@ -33,7 +33,7 @@ export default function SocialLinksSection({ initialData, onSave }: { initialDat
   return (
     <div className="bg-white border border-slate-200 rounded-[2.5rem] p-8 md:p-10 shadow-sm">
       <h2 className="text-xl font-bold flex items-center gap-2 mb-6 text-slate-900">
-        <Link2 className="w-5 h-5 text-indigo-600" />
+        <Link2 className="w-5 h-5 text-blue-600" />
         Social Links
       </h2>
 
@@ -50,7 +50,7 @@ export default function SocialLinksSection({ initialData, onSave }: { initialDat
                 type="url"
                 value={links.github}
                 onChange={(e) => setLinks({ ...links, github: e.target.value })}
-                className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-3.5 pl-12 px-4 text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all text-sm font-medium"
+                className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-3.5 pl-12 px-4 text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all text-sm font-medium"
                 placeholder="https://github.com/username"
               />
             </div>
@@ -65,7 +65,7 @@ export default function SocialLinksSection({ initialData, onSave }: { initialDat
                 type="url"
                 value={links.linkedin}
                 onChange={(e) => setLinks({ ...links, linkedin: e.target.value })}
-                className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-3.5 pl-12 px-4 text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all text-sm font-medium"
+                className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-3.5 pl-12 px-4 text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all text-sm font-medium"
                 placeholder="https://linkedin.com/in/username"
               />
             </div>
@@ -83,7 +83,7 @@ export default function SocialLinksSection({ initialData, onSave }: { initialDat
                 type="url"
                 value={links.portfolio}
                 onChange={(e) => setLinks({ ...links, portfolio: e.target.value })}
-                className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-3.5 pl-12 px-4 text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all text-sm font-medium"
+                className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-3.5 pl-12 px-4 text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all text-sm font-medium"
                 placeholder="https://yourwebsite.com"
               />
             </div>
@@ -98,7 +98,7 @@ export default function SocialLinksSection({ initialData, onSave }: { initialDat
                 type="url"
                 value={links.twitter}
                 onChange={(e) => setLinks({ ...links, twitter: e.target.value })}
-                className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-3.5 pl-12 px-4 text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all text-sm font-medium"
+                className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-3.5 pl-12 px-4 text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all text-sm font-medium"
                 placeholder="https://twitter.com/username"
               />
             </div>
@@ -117,7 +117,7 @@ export default function SocialLinksSection({ initialData, onSave }: { initialDat
           <button
             type="submit"
             disabled={saving}
-            className="px-6 py-3.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-bold rounded-2xl text-xs uppercase tracking-widest shadow-lg shadow-indigo-600/20 transition-all active:scale-[0.98] flex items-center gap-2 cursor-pointer"
+            className="px-6 py-3.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-bold rounded-2xl text-xs uppercase tracking-widest shadow-lg shadow-blue-600/20 transition-all active:scale-[0.98] flex items-center gap-2 cursor-pointer"
           >
             {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
             Save Links

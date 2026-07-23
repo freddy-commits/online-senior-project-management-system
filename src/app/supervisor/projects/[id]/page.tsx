@@ -164,7 +164,7 @@ export default function SupervisorReviewPage() {
         {/* Main Deliverables Area */}
         <div className="lg:col-span-2 space-y-6">
           <h2 className="text-lg font-black text-slate-955 flex items-center gap-3">
-            <ShieldCheck className="w-5 h-5 text-indigo-600" />
+            <ShieldCheck className="w-5 h-5 text-blue-600" />
             Submission & Deliverable History
           </h2>
           
@@ -183,9 +183,9 @@ export default function SupervisorReviewPage() {
                       <div className="flex items-center gap-2 mt-2">
                         <span className={`px-2 py-0.5 rounded text-[8px] font-black uppercase border ${
                           item.status === 'graded' 
-                            ? 'bg-indigo-50 border-indigo-100 text-indigo-700'
+                            ? 'bg-blue-50 border-blue-100 text-blue-700'
                             : item.status === 'submitted'
-                              ? 'bg-blue-50 border-blue-100 text-blue-700 animate-pulse'
+                              ? 'bg-amber-50 border-amber-100 text-amber-700 animate-pulse'
                               : 'bg-slate-50 border-slate-200 text-slate-500'
                         }`}>
                           {item.status}
@@ -218,9 +218,9 @@ export default function SupervisorReviewPage() {
                 {/* Grading & Feedback controls */}
                 <div className="space-y-4">
                   {item.status === 'graded' ? (
-                    <div className="flex items-center justify-between p-3.5 bg-indigo-50 border border-indigo-100 rounded-xl">
-                      <span className="text-xs font-black text-indigo-700 uppercase tracking-wider">Milestone Mark</span>
-                      <span className="font-black text-lg text-indigo-800">{item.grade}</span>
+                    <div className="flex items-center justify-between p-3.5 bg-blue-50 border border-blue-100 rounded-xl">
+                      <span className="text-xs font-black text-blue-700 uppercase tracking-wider">Milestone Mark</span>
+                      <span className="font-black text-lg text-blue-800">{item.grade}</span>
                     </div>
                   ) : (
                     <div className="space-y-3">
@@ -231,7 +231,7 @@ export default function SupervisorReviewPage() {
                       <textarea 
                         id={`recommend-${item.id}`}
                         placeholder="Type comments, feedback, or recommendations for revisions..."
-                        className="w-full bg-slate-50/50 border border-slate-200 focus:border-indigo-500 rounded-xl p-4 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500/10 transition-all resize-none text-slate-800"
+                        className="w-full bg-slate-50/50 border border-slate-200 focus:border-blue-500 rounded-xl p-4 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500/10 transition-all resize-none text-slate-800"
                         rows={2}
                       />
                       
@@ -256,7 +256,7 @@ export default function SupervisorReviewPage() {
                               max="20"
                               step="0.5"
                               placeholder="Mark (0-20)"
-                              className="w-28 bg-white border border-slate-250 focus:border-indigo-500 rounded-xl px-3 py-2 text-xs font-bold text-center focus:outline-none"
+                              className="w-28 bg-white border border-slate-250 focus:border-blue-500 rounded-xl px-3 py-2 text-xs font-bold text-center focus:outline-none"
                             />
                             <button 
                               onClick={() => {
@@ -269,7 +269,7 @@ export default function SupervisorReviewPage() {
                                 handleGradeSubmission(item.id, val)
                               }}
                               disabled={processing}
-                              className="px-6 py-2.5 bg-indigo-700 hover:bg-indigo-800 text-white rounded-xl font-black text-xs uppercase tracking-wider shadow-sm transition-all cursor-pointer shrink-0"
+                              className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-black text-xs uppercase tracking-wider shadow-sm transition-all cursor-pointer shrink-0"
                             >
                               Award Mark
                             </button>
@@ -293,11 +293,11 @@ export default function SupervisorReviewPage() {
           {/* Student details card */}
           <div className="bg-white border border-slate-150 rounded-[2.25rem] p-6 shadow-sm">
             <h3 className="text-sm font-black text-slate-900 mb-5 flex items-center gap-2">
-              <Users className="w-4 h-4 text-indigo-600" />
+              <Users className="w-4 h-4 text-blue-600" />
               Student Lead Information
             </h3>
             <div className="flex items-center gap-4 mb-6">
-              <div className="w-12 h-12 rounded-2xl bg-indigo-50 border border-indigo-150 text-indigo-700 flex items-center justify-center font-black text-md shrink-0 shadow-sm">
+              <div className="w-12 h-12 rounded-2xl bg-blue-50 border border-blue-150 text-blue-700 flex items-center justify-center font-black text-md shrink-0 shadow-sm">
                 {project.student?.full_name?.split(' ').map((n: string) => n[0]).slice(0, 2).join('') || 'ST'}
               </div>
               <div className="min-w-0">
@@ -316,8 +316,8 @@ export default function SupervisorReviewPage() {
           </div>
 
           {/* Academic notice cards */}
-          <div className="bg-gradient-to-br from-indigo-50/50 to-blue-50/50 border border-indigo-100 rounded-[2.25rem] p-6">
-            <h3 className="text-xs font-black text-indigo-900 uppercase tracking-widest mb-3">Academic Guidelines</h3>
+          <div className="bg-gradient-to-br from-blue-50/50 to-amber-50/50 border border-blue-100 rounded-[2.25rem] p-6">
+            <h3 className="text-xs font-black text-blue-900 uppercase tracking-widest mb-3">Academic Guidelines</h3>
             <p className="text-[11px] text-slate-500 font-semibold leading-relaxed">
               As an Academic Supervisor, you are responsible for checking milestones regularly, leaving specific technical feedback/recommendations, and submitting the final deliverable grade.
             </p>

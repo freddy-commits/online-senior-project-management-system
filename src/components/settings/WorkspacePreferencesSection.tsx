@@ -47,7 +47,7 @@ export default function WorkspacePreferencesSection({ onSave }: { onSave?: (data
   return (
     <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-[2.5rem] p-8 md:p-10 shadow-sm transition-colors">
       <h2 className="text-xl font-bold flex items-center gap-2 mb-6 text-slate-900 dark:text-white">
-        <Sliders className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+        <Sliders className="w-5 h-5 text-blue-600 dark:text-blue-400" />
         {t('workspace_preferences')}
       </h2>
 
@@ -66,7 +66,7 @@ export default function WorkspacePreferencesSection({ onSave }: { onSave?: (data
                   setUserLocale(newLocale);
                 });
               }}
-              className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl py-3.5 px-4 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all text-sm font-medium disabled:opacity-50"
+              className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl py-3.5 px-4 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all text-sm font-medium disabled:opacity-50"
             >
               <option value="en">English (US)</option>
               <option value="fr">Français</option>
@@ -78,7 +78,7 @@ export default function WorkspacePreferencesSection({ onSave }: { onSave?: (data
             <select
               value={prefs.timezone}
               onChange={(e) => setPrefs({ ...prefs, timezone: e.target.value })}
-              className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl py-3.5 px-4 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all text-sm font-medium"
+              className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl py-3.5 px-4 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all text-sm font-medium"
             >
               <option value="Africa/Nairobi">Africa/Nairobi (EAT)</option>
               <option value="America/New_York">America/New_York (EST)</option>
@@ -97,21 +97,21 @@ export default function WorkspacePreferencesSection({ onSave }: { onSave?: (data
                   <button
                     type="button"
                     onClick={() => setTheme('light')}
-                    className={`flex-1 py-3.5 px-4 rounded-2xl border text-sm font-bold transition-colors ${theme === 'light' ? 'bg-indigo-50 border-indigo-200 text-indigo-700 dark:bg-indigo-900/40 dark:border-indigo-600 dark:text-indigo-300' : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-400 dark:hover:bg-slate-700'}`}
+                    className={`flex-1 py-3.5 px-4 rounded-2xl border text-sm font-bold transition-colors ${theme === 'light' ? 'bg-blue-50 border-blue-200 text-blue-700 dark:bg-blue-900/40 dark:border-blue-600 dark:text-blue-300' : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-400 dark:hover:bg-slate-700'}`}
                   >
                     {t('light')}
                   </button>
                   <button
                     type="button"
                     onClick={() => setTheme('dark')}
-                    className={`flex-1 py-3.5 px-4 rounded-2xl border text-sm font-bold transition-colors ${theme === 'dark' ? 'bg-indigo-50 border-indigo-200 text-indigo-700 dark:bg-indigo-900/40 dark:border-indigo-600 dark:text-indigo-300' : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-400 dark:hover:bg-slate-700'}`}
+                    className={`flex-1 py-3.5 px-4 rounded-2xl border text-sm font-bold transition-colors ${theme === 'dark' ? 'bg-blue-50 border-blue-200 text-blue-700 dark:bg-blue-900/40 dark:border-blue-600 dark:text-blue-300' : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-400 dark:hover:bg-slate-700'}`}
                   >
                     {t('dark')}
                   </button>
                   <button
                     type="button"
                     onClick={() => setTheme('system')}
-                    className={`flex-1 py-3.5 px-4 rounded-2xl border text-sm font-bold transition-colors ${theme === 'system' ? 'bg-indigo-50 border-indigo-200 text-indigo-700 dark:bg-indigo-900/40 dark:border-indigo-600 dark:text-indigo-300' : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-400 dark:hover:bg-slate-700'}`}
+                    className={`flex-1 py-3.5 px-4 rounded-2xl border text-sm font-bold transition-colors ${theme === 'system' ? 'bg-blue-50 border-blue-200 text-blue-700 dark:bg-blue-900/40 dark:border-blue-600 dark:text-blue-300' : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-400 dark:hover:bg-slate-700'}`}
                   >
                     {t('system')}
                   </button>
@@ -126,7 +126,7 @@ export default function WorkspacePreferencesSection({ onSave }: { onSave?: (data
             <select
               value={prefs.dateFormat}
               onChange={(e) => setPrefs({ ...prefs, dateFormat: e.target.value })}
-              className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl py-3.5 px-4 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all text-sm font-medium"
+              className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-2xl py-3.5 px-4 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all text-sm font-medium"
             >
               <option value="MMM DD, YYYY">Oct 12, 2026 (MMM DD, YYYY)</option>
               <option value="DD/MM/YYYY">12/10/2026 (DD/MM/YYYY)</option>
@@ -148,7 +148,7 @@ export default function WorkspacePreferencesSection({ onSave }: { onSave?: (data
           <button
             type="submit"
             disabled={saving}
-            className="px-6 py-3.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-bold rounded-2xl text-xs uppercase tracking-widest shadow-lg shadow-indigo-600/20 transition-all active:scale-[0.98] flex items-center gap-2 cursor-pointer"
+            className="px-6 py-3.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-bold rounded-2xl text-xs uppercase tracking-widest shadow-lg shadow-blue-600/20 transition-all active:scale-[0.98] flex items-center gap-2 cursor-pointer"
           >
             {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
             {t('save_settings')}

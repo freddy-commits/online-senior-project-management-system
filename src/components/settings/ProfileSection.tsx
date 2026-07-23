@@ -90,7 +90,7 @@ export default function ProfileSection({ initialProfile, onSave }: { initialProf
   return (
     <div className="bg-white border border-slate-200 rounded-[2.5rem] p-8 md:p-10 shadow-sm">
       <h2 className="text-xl font-bold flex items-center gap-2 mb-6 text-slate-900">
-        <User className="w-5 h-5 text-indigo-600" />
+        <User className="w-5 h-5 text-blue-600" />
         Profile Details
       </h2>
 
@@ -98,10 +98,10 @@ export default function ProfileSection({ initialProfile, onSave }: { initialProf
         <div className="relative group shrink-0">
           <div 
             onClick={() => fileInputRef.current?.click()}
-            className="w-24 h-24 rounded-full bg-slate-100 flex items-center justify-center border-2 border-dashed border-slate-350 overflow-hidden cursor-pointer hover:border-indigo-400 transition-colors"
+            className="w-24 h-24 rounded-full bg-slate-100 flex items-center justify-center border-2 border-dashed border-slate-350 overflow-hidden cursor-pointer hover:border-blue-400 transition-colors"
           >
             {uploading ? (
-              <Loader2 className="w-8 h-8 text-indigo-500 animate-spin" />
+              <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
             ) : profile.avatar_url ? (
               <img src={profile.avatar_url} alt="Profile photo" className="w-full h-full object-cover" />
             ) : (
@@ -111,7 +111,7 @@ export default function ProfileSection({ initialProfile, onSave }: { initialProf
           <button 
             type="button"
             onClick={() => fileInputRef.current?.click()}
-            className="absolute -bottom-1 -right-1 p-2 bg-indigo-600 rounded-full text-white hover:bg-indigo-700 transition-colors shadow-md border-2 border-white flex items-center justify-center cursor-pointer active:scale-95"
+            className="absolute -bottom-1 -right-1 p-2 bg-blue-600 rounded-full text-white hover:bg-blue-700 transition-colors shadow-md border-2 border-white flex items-center justify-center cursor-pointer active:scale-95"
             title="Upload profile photo"
           >
             <Camera className="w-4 h-4" />
@@ -139,7 +139,7 @@ export default function ProfileSection({ initialProfile, onSave }: { initialProf
               type="text"
               value={profile.full_name}
               onChange={(e) => setProfile({ ...profile, full_name: e.target.value })}
-              className={`w-full bg-slate-50 border ${errors.full_name ? 'border-red-500' : 'border-slate-200'} rounded-2xl py-3.5 px-4 text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all text-sm font-medium`}
+              className={`w-full bg-slate-50 border ${errors.full_name ? 'border-red-500' : 'border-slate-200'} rounded-2xl py-3.5 px-4 text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all text-sm font-medium`}
             />
             {errors.full_name && <p className="text-red-500 text-xs mt-1 ml-1">Full name is required.</p>}
           </div>
@@ -163,7 +163,7 @@ export default function ProfileSection({ initialProfile, onSave }: { initialProf
                 type="tel"
                 value={profile.phone}
                 onChange={(e) => setProfile({ ...profile, phone: e.target.value })}
-                className={`w-full bg-slate-50 border ${errors.phone ? 'border-red-500' : 'border-slate-200'} rounded-2xl py-3.5 pl-14 px-4 text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all text-sm font-medium`}
+                className={`w-full bg-slate-50 border ${errors.phone ? 'border-red-500' : 'border-slate-200'} rounded-2xl py-3.5 pl-14 px-4 text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all text-sm font-medium`}
                 placeholder="712345678"
               />
             </div>
@@ -175,7 +175,7 @@ export default function ProfileSection({ initialProfile, onSave }: { initialProf
               type="date"
               value={profile.dob}
               onChange={(e) => setProfile({ ...profile, dob: e.target.value })}
-              className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-3.5 px-4 text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all text-sm font-medium"
+              className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-3.5 px-4 text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all text-sm font-medium"
             />
           </div>
         </div>
@@ -187,7 +187,7 @@ export default function ProfileSection({ initialProfile, onSave }: { initialProf
               maxLength={200}
               value={profile.bio}
               onChange={(e) => setProfile({ ...profile, bio: e.target.value })}
-              className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-3.5 px-4 text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all text-sm font-medium min-h-[100px] resize-none"
+              className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-3.5 px-4 text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all text-sm font-medium min-h-[100px] resize-none"
               placeholder="Tell us about yourself..."
             />
             <div className="flex justify-end mt-1">
@@ -202,7 +202,7 @@ export default function ProfileSection({ initialProfile, onSave }: { initialProf
             <select
               value={profile.gender}
               onChange={(e) => setProfile({ ...profile, gender: e.target.value })}
-              className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-3.5 px-4 text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all text-sm font-medium appearance-none"
+              className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-3.5 px-4 text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all text-sm font-medium appearance-none"
             >
               <option value="not_specified">Prefer not to say</option>
               <option value="male">Male</option>
@@ -216,12 +216,12 @@ export default function ProfileSection({ initialProfile, onSave }: { initialProf
             <div>
               <label className="block text-sm font-semibold text-slate-600 mb-2 ml-1">
                 Department
-                <span className="ml-1 text-xs text-indigo-500 font-bold">(used for project filtering)</span>
+                <span className="ml-1 text-xs text-blue-500 font-bold">(used for project filtering)</span>
               </label>
               <select
                 value={profile.department}
                 onChange={(e) => setProfile({ ...profile, department: e.target.value })}
-                className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-3.5 px-4 text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all text-sm font-medium appearance-none"
+                className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-3.5 px-4 text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all text-sm font-medium appearance-none"
               >
                 <option value="">Select your department</option>
                 <option value="Computer Science">Computer Science</option>
@@ -250,7 +250,7 @@ export default function ProfileSection({ initialProfile, onSave }: { initialProf
           <button
             type="submit"
             disabled={saving}
-            className="px-6 py-3.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-bold rounded-2xl text-xs uppercase tracking-widest shadow-lg shadow-indigo-600/20 transition-all active:scale-[0.98] flex items-center gap-2 cursor-pointer"
+            className="px-6 py-3.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-bold rounded-2xl text-xs uppercase tracking-widest shadow-lg shadow-blue-600/20 transition-all active:scale-[0.98] flex items-center gap-2 cursor-pointer"
           >
             {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
             Save Profile

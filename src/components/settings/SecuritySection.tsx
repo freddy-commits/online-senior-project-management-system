@@ -61,7 +61,7 @@ export default function SecuritySection({ onSave }: { onSave?: (data: any) => Pr
   return (
     <div className="bg-white border border-slate-200 rounded-[2.5rem] p-8 md:p-10 shadow-sm">
       <h2 className="text-xl font-bold flex items-center gap-2 mb-6 text-slate-900">
-        <Key className="w-5 h-5 text-indigo-600" />
+        <Key className="w-5 h-5 text-blue-600" />
         Password & Security
       </h2>
 
@@ -75,12 +75,12 @@ export default function SecuritySection({ onSave }: { onSave?: (data: any) => Pr
                   type={showPassword ? "text" : "password"}
                   value={passwords.current}
                   onChange={(e) => setPasswords({ ...passwords, current: e.target.value })}
-                  className={`w-full bg-slate-50 border ${errors.current ? 'border-red-500' : 'border-slate-200'} rounded-2xl py-3.5 pl-4 pr-12 text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all text-sm font-medium`}
+                  className={`w-full bg-slate-50 border ${errors.current ? 'border-red-500' : 'border-slate-200'} rounded-2xl py-3.5 pl-4 pr-12 text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all text-sm font-medium`}
                 />
                 <button 
                   type="button" 
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-4 top-3.5 text-slate-400 hover:text-indigo-600 transition-colors"
+                  className="absolute right-4 top-3.5 text-slate-400 hover:text-blue-600 transition-colors"
                 >
                   {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>
@@ -102,7 +102,7 @@ export default function SecuritySection({ onSave }: { onSave?: (data: any) => Pr
                 type={showPassword ? "text" : "password"}
                 value={passwords.new}
                 onChange={(e) => setPasswords({ ...passwords, new: e.target.value })}
-                className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-3.5 px-4 text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all text-sm font-medium mb-3"
+                className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-3.5 px-4 text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all text-sm font-medium mb-3"
               />
               
               {/* Password Strength Bar */}
@@ -123,7 +123,7 @@ export default function SecuritySection({ onSave }: { onSave?: (data: any) => Pr
                 type={showPassword ? "text" : "password"}
                 value={passwords.confirm}
                 onChange={(e) => setPasswords({ ...passwords, confirm: e.target.value })}
-                className={`w-full bg-slate-50 border ${errors.confirm ? 'border-red-500' : 'border-slate-200'} rounded-2xl py-3.5 px-4 text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all text-sm font-medium`}
+                className={`w-full bg-slate-50 border ${errors.confirm ? 'border-red-500' : 'border-slate-200'} rounded-2xl py-3.5 px-4 text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all text-sm font-medium`}
               />
               {errors.confirm && <p className="text-red-500 text-xs mt-1 ml-1">Passwords do not match.</p>}
             </div>
@@ -140,7 +140,7 @@ export default function SecuritySection({ onSave }: { onSave?: (data: any) => Pr
           <button
             type="button"
             onClick={() => setTwoFactor(!twoFactor)}
-            className={`w-12 h-6 rounded-full p-1 transition-colors ${twoFactor ? 'bg-indigo-600' : 'bg-slate-200'}`}
+            className={`w-12 h-6 rounded-full p-1 transition-colors ${twoFactor ? 'bg-blue-600' : 'bg-slate-200'}`}
           >
             <div className={`w-4 h-4 bg-white rounded-full shadow-sm transition-transform ${twoFactor ? 'translate-x-6' : 'translate-x-0'}`} />
           </button>
@@ -158,7 +158,7 @@ export default function SecuritySection({ onSave }: { onSave?: (data: any) => Pr
           <button
             type="submit"
             disabled={saving}
-            className="px-6 py-3.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-bold rounded-2xl text-xs uppercase tracking-widest shadow-lg shadow-indigo-600/20 transition-all active:scale-[0.98] flex items-center gap-2 cursor-pointer"
+            className="px-6 py-3.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-bold rounded-2xl text-xs uppercase tracking-widest shadow-lg shadow-blue-600/20 transition-all active:scale-[0.98] flex items-center gap-2 cursor-pointer"
           >
             {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
             Save Security
