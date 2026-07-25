@@ -39,7 +39,8 @@ export async function updateSession(request: NextRequest) {
     path.startsWith('/debug') ||
     path.startsWith('/sandbox') ||
     path.startsWith('/api') ||
-    path.startsWith('/preview')
+    path.startsWith('/preview') ||
+    path.startsWith('/hub')
 
 
 

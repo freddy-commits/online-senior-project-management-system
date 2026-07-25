@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
+import { createServerClient } from '@supabase/ssr'
 import { NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 
@@ -36,18 +36,37 @@ export async function GET(request: Request) {
   const next = searchParams.get('next')
 
   if (!code) {
-    // No code present — something went wrong before we even got here
     return NextResponse.redirect(
       `${origin}/login?error=Google+sign-in+failed.+Please+try+again.`
     )
   }
 
   try {
-    const supabase = await createClient()
+    let targetPath = '/student/dashboard'
+    const cookiesToSetStore: Array<{ name: string; value: string; options: any }> = []
+
+    // Create Supabase SSR client for code exchange
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          getAll() {
+            return cookieStore.getAll()
+          },
+          setAll(cookiesToSet) {
+            cookiesToSet.forEach(({ name, value, options }) => {
+              try {
+                cookieStore.set(name, value, options)
+              } catch {}
+              cookiesToSetStore.push({ name, value, options })
+            })
+          },
+        },
+      }
+    )
 
     // Exchange the OAuth code for a session
-    // NOTE: Do NOT call supabase.auth.signOut() here, because it deletes
-    // the PKCE code_verifier cookie needed by exchangeCodeForSession!
     const { data: sessionData, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code)
 
     if (exchangeError || !sessionData?.user) {
@@ -76,7 +95,7 @@ export async function GET(request: Request) {
 
     const isElevatedRole = ELEVATED_ROLES.includes(role)
 
-    // 1. Check if the user has ANY pending role approval request
+    // 1. Check if user has ANY pending role approval request
     const { data: pendingRequest } = await adminSupabase
       .from('role_requests')
       .select('id')
@@ -84,16 +103,11 @@ export async function GET(request: Request) {
       .eq('status', 'pending')
       .maybeSingle()
 
-    // If user is waiting for admin approval on any pending request → redirect to /hub
     if (pendingRequest) {
-      return NextResponse.redirect(`${origin}/hub`)
-    }
-
-    // 2. If user already exists in profiles table:
-    if (existingProfile) {
-      // If they selected an ELEVATED role on the register page, but their profile role is still 'student':
+      targetPath = '/hub'
+    } else if (existingProfile) {
+      // 2. Existing profile logic
       if (isElevatedRole && existingProfile.role === 'student') {
-        // Check if this specific request already exists
         const { data: reqExists } = await adminSupabase
           .from('role_requests')
           .select('id')
@@ -102,7 +116,6 @@ export async function GET(request: Request) {
           .maybeSingle()
 
         if (!reqExists) {
-          // Use insert (NOT upsert with onConflict, because role_requests table lacks a unique constraint on user_id,requested_role)
           const { error: insErr } = await adminSupabase
             .from('role_requests')
             .insert({
@@ -117,63 +130,65 @@ export async function GET(request: Request) {
           }
         }
 
-        // Redirect to /hub (waiting room for admin approval)
-        return NextResponse.redirect(`${origin}/hub`)
+        targetPath = '/hub'
+      } else {
+        targetPath = next || DASHBOARD_MAP[existingProfile.role] || '/student/dashboard'
+      }
+    } else {
+      // 3. Brand new user logic
+      const fullName =
+        user.user_metadata?.full_name ||
+        user.user_metadata?.name ||
+        user.email?.split('@')[0] ||
+        'New User'
+
+      const profilePayload: Record<string, any> = {
+        id:         user.id,
+        email:      user.email,
+        full_name:  fullName,
+        avatar_url: user.user_metadata?.avatar_url || null,
+        role:       'student',
       }
 
-      // Otherwise, redirect according to their actual stored/approved role in profiles
-      const redirectPath = next || DASHBOARD_MAP[existingProfile.role] || '/student/dashboard'
-      return NextResponse.redirect(`${origin}${redirectPath}`)
-    }
-
-    // 3. BRAND NEW USER (no profile yet):
-    const fullName =
-      user.user_metadata?.full_name ||
-      user.user_metadata?.name ||
-      user.email?.split('@')[0] ||
-      'New User'
-
-    // Create profile with role = 'student' (security default)
-    const profilePayload: Record<string, any> = {
-      id:         user.id,
-      email:      user.email,
-      full_name:  fullName,
-      avatar_url: user.user_metadata?.avatar_url || null,
-      role:       'student', // default
-    }
-
-    if (department && (role === 'instructor' || role === 'student' || role === 'supervisor')) {
-      profilePayload.department = department
-    }
-
-    const { error: profileError } = await adminSupabase
-      .from('profiles')
-      .upsert(profilePayload, { onConflict: 'id' })
-
-    if (profileError) {
-      console.error('[OAuth Callback] Profile upsert failed:', profileError.message)
-    }
-
-    // If elevated role requested, create a role_request and redirect to /hub
-    if (isElevatedRole) {
-      const { error: roleRequestError } = await adminSupabase
-        .from('role_requests')
-        .insert({
-          user_id:        user.id,
-          requested_role: role,
-          department:     department || null,
-          status:         'pending',
-        })
-
-      if (roleRequestError) {
-        console.error('[OAuth Callback] role_request insert failed:', roleRequestError.message)
+      if (department && (role === 'instructor' || role === 'student' || role === 'supervisor')) {
+        profilePayload.department = department
       }
 
-      return NextResponse.redirect(`${origin}/hub`)
+      const { error: profileError } = await adminSupabase
+        .from('profiles')
+        .upsert(profilePayload, { onConflict: 'id' })
+
+      if (profileError) {
+        console.error('[OAuth Callback] Profile upsert failed:', profileError.message)
+      }
+
+      if (isElevatedRole) {
+        const { error: roleRequestError } = await adminSupabase
+          .from('role_requests')
+          .insert({
+            user_id:        user.id,
+            requested_role: role,
+            department:     department || null,
+            status:         'pending',
+          })
+
+        if (roleRequestError) {
+          console.error('[OAuth Callback] role_request insert failed:', roleRequestError.message)
+        }
+
+        targetPath = '/hub'
+      } else {
+        targetPath = '/student/dashboard'
+      }
     }
 
-    // New student: redirect to /student/dashboard
-    return NextResponse.redirect(`${origin}/student/dashboard`)
+    // Construct response redirect AND explicitly attach all session Set-Cookie headers!
+    const response = NextResponse.redirect(`${origin}${targetPath}`)
+    cookiesToSetStore.forEach(({ name, value, options }) => {
+      response.cookies.set(name, value, options)
+    })
+
+    return response
 
   } catch (err: any) {
     console.error('[OAuth Callback] Unexpected error:', err?.message || err)
