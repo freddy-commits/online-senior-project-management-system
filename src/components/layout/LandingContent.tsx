@@ -1,6 +1,8 @@
 'use client'
 
+import { useState } from 'react'
 import Link from 'next/link'
+import DemoModal from './DemoModal'
 import {
   GraduationCap,
   Users,
@@ -54,6 +56,7 @@ const STAGES = [
 const NAVY = '#111827'
 
 export default function LandingContent() {
+  const [isDemoOpen, setIsDemoOpen] = useState(false)
   return (
     <div className="min-h-screen font-sans" style={{ background: '#F9FAFB' }}>
 
@@ -86,7 +89,7 @@ export default function LandingContent() {
             >
               Roles
             </button>
-            <button
+          <button
               onClick={() => document.getElementById('workflow')?.scrollIntoView({ behavior: 'smooth' })}
               className="hover:text-white transition-colors"
             >
@@ -131,7 +134,7 @@ export default function LandingContent() {
               Get Started Free
             </Link>
             <button
-              onClick={() => document.getElementById('workflow')?.scrollIntoView({ behavior: 'smooth' })}
+              onClick={() => setIsDemoOpen(true)}
               className="px-7 py-3 rounded-lg text-sm font-bold border border-white/20 text-white hover:bg-white/5 transition-all"
             >
               Watch Demo
@@ -241,6 +244,9 @@ export default function LandingContent() {
           </div>
         </div>
       </footer>
+
+      {/* ===== DEMO MODAL ===== */}
+      <DemoModal open={isDemoOpen} onClose={() => setIsDemoOpen(false)} />
 
     </div>
   )

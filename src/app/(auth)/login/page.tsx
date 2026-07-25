@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { resetUserPasswordByEmail, checkEmailExists } from '../actions'
+import { getFriendlyAuthError } from '@/lib/error-messages'
 import { 
   Loader2, 
   Check, 
@@ -139,8 +140,10 @@ export default function LoginPage() {
       router.push(roleRouteMap[role] ?? '/student/dashboard')
 
     } catch (err: any) {
-      console.error("Auth signin failed:", err.message || err)
-      setError(err.message || 'Authentication failed. Please check your credentials.')
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Auth signin failed:', err.message || err)
+      }
+      setError(getFriendlyAuthError(err.message || ''))
     } finally {
       setLoading(false)
     }
@@ -154,16 +157,25 @@ export default function LoginPage() {
         sessionStorage.setItem('dashboard_session_active', 'true')
       }
       const supabase = createClient()
+
+      // Sign out any active session first so the browser gets a clean slate
+      await supabase.auth.signOut()
+
       const { error: oauthError } = await supabase.auth.signInWithOAuth({
         provider,
         options: {
-          redirectTo: `${window.location.origin}/api/auth/callback`
-        }
+          redirectTo: `${window.location.origin}/api/auth/callback`,
+          queryParams: {
+            prompt: 'select_account',
+          },
+        },
       })
       if (oauthError) throw oauthError
     } catch (err: any) {
-      console.error(`${provider} oauth failed:`, err.message || err)
-      setError(err.message || 'OAuth authentication failed.')
+      if (process.env.NODE_ENV === 'development') {
+        console.error(`${provider} oauth failed:`, err.message || err)
+      }
+      setError(getFriendlyAuthError(err.message || ''))
       setLoading(false)
     }
   }

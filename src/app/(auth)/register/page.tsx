@@ -14,6 +14,7 @@ import {
   EyeOff
 } from 'lucide-react'
 import { SCHOOL_EMAIL_DOMAIN } from '@/lib/email-validation'
+import { getFriendlyAuthError } from '@/lib/error-messages'
 
 export default function RegisterPage() {
   const router = useRouter()
@@ -131,8 +132,10 @@ export default function RegisterPage() {
       }
 
     } catch (err: any) {
-      console.error('Registration attempt failed:', err.message || err)
-      setError(err.message || 'Registration failed. Please try again.')
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Registration attempt failed:', err.message || err)
+      }
+      setError(getFriendlyAuthError(err.message || ''))
     } finally {
       setLoading(false)
     }
@@ -140,49 +143,46 @@ export default function RegisterPage() {
 
   async function handleOAuthLogin(provider: 'google' | 'github') {
     // Require department for roles that need it
-    if ((selectedRole === 'student' || selectedRole === 'instructor' || selectedRole === 'supervisor') && !selectedDepartment) {
+    const rolesRequiringDept = ['student', 'instructor', 'supervisor', 'examiner']
+    if (rolesRequiringDept.includes(selectedRole) && !selectedDepartment) {
       setError(`Please select your department before continuing with ${provider.charAt(0).toUpperCase() + provider.slice(1)}.`)
       return
-    }
-
-    // SECURITY: Warn about UEAB email requirement for OAuth
-    if (selectedRole === 'student') {
-      // Note: server-side validation in callback/route.ts will enforce @ueab.ac.ke
-      // This is just a helpful client-side reminder
     }
 
     setLoading(true)
     setError('')
     try {
-      if (typeof window !== 'undefined') {
-        sessionStorage.setItem('dashboard_session_active', 'true')
-      }
       const supabase = createClient()
-      
-      // Store selected department in a cookie (expires in 10 minutes)
-      if (selectedDepartment) {
-        document.cookie = `oauth_dept=${encodeURIComponent(selectedDepartment)}; path=/; max-age=600`
-      } else {
-        document.cookie = `oauth_dept=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT`
-      }
 
-      // Store selected role in a cookie (expires in 10 minutes)
-      if (selectedRole) {
-        document.cookie = `oauth_role=${encodeURIComponent(selectedRole)}; path=/; max-age=600`
-      } else {
-        document.cookie = `oauth_role=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT`
-      }
+      // Sign out any active session first so the browser gets a clean slate
+      await supabase.auth.signOut()
+
+      // Store selected department in a cookie (expires in 5 minutes)
+      const cookieOpts = 'path=/; max-age=300; SameSite=Lax'
+      document.cookie = selectedDepartment
+        ? `oauth_dept=${encodeURIComponent(selectedDepartment)}; ${cookieOpts}`
+        : `oauth_dept=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT`
+
+      // Store selected role in a cookie — covers ALL five roles
+      document.cookie = `oauth_role=${encodeURIComponent(selectedRole)}; ${cookieOpts}`
+
+      const redirectTo = `${window.location.origin}/api/auth/callback?role=${encodeURIComponent(selectedRole)}${selectedDepartment ? `&department=${encodeURIComponent(selectedDepartment)}` : ''}`
 
       const { error: oauthError } = await supabase.auth.signInWithOAuth({
         provider,
         options: {
-          redirectTo: `${window.location.origin}/api/auth/callback?role=${selectedRole}`
-        }
+          redirectTo,
+          queryParams: {
+            prompt: 'select_account',
+          },
+        },
       })
       if (oauthError) throw oauthError
     } catch (err: any) {
-      console.error(`${provider} oauth failed:`, err.message || err)
-      setError(err.message || 'OAuth authentication failed.')
+      if (process.env.NODE_ENV === 'development') {
+        console.error(`${provider} oauth failed:`, err.message || err)
+      }
+      setError(getFriendlyAuthError(err.message || ''))
       setLoading(false)
     }
   }
