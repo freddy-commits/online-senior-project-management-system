@@ -153,9 +153,8 @@ export default function RegisterPage() {
     setError('')
     try {
       const supabase = createClient()
-
-      // Sign out any active session first so the browser gets a clean slate
-      await supabase.auth.signOut()
+      // Note: Do NOT call signOut() here — it destroys the PKCE verifier cookie
+      // Session isolation is handled in the callback route
 
       // Store selected department in a cookie (expires in 5 minutes)
       const cookieOpts = 'path=/; max-age=300; SameSite=Lax'

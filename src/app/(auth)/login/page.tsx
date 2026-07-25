@@ -126,10 +126,7 @@ export default function LoginPage() {
           .maybeSingle()
 
         if (roleReq) {
-          if (typeof window !== 'undefined') {
-            sessionStorage.setItem('dashboard_session_active', 'true')
-          }
-          router.push('/hub')
+      router.replace('/hub')
           return
         }
       }
@@ -137,7 +134,7 @@ export default function LoginPage() {
       if (typeof window !== 'undefined') {
         sessionStorage.setItem('dashboard_session_active', 'true')
       }
-      router.push(roleRouteMap[role] ?? '/student/dashboard')
+      router.replace(roleRouteMap[role] ?? '/student/dashboard')
 
     } catch (err: any) {
       if (process.env.NODE_ENV === 'development') {
@@ -153,14 +150,9 @@ export default function LoginPage() {
     setLoading(true)
     setError('')
     try {
-      if (typeof window !== 'undefined') {
-        sessionStorage.setItem('dashboard_session_active', 'true')
-      }
       const supabase = createClient()
-
-      // Sign out any active session first so the browser gets a clean slate
-      await supabase.auth.signOut()
-
+      // Note: Do NOT call signOut() here — it's slow and destroys the PKCE verifier
+      // The callback route handles session isolation properly
       const { error: oauthError } = await supabase.auth.signInWithOAuth({
         provider,
         options: {
