@@ -37,12 +37,14 @@ export default async function AdminDashboardPage() {
     { count: pendingCount }, 
     { count: totalUsers }, 
     { count: totalProjects },
-    { data: pendingRequests }
+    { data: pendingRequests },
+    { data: projectsData }
   ] = await Promise.all([
     supabase.from('role_requests').select('*', { count: 'exact', head: true }).eq('status', 'pending'),
     supabase.from('profiles').select('*', { count: 'exact', head: true }),
     supabase.from('projects').select('*', { count: 'exact', head: true }),
-    supabase.from('role_requests').select('*').eq('status', 'pending').limit(3)
+    supabase.from('role_requests').select('*').eq('status', 'pending').limit(3),
+    supabase.from('projects').select('status, industry_partner_id')
   ])
 
   // Get profile details for pending requests to avoid join issues
@@ -59,6 +61,46 @@ export default async function AdminDashboardPage() {
       profile: userProfiles?.find(p => p.id === r.user_id) || null
     }))
   }
+
+  // Calculate project stage counts for Academic vs Industry
+  const academicCounts = { pending: 0, approved: 0, build: 0, review: 0, defend: 0 }
+  const industryCounts = { pending: 0, approved: 0, build: 0, review: 0, defend: 0 }
+
+  projectsData?.forEach(proj => {
+    const isIndustry = !!proj.industry_partner_id
+    const target = isIndustry ? industryCounts : academicCounts
+    if (proj.status === 'pending') {
+      target.pending++
+    } else if (proj.status === 'approved') {
+      target.approved++
+    } else if (proj.status === 'in_progress' || proj.status === 'build') {
+      target.build++
+    } else if (proj.status === 'review') {
+      target.review++
+    } else if (proj.status === 'completed' || proj.status === 'defend') {
+      target.defend++
+    } else {
+      target.pending++
+    }
+  })
+
+  // Find max value to scale heights dynamically
+  const maxVal = Math.max(
+    ...Object.values(academicCounts),
+    ...Object.values(industryCounts),
+    1
+  )
+  const heightScale = 140 / maxVal
+
+  const stages = [
+    { label: 'Propose', academic: academicCounts.pending, industry: industryCounts.pending },
+    { label: 'Approve', academic: academicCounts.approved, industry: industryCounts.approved },
+    { label: 'Build', academic: academicCounts.build, industry: industryCounts.build },
+    { label: 'Review', academic: academicCounts.review, industry: industryCounts.review },
+    { label: 'Defend', academic: academicCounts.defend, industry: industryCounts.defend },
+  ]
+
+  const activeCount = projectsData?.filter(p => p.status !== 'pending' && p.status !== 'rejected').length ?? 0
 
   const stats = [
     {
@@ -79,6 +121,14 @@ export default async function AdminDashboardPage() {
       href: '/admin/users',
     },
     {
+      label: 'Active Projects',
+      value: activeCount,
+      icon: <CheckCircle2 className="w-5 h-5" />,
+      color: 'bg-white border-slate-200',
+      textVal: 'text-indigo-650',
+      href: '/admin/projects',
+    },
+    {
       label: 'Total Projects',
       value: totalProjects ?? 0,
       icon: <FolderOpen className="w-5 h-5" />,
@@ -88,8 +138,13 @@ export default async function AdminDashboardPage() {
     },
   ]
 
-  const daysInMonth = Array.from({ length: 30 }, (_, i) => i + 1)
-  const currentDay = 23
+  // Calculate real Calendar Month & Current Day values
+  const today = new Date()
+  const monthName = today.toLocaleString('default', { month: 'long' })
+  const yearName = today.getFullYear()
+  const currentDay = today.getDate()
+  const daysCount = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate()
+  const daysInMonth = Array.from({ length: daysCount }, (_, i) => i + 1)
 
   return (
     <div className="p-6 lg:p-10 space-y-6 max-w-6xl mx-auto font-sans">
@@ -121,7 +176,7 @@ export default async function AdminDashboardPage() {
         <div className="lg:col-span-8 space-y-6">
           
           {/* Stats cards row */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
             {stats.map((stat) => (
               <div
                 key={stat.label}
@@ -166,31 +221,60 @@ export default async function AdminDashboardPage() {
                 <line x1="20" y1="120" x2="380" y2="120" stroke="#f8fafc" strokeWidth="1" />
                 <line x1="20" y1="170" x2="380" y2="170" stroke="#e2e8f0" strokeWidth="1.5" />
                 
-                {/* Propose */}
-                <rect x="50" y="60" width="20" height="110" rx="3" fill="#2563eb" opacity="0.85" />
-                <rect x="50" y="100" width="20" height="70" rx="3" fill="#F59E0B" />
-                
-                {/* Approve */}
-                <rect x="120" y="40" width="20" height="130" rx="3" fill="#2563eb" opacity="0.85" />
-                <rect x="120" y="80" width="20" height="90" rx="3" fill="#F59E0B" />
-                
-                {/* Build */}
-                <rect x="190" y="80" width="20" height="90" rx="3" fill="#2563eb" opacity="0.85" />
-                <rect x="190" y="120" width="20" height="50" rx="3" fill="#F59E0B" />
-                
-                {/* Review */}
-                <rect x="260" y="90" width="20" height="80" rx="3" fill="#2563eb" opacity="0.85" />
-                <rect x="260" y="130" width="20" height="40" rx="3" fill="#F59E0B" />
-                
-                {/* Defend */}
-                <rect x="330" y="110" width="20" height="60" rx="3" fill="#2563eb" opacity="0.85" />
-                <rect x="330" y="140" width="20" height="30" rx="3" fill="#F59E0B" />
+                {stages.map((s, idx) => {
+                  const xBase = 50 + idx * 70
+                  const acadHeight = s.academic * heightScale
+                  const indHeight = s.industry * heightScale
+                  const acadY = 170 - acadHeight
+                  const indY = 170 - indHeight
 
-                <text x="60" y="190" fontSize="9" fontWeight="bold" fill="#94a3b8" textAnchor="middle">Propose</text>
-                <text x="130" y="190" fontSize="9" fontWeight="bold" fill="#94a3b8" textAnchor="middle">Approve</text>
-                <text x="200" y="190" fontSize="9" fontWeight="bold" fill="#94a3b8" textAnchor="middle">Build</text>
-                <text x="270" y="190" fontSize="9" fontWeight="bold" fill="#94a3b8" textAnchor="middle">Review</text>
-                <text x="340" y="190" fontSize="9" fontWeight="bold" fill="#94a3b8" textAnchor="middle">Defend</text>
+                  return (
+                    <g key={s.label}>
+                      {/* Academic Bar (Blue) */}
+                      <rect
+                        x={xBase}
+                        y={acadY}
+                        width="14"
+                        height={acadHeight}
+                        rx="3"
+                        fill="#2563eb"
+                        opacity="0.85"
+                      />
+                      {/* Industry Bar (Amber) */}
+                      <rect
+                        x={xBase + 18}
+                        y={indY}
+                        width="14"
+                        height={indHeight}
+                        rx="3"
+                        fill="#F59E0B"
+                      />
+                      <text
+                        x={xBase + 16}
+                        y="190"
+                        fontSize="9"
+                        fontWeight="bold"
+                        fill="#94a3b8"
+                        textAnchor="middle"
+                      >
+                        {s.label}
+                      </text>
+                      {/* Show value indicator above bars if any projects exist */}
+                      {(s.academic > 0 || s.industry > 0) && (
+                        <text
+                          x={xBase + 16}
+                          y={Math.min(acadY, indY) - 6}
+                          fontSize="8"
+                          fontWeight="extrabold"
+                          fill="#475569"
+                          textAnchor="middle"
+                        >
+                          {s.academic + s.industry}
+                        </text>
+                      )}
+                    </g>
+                  )
+                })}
               </svg>
             </div>
           </div>
@@ -268,7 +352,7 @@ export default async function AdminDashboardPage() {
           {/* CALENDAR CARD */}
           <div className="bg-white border border-slate-200 rounded-[2rem] p-5 shadow-sm space-y-4">
             <div className="flex items-center justify-between border-b border-slate-100 pb-2">
-              <span className="text-[10px] font-black text-slate-400 tracking-wider uppercase">July 2026</span>
+              <span className="text-[10px] font-black text-slate-400 tracking-wider uppercase">{monthName} {yearName}</span>
               <Calendar className="w-4 h-4 text-blue-600" />
             </div>
             <div className="grid grid-cols-7 gap-1 text-center text-[10px] font-extrabold text-slate-400 uppercase">

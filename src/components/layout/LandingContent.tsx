@@ -230,20 +230,69 @@ export default function LandingContent() {
       </section>
 
       {/* ===== FOOTER ===== */}
-      <footer style={{ background: NAVY }} className="border-t border-white/5">
-        <div className="max-w-5xl mx-auto px-6 py-6 flex flex-col sm:flex-row items-center justify-between gap-3">
-          <p className="text-xs text-slate-400 font-semibold">
-            © {new Date().getFullYear()} Project Station · Senior Capstone Platform
+      <footer style={{ background: NAVY }} className="border-t border-white/5 pt-16 pb-8 text-slate-400">
+        <div className="max-w-5xl mx-auto px-6 grid grid-cols-1 md:grid-cols-4 gap-8 pb-12 border-b border-white/5">
+          {/* Col 1 */}
+          <div className="space-y-4">
+            <div className="flex items-center gap-2.5">
+              <div
+                className="w-8 h-8 rounded-lg flex items-center justify-center font-black text-sm"
+                style={{ background: '#F59E0B', color: '#111827' }}
+              >
+                P
+              </div>
+              <span className="font-extrabold text-white text-base tracking-tight">Project Station</span>
+            </div>
+            <p className="text-xs font-semibold leading-relaxed text-slate-400">
+              The premier online platform for senior project management, connecting student research with academic advisors and industry sponsors.
+            </p>
+          </div>
+
+          {/* Col 2 */}
+          <div className="space-y-3">
+            <h4 className="text-xs font-black uppercase tracking-wider text-white">Platform</h4>
+            <ul className="space-y-2 text-xs font-semibold">
+              <li><button onClick={() => setIsDemoOpen(true)} className="hover:text-white transition-colors text-left">Watch Live Demo</button></li>
+              <li><Link href="/register" className="hover:text-white transition-colors">Request Account</Link></li>
+              <li><Link href="/login" className="hover:text-white transition-colors">Sign In Portal</Link></li>
+            </ul>
+          </div>
+
+          {/* Col 3 */}
+          <div className="space-y-3">
+            <h4 className="text-xs font-black uppercase tracking-wider text-white">Role Workspaces</h4>
+            <ul className="space-y-2 text-xs font-semibold">
+              <li><Link href="/register?role=student" className="hover:text-white transition-colors">Student Workspaces</Link></li>
+              <li><Link href="/register?role=instructor" className="hover:text-white transition-colors">Instructor Panel</Link></li>
+              <li><Link href="/register?role=supervisor" className="hover:text-white transition-colors">Supervisor Dashboard</Link></li>
+              <li><Link href="/register?role=industry_partner" className="hover:text-white transition-colors">Industry Partners</Link></li>
+            </ul>
+          </div>
+
+          {/* Col 4 */}
+          <div className="space-y-3">
+            <h4 className="text-xs font-black uppercase tracking-wider text-white">Institutional</h4>
+            <ul className="space-y-2 text-xs font-semibold">
+              <li><a href="https://www.ueab.ac.ke" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">UEAB University Website</a></li>
+              <li><a href="mailto:admin@ueab.ac.ke" className="hover:text-white transition-colors">Contact Administration</a></li>
+            </ul>
+          </div>
+        </div>
+
+        <div className="max-w-5xl mx-auto px-6 pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-[11px] font-bold">
+          <p className="text-slate-500">
+            © {new Date().getFullYear()} Project Station. All rights reserved. University of Eastern Africa, Baraton.
           </p>
-          <div className="flex items-center gap-4 text-xs text-slate-400 font-semibold">
+          <div className="flex items-center gap-4 text-slate-500">
+            <span className="cursor-pointer hover:text-white transition-colors">Privacy Policy</span>
+            <span>·</span>
+            <span className="cursor-pointer hover:text-white transition-colors">Terms of Service</span>
+            <span>·</span>
             <span className="cursor-pointer hover:text-white transition-colors">English</span>
-            <span className="text-slate-600">·</span>
-            <span className="cursor-pointer hover:text-white transition-colors">Français</span>
-            <span className="text-slate-600">·</span>
-            <span className="cursor-pointer hover:text-white transition-colors">Kiswahili</span>
           </div>
         </div>
       </footer>
+
 
       {/* ===== DEMO MODAL ===== */}
       <DemoModal open={isDemoOpen} onClose={() => setIsDemoOpen(false)} />

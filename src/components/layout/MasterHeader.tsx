@@ -2,10 +2,10 @@
 
 import { useState, useEffect } from 'react'
 import TrackSwitcher from '@/components/navigation/TrackSwitcher'
-import { Bell, Menu } from 'lucide-react'
+import { Bell, Menu, LogOut } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 
 export default function MasterHeader({ role = 'student' }: { role?: string }) {
   const [fullName, setFullName] = useState('User')
@@ -82,7 +82,25 @@ export default function MasterHeader({ role = 'student' }: { role?: string }) {
             {fullName}
           </span>
         </Link>
+
+        {/* Divider */}
+        <div className="w-px h-8 bg-slate-200 dark:bg-slate-800 hidden sm:block" />
+
+        {/* Log Out Button */}
+        <button
+          onClick={async () => {
+            const { createClient } = await import('@/lib/supabase/client')
+            const supabase = createClient()
+            await supabase.auth.signOut()
+            window.location.href = '/'
+          }}
+          className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl text-slate-400 hover:text-red-500 transition-colors"
+          title="Log Out"
+        >
+          <LogOut className="w-5 h-5" />
+        </button>
       </div>
     </header>
   )
 }
+
