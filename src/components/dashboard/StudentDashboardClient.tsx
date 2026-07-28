@@ -340,30 +340,43 @@ export default function StudentDashboardClient({
                         <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-slate-100 rounded text-[9.5px] font-black text-slate-500 uppercase">Monthly</span>
                       </div>
                       <div className="pt-2">
-                        {/* Custom SVG Performance Area Chart */}
-                        <svg className="w-full h-48" viewBox="0 0 400 200" preserveAspectRatio="none">
-                          <path d="M 20 170 Q 100 130, 200 90 T 380 40" fill="none" stroke="#2563eb" strokeWidth="3" />
-                          <path d="M 20 170 Q 100 130, 200 90 T 380 40 L 380 170 L 20 170 Z" fill="url(#grad)" opacity="0.1" />
-                          
-                          <circle cx="20" cy="170" r="5" fill="#F59E0B" stroke="#white" strokeWidth="2" />
-                          <circle cx="110" cy="125" r="5" fill="#F59E0B" stroke="#white" strokeWidth="2" />
-                          <circle cx="200" cy="90" r="5" fill="#F59E0B" stroke="#white" strokeWidth="2" />
-                          <circle cx="290" cy="65" r="5" fill="#F59E0B" stroke="#white" strokeWidth="2" />
-                          <circle cx="380" cy="40" r="5" fill="#F59E0B" stroke="#white" strokeWidth="2" />
+                        {/* Dynamic SVG curve — X-axis starts from the proposal submission month */}
+                        {(() => {
+                          // Derive 5 month labels starting from the month the project was submitted
+                          const startDate = activeProject.created_at ? new Date(activeProject.created_at) : new Date()
+                          const monthShort = (d: Date) => d.toLocaleString('default', { month: 'short' })
+                          const addMonths = (d: Date, n: number) => {
+                            const r = new Date(d)
+                            r.setMonth(r.getMonth() + n)
+                            return r
+                          }
+                          const labels = [0, 2, 4, 6, 8].map(n => monthShort(addMonths(startDate, n)))
+                          return (
+                            <svg className="w-full h-48" viewBox="0 0 400 200" preserveAspectRatio="none">
+                              <path d="M 20 170 Q 100 130, 200 90 T 380 40" fill="none" stroke="#2563eb" strokeWidth="3" />
+                              <path d="M 20 170 Q 100 130, 200 90 T 380 40 L 380 170 L 20 170 Z" fill="url(#grad-thesis)" opacity="0.1" />
 
-                          <defs>
-                            <linearGradient id="grad" x1="0%" y1="0%" x2="0%" y2="100%">
-                              <stop offset="0%" stopColor="#2563eb" />
-                              <stop offset="100%" stopColor="#ffffff" />
-                            </linearGradient>
-                          </defs>
+                              <circle cx="20" cy="170" r="5" fill="#F59E0B" />
+                              <circle cx="110" cy="125" r="5" fill="#F59E0B" />
+                              <circle cx="200" cy="90" r="5" fill="#F59E0B" />
+                              <circle cx="290" cy="65" r="5" fill="#F59E0B" />
+                              <circle cx="380" cy="40" r="5" fill="#F59E0B" />
 
-                          <text x="20" y="190" fontSize="9" fontWeight="bold" fill="#94a3b8" textAnchor="middle">Oct</text>
-                          <text x="110" y="190" fontSize="9" fontWeight="bold" fill="#94a3b8" textAnchor="middle">Dec</text>
-                          <text x="200" y="190" fontSize="9" fontWeight="bold" fill="#94a3b8" textAnchor="middle">Feb</text>
-                          <text x="290" y="190" fontSize="9" fontWeight="bold" fill="#94a3b8" textAnchor="middle">Apr</text>
-                          <text x="380" y="190" fontSize="9" fontWeight="bold" fill="#94a3b8" textAnchor="middle">Jun</text>
-                        </svg>
+                              <defs>
+                                <linearGradient id="grad-thesis" x1="0%" y1="0%" x2="0%" y2="100%">
+                                  <stop offset="0%" stopColor="#2563eb" />
+                                  <stop offset="100%" stopColor="#ffffff" />
+                                </linearGradient>
+                              </defs>
+
+                              <text x="20" y="190" fontSize="9" fontWeight="bold" fill="#94a3b8" textAnchor="middle">{labels[0]}</text>
+                              <text x="110" y="190" fontSize="9" fontWeight="bold" fill="#94a3b8" textAnchor="middle">{labels[1]}</text>
+                              <text x="200" y="190" fontSize="9" fontWeight="bold" fill="#94a3b8" textAnchor="middle">{labels[2]}</text>
+                              <text x="290" y="190" fontSize="9" fontWeight="bold" fill="#94a3b8" textAnchor="middle">{labels[3]}</text>
+                              <text x="380" y="190" fontSize="9" fontWeight="bold" fill="#94a3b8" textAnchor="middle">{labels[4]}</text>
+                            </svg>
+                          )
+                        })()}
                       </div>
                     </div>
                   </>
@@ -516,15 +529,27 @@ export default function StudentDashboardClient({
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs font-semibold text-slate-650">
                 <div className="p-4 bg-slate-50 border border-slate-100 rounded-2xl space-y-2">
                   <span className="text-[9px] font-black uppercase text-slate-400 tracking-wider block">Supervisor Assignment</span>
-                  <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center text-xs font-black">
-                      {activeProject.supervisor?.full_name?.split(' ').map((n: string) => n[0]).join('') || 'SP'}
+                  {activeProject.supervisor?.full_name ? (
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center text-xs font-black">
+                        {activeProject.supervisor.full_name.split(' ').map((n: string) => n[0]).join('')}
+                      </div>
+                      <div>
+                        <span className="text-slate-900 font-extrabold block leading-tight">{activeProject.supervisor.full_name}</span>
+                        <span className="text-[10px] text-emerald-600 font-bold leading-none">✓ Supervisor assigned</span>
+                      </div>
                     </div>
-                    <div>
-                      <span className="text-slate-900 font-extrabold block leading-tight">{activeProject.supervisor?.full_name || 'Academic supervisor'}</span>
-                      <span className="text-[10px] text-slate-400 leading-none">Supervisor matching confirmed</span>
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-8 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center text-xs font-black">
+                        ⏳
+                      </div>
+                      <div>
+                        <span className="text-slate-700 font-extrabold block leading-tight">Awaiting Assignment</span>
+                        <span className="text-[10px] text-amber-600 font-bold leading-none">Admin is assigning your supervisor</span>
+                      </div>
                     </div>
-                  </div>
+                  )}
                 </div>
 
                 {trackMode === 'industry' ? (
