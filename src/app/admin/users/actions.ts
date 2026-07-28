@@ -112,3 +112,58 @@ export async function deleteUserAccount(userId: string) {
   revalidatePath('/admin/users')
   revalidatePath('/admin/dashboard')
 }
+
+/**
+ * Assign a supervisor to a student.
+ * Updates the instructor_id on ALL approved projects belonging to the student.
+ * Also marks the student's profile with the supervisor reference.
+ */
+export async function assignSupervisorToStudent(studentId: string, supervisorId: string) {
+  const supabase = await createServerClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('Unauthorized')
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', user.id)
+    .single()
+
+  if (!profile || profile.role !== 'admin') {
+    throw new Error('Access denied. Only system administrators can assign supervisors.')
+  }
+
+  const adminSupabase = getAdminClient()
+
+  // Update all projects belonging to this student that are approved or pending
+  const { error: projError } = await adminSupabase
+    .from('projects')
+    .update({ instructor_id: supervisorId })
+    .eq('student_id', studentId)
+    .in('status', ['approved', 'pending'])
+
+  if (projError) throw new Error(projError.message)
+
+  revalidatePath('/admin/users')
+  revalidatePath('/admin/dashboard')
+  revalidatePath('/student/dashboard')
+  revalidatePath('/student/milestones')
+}
+
+/**
+ * Fetch all supervisors (role = 'supervisor') for the assignment dropdown
+ */
+export async function getAllSupervisors() {
+  const adminSupabase = getAdminClient()
+  const { data, error } = await adminSupabase
+    .from('profiles')
+    .select('id, full_name, email, department')
+    .eq('role', 'supervisor')
+    .order('full_name', { ascending: true })
+
+  if (error) {
+    console.error('getAllSupervisors error:', error.message)
+    return []
+  }
+  return data || []
+}

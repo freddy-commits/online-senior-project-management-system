@@ -466,6 +466,30 @@ export default function InstructorVettingPage() {
                   )
                 })()}
 
+                {/* Show student uploaded proposal document if present */}
+                {selectedProposal.proposal_url && (
+                  <div className="bg-emerald-50/60 border border-emerald-200/70 rounded-2xl p-5 flex items-start gap-4">
+                    <div className="w-10 h-10 rounded-xl bg-emerald-100 border border-emerald-200 flex items-center justify-center shrink-0">
+                      <FileText className="w-5 h-5 text-emerald-600" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h4 className="text-xs font-black uppercase tracking-[0.15em] text-emerald-700 mb-1">Uploaded Proposal Document</h4>
+                      <p className="text-xs text-emerald-600 font-semibold mb-3 truncate" title={selectedProposal.proposal_url}>
+                        Full proposal submitted by student
+                      </p>
+                      <a
+                        href={selectedProposal.proposal_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl transition-all shadow-sm shadow-emerald-600/20 cursor-pointer active:scale-[0.98]"
+                      >
+                        <Download className="w-3.5 h-3.5" />
+                        Download / View Proposal
+                      </a>
+                    </div>
+                  </div>
+                )}
+
                 {/* Supervisor Indicator Info */}
                 <div className="flex items-start gap-3 bg-amber-50/50 border border-amber-200/60 rounded-2xl p-4 text-xs text-amber-800 leading-normal">
                   <AlertCircle className="w-4.5 h-4.5 text-amber-600 shrink-0 mt-0.5" />

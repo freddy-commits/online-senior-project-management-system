@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useMemo } from 'react'
-import { getAllUsers, updateUserRole, deleteUserAccount } from './actions'
+import { getAllUsers, updateUserRole, deleteUserAccount, assignSupervisorToStudent, getAllSupervisors } from './actions'
 import { 
   Users, 
   Search, 
@@ -16,7 +16,8 @@ import {
   GraduationCap,
   Briefcase,
   Sliders,
-  Check
+  Check,
+  UserPlus
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 
@@ -31,6 +32,7 @@ const ROLE_CONFIG: Record<string, { label: string; bg: string; text: string; bor
 
 export default function UserManagementPage() {
   const [users, setUsers] = useState<any[]>([])
+  const [supervisors, setSupervisors] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
   const [roleFilter, setRoleFilter] = useState('all')
@@ -39,19 +41,22 @@ export default function UserManagementPage() {
   // Modals state
   const [selectedUserForRole, setSelectedUserForRole] = useState<any | null>(null)
   const [selectedUserForDelete, setSelectedUserForDelete] = useState<any | null>(null)
+  const [selectedStudentForSupervisor, setSelectedStudentForSupervisor] = useState<any | null>(null)
   const [roleInput, setRoleInput] = useState('')
+  const [supervisorInput, setSupervisorInput] = useState('')
   const [actionLoading, setActionLoading] = useState(false)
   const [message, setMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null)
 
   useEffect(() => {
     async function loadData() {
-      const data = await getAllUsers()
-      setUsers(data)
+      const [userData, supervisorData] = await Promise.all([getAllUsers(), getAllSupervisors()])
+      setUsers(userData)
+      setSupervisors(supervisorData)
       
       // Determine the logged-in admin email from localStorage/session if possible
       if (typeof window !== 'undefined') {
         const storedEmail = localStorage.getItem('active_user_email') || 'admin@ueab.ac.ke'
-        const currentAdmin = data.find(u => u.email?.toLowerCase() === storedEmail.toLowerCase())
+        const currentAdmin = userData.find((u: any) => u.email?.toLowerCase() === storedEmail.toLowerCase())
         if (currentAdmin) {
           setCurrentUser(currentAdmin)
         }
@@ -106,6 +111,26 @@ export default function UserManagementPage() {
     }
   }
 
+  const handleAssignSupervisor = async () => {
+    if (!selectedStudentForSupervisor || !supervisorInput) return
+    setActionLoading(true)
+    setMessage(null)
+    try {
+      await assignSupervisorToStudent(selectedStudentForSupervisor.id, supervisorInput)
+      const supervisor = supervisors.find(s => s.id === supervisorInput)
+      setMessage({ 
+        text: `Successfully assigned ${supervisor?.full_name || 'supervisor'} to ${selectedStudentForSupervisor.full_name}.`, 
+        type: 'success' 
+      })
+      setSelectedStudentForSupervisor(null)
+      setSupervisorInput('')
+    } catch (err: any) {
+      setMessage({ text: err.message || 'Failed to assign supervisor.', type: 'error' })
+    } finally {
+      setActionLoading(false)
+    }
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen bg-[#f8fafc] flex items-center justify-center">
@@ -126,10 +151,22 @@ export default function UserManagementPage() {
           <div>
             <h1 className="text-2xl font-black text-slate-900 tracking-tight leading-tight">User Directory</h1>
             <p className="text-xs font-semibold text-slate-400 mt-1">
-              Manage system access, assign roles, and administer all {users.length} registered users.
+              Manage system access, assign roles, assign supervisors, and administer all {users.length} registered users.
             </p>
           </div>
         </div>
+      </div>
+
+      {/* Admin note about supervisor assignment */}
+      <div className="p-4 bg-cyan-50 border border-cyan-200 rounded-2xl flex items-start gap-3">
+        <UserPlus className="w-4 h-4 text-cyan-600 shrink-0 mt-0.5" />
+        <p className="text-xs font-semibold text-cyan-800">
+          <span className="font-black">Admin Action:</span> To assign a student to a supervisor, click the{' '}
+          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-cyan-100 rounded-md font-black text-cyan-700 text-[10px]">
+            <UserPlus className="w-3 h-3" /> Assign Supervisor
+          </span>{' '}
+          button on any student row below. Only approved supervisors will appear in the selection.
+        </p>
       </div>
 
       {/* Alert message notification */}
@@ -208,6 +245,7 @@ export default function UserManagementPage() {
                   }
                   const Icon = roleInfo.icon
                   const isSelf = currentUser?.id === user.id
+                  const isStudent = user.role === 'student'
 
                   return (
                     <tr key={user.id} className="hover:bg-slate-50/50 transition-colors">
@@ -264,6 +302,19 @@ export default function UserManagementPage() {
                       {/* Actions */}
                       <td className="px-6 py-5 text-right">
                         <div className="flex items-center justify-end gap-1.5">
+                          {/* Assign Supervisor — only for students */}
+                          {isStudent && (
+                            <button
+                              onClick={() => {
+                                setSelectedStudentForSupervisor(user)
+                                setSupervisorInput('')
+                              }}
+                              className="p-2 border border-cyan-200 text-cyan-600 hover:text-cyan-800 rounded-xl hover:bg-cyan-50 hover:shadow-sm transition-all"
+                              title="Assign Supervisor"
+                            >
+                              <UserPlus className="w-4 h-4" />
+                            </button>
+                          )}
                           <button
                             onClick={() => {
                               setSelectedUserForRole(user)
@@ -293,6 +344,96 @@ export default function UserManagementPage() {
           </table>
         </div>
       </div>
+
+      {/* ── Assign Supervisor Modal ── */}
+      <AnimatePresence>
+        {selectedStudentForSupervisor && (
+          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-white rounded-[2rem] border border-slate-200 shadow-2xl p-8 max-w-md w-full relative space-y-6"
+            >
+              <button 
+                onClick={() => setSelectedStudentForSupervisor(null)} 
+                className="absolute top-5 right-5 p-1.5 hover:bg-slate-100 rounded-xl text-slate-400 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+
+              <div className="space-y-1">
+                <div className="w-10 h-10 bg-cyan-100 text-cyan-600 rounded-2xl flex items-center justify-center mb-3">
+                  <UserPlus className="w-5 h-5" />
+                </div>
+                <h3 className="text-lg font-black text-slate-950 leading-tight">Assign Supervisor</h3>
+                <p className="text-xs font-semibold text-slate-500">
+                  Assign an academic supervisor to{' '}
+                  <span className="font-black text-slate-800">{selectedStudentForSupervisor.full_name}</span>.
+                  This will update all their active projects.
+                </p>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">
+                    Select Supervisor
+                  </label>
+                  {supervisors.length === 0 ? (
+                    <div className="p-4 bg-amber-50 border border-amber-200 rounded-2xl text-xs text-amber-700 font-semibold">
+                      No approved supervisors are available yet. Ask supervisors to register and then approve their accounts first.
+                    </div>
+                  ) : (
+                    <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
+                      {supervisors.map((sup) => {
+                        const isSelected = supervisorInput === sup.id
+                        return (
+                          <button
+                            key={sup.id}
+                            type="button"
+                            onClick={() => setSupervisorInput(sup.id)}
+                            className={`w-full flex items-center gap-3 p-3 rounded-2xl border text-left transition-all ${
+                              isSelected 
+                                ? 'border-cyan-500 bg-cyan-50/60 ring-2 ring-offset-1 ring-cyan-500/20' 
+                                : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50'
+                            }`}
+                          >
+                            <div className="w-8 h-8 bg-cyan-100 text-cyan-700 rounded-xl flex items-center justify-center font-black text-xs shrink-0">
+                              {sup.full_name?.split(' ').map((n: string) => n[0]).slice(0, 2).join('').toUpperCase() || 'S'}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-xs font-black text-slate-900 truncate">{sup.full_name}</p>
+                              <p className="text-[10px] text-slate-400 font-semibold truncate">{sup.department || sup.email}</p>
+                            </div>
+                            {isSelected && <Check className="w-4 h-4 text-cyan-600 shrink-0" />}
+                          </button>
+                        )
+                      })}
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex gap-2 pt-2">
+                  <button
+                    onClick={() => setSelectedStudentForSupervisor(null)}
+                    className="flex-1 py-3 border border-slate-200 hover:bg-slate-50 text-slate-600 font-bold rounded-2xl text-xs uppercase tracking-wider transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleAssignSupervisor}
+                    disabled={actionLoading || !supervisorInput}
+                    className="flex-1 py-3 bg-cyan-600 hover:bg-cyan-700 disabled:opacity-50 text-white font-black rounded-2xl text-xs uppercase tracking-wider transition-colors shadow-lg shadow-cyan-600/10 flex items-center justify-center gap-1.5"
+                  >
+                    {actionLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+                    Assign
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       {/* Role edit modal */}
       <AnimatePresence>

@@ -37,7 +37,7 @@ export async function GET(request: Request) {
 
   if (!code) {
     return NextResponse.redirect(
-      `${origin}/login?error=Google+sign-in+failed.+Please+try+again.`
+      `${origin}/register?error=Google+sign-in+failed.+Please+try+again.`
     )
   }
 
@@ -72,7 +72,7 @@ export async function GET(request: Request) {
     if (exchangeError || !sessionData?.user) {
       console.error('[OAuth Callback] Code exchange failed:', exchangeError?.message)
       return NextResponse.redirect(
-        `${origin}/login?error=Google+sign-in+failed.+Please+try+again.`
+        `${origin}/register?error=Google+sign-in+failed.+Please+try+again.`
       )
     }
 
@@ -193,7 +193,7 @@ export async function GET(request: Request) {
   } catch (err: any) {
     console.error('[OAuth Callback] Unexpected error:', err?.message || err)
     return NextResponse.redirect(
-      `${origin}/login?error=Google+sign-in+failed.+Please+try+again.`
+      `${origin}/register?error=Google+sign-in+failed.+Please+try+again.`
     )
   }
 }

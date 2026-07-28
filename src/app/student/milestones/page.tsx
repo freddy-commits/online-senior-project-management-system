@@ -102,6 +102,8 @@ export default function StudentMilestonesPage() {
   const [newProjDesc, setNewProjDesc] = useState('')
   const [submittingProposal, setSubmittingProposal] = useState(false)
   const [proposalError, setProposalError] = useState<string | null>(null)
+  const [proposalFile, setProposalFile] = useState<File | null>(null)
+  const [proposalFileName, setProposalFileName] = useState('')
 
   const handleCreateProposal = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -114,11 +116,23 @@ export default function StudentMilestonesPage() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) throw new Error('You must be logged in.')
 
+      // Upload proposal document if provided
+      let proposalUrl: string | null = null
+      if (proposalFile) {
+        const formData = new FormData()
+        formData.append('file', proposalFile)
+        const uploadRes = await fetch('/api/upload', { method: 'POST', body: formData })
+        const uploadData = await uploadRes.json()
+        if (!uploadRes.ok || !uploadData.success) throw new Error(uploadData.error || 'File upload failed.')
+        proposalUrl = uploadData.url
+      }
+
       const { error: insertError } = await supabase.from('projects').insert({
         title: newProjTitle.trim(),
         description: newProjDesc.trim(),
         status: 'pending',
-        student_id: user.id
+        student_id: user.id,
+        ...(proposalUrl ? { proposal_url: proposalUrl } : {}),
       })
 
       if (insertError) throw insertError
@@ -126,6 +140,8 @@ export default function StudentMilestonesPage() {
       showToast('Proposal submitted successfully! Initializing default deliverables...')
       setNewProjTitle('')
       setNewProjDesc('')
+      setProposalFile(null)
+      setProposalFileName('')
       
       // Reload projects & deliverables
       await fetchDeliverables()
@@ -148,18 +164,32 @@ export default function StudentMilestonesPage() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) throw new Error('You must be logged in.')
 
+      // Upload proposal document if provided
+      let proposalUrl: string | null = null
+      if (proposalFile) {
+        const formData = new FormData()
+        formData.append('file', proposalFile)
+        const uploadRes = await fetch('/api/upload', { method: 'POST', body: formData })
+        const uploadData = await uploadRes.json()
+        if (!uploadRes.ok || !uploadData.success) throw new Error(uploadData.error || 'File upload failed.')
+        proposalUrl = uploadData.url
+      }
+
       const { error: updateError } = await supabase
         .from('projects')
         .update({
           title: newProjTitle.trim(),
           description: newProjDesc.trim(),
-          status: 'pending'
+          status: 'pending',
+          ...(proposalUrl ? { proposal_url: proposalUrl } : {}),
         })
         .eq('id', project.id)
 
       if (updateError) throw updateError
 
       showToast('Proposal resubmitted successfully!')
+      setProposalFile(null)
+      setProposalFileName('')
       
       // Reload projects & deliverables
       await fetchDeliverables()
@@ -546,7 +576,24 @@ export default function StudentMilestonesPage() {
                 </div>
 
                 <div>
-                  <label className="block text-[10px] uppercase tracking-[0.2em] font-black text-slate-450 mb-2">Abstract & Description</label>
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="block text-[10px] uppercase tracking-[0.2em] font-black text-slate-450">Abstract & Description</label>
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        try {
+                          const text = await navigator.clipboard.readText()
+                          setNewProjDesc(prev => prev ? prev + '\n' + text : text)
+                          showToast('Pasted from clipboard!')
+                        } catch {
+                          showToast('Clipboard access denied. Please paste manually (Ctrl+V).')
+                        }
+                      }}
+                      className="flex items-center gap-1 text-[9px] font-black uppercase tracking-wider text-[#a75d24] hover:text-[#8f4f1d] bg-[#fdf5f0] hover:bg-[#fce9d8] px-2.5 py-1 rounded-lg transition-colors"
+                    >
+                      📋 Paste from Clipboard
+                    </button>
+                  </div>
                   <textarea
                     required
                     rows={5}
@@ -555,6 +602,35 @@ export default function StudentMilestonesPage() {
                     placeholder="Describe your methodology, goals, and intended research outcome..."
                     className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-xs font-semibold text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#a75d24]/20 focus:border-[#a75d24] resize-none"
                   />
+                </div>
+
+                {/* Full Proposal Document Upload */}
+                <div>
+                  <label className="block text-[10px] uppercase tracking-[0.2em] font-black text-slate-450 mb-2">Upload Full Proposal Document <span className="text-slate-400 font-semibold normal-case">(PDF or DOCX, optional)</span></label>
+                  <label className="flex items-center gap-3 p-3 bg-slate-50 border-2 border-dashed border-slate-200 hover:border-[#a75d24] rounded-xl cursor-pointer transition-colors group">
+                    <CloudUpload className="w-5 h-5 text-slate-400 group-hover:text-[#a75d24] transition-colors shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      {proposalFileName ? (
+                        <p className="text-xs font-bold text-slate-700 truncate">{proposalFileName}</p>
+                      ) : (
+                        <p className="text-xs font-semibold text-slate-400">Click to browse or drag and drop your proposal file</p>
+                      )}
+                    </div>
+                    <input
+                      type="file"
+                      accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                      className="hidden"
+                      onChange={(e) => {
+                        const f = e.target.files?.[0]
+                        if (f) { setProposalFile(f); setProposalFileName(f.name) }
+                      }}
+                    />
+                  </label>
+                  {proposalFile && (
+                    <button type="button" onClick={() => { setProposalFile(null); setProposalFileName('') }} className="mt-1.5 text-[10px] text-red-500 hover:text-red-700 font-bold flex items-center gap-1">
+                      <X className="w-3 h-3" /> Remove file
+                    </button>
+                  )}
                 </div>
 
                 <div className="pt-4 border-t border-slate-100 flex justify-end">
@@ -621,7 +697,24 @@ export default function StudentMilestonesPage() {
                       </div>
 
                       <div>
-                        <label className="block text-[10px] uppercase tracking-[0.2em] font-black text-slate-450 mb-2">Abstract & Description</label>
+                        <div className="flex items-center justify-between mb-2">
+                          <label className="block text-[10px] uppercase tracking-[0.2em] font-black text-slate-450">Abstract & Description</label>
+                          <button
+                            type="button"
+                            onClick={async () => {
+                              try {
+                                const text = await navigator.clipboard.readText()
+                                setNewProjDesc(prev => prev ? prev + '\n' + text : text)
+                                showToast('Pasted from clipboard!')
+                              } catch {
+                                showToast('Clipboard access denied. Please paste manually (Ctrl+V).')
+                              }
+                            }}
+                            className="flex items-center gap-1 text-[9px] font-black uppercase tracking-wider text-[#a75d24] hover:text-[#8f4f1d] bg-[#fdf5f0] hover:bg-[#fce9d8] px-2.5 py-1 rounded-lg transition-colors"
+                          >
+                            📋 Paste from Clipboard
+                          </button>
+                        </div>
                         <textarea
                           required
                           rows={5}
@@ -630,6 +723,35 @@ export default function StudentMilestonesPage() {
                           placeholder="Describe your methodology, goals, and intended research outcome..."
                           className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-xs font-semibold text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#a75d24]/20 focus:border-[#a75d24] resize-none"
                         />
+                      </div>
+
+                      {/* Full Proposal Document Upload */}
+                      <div>
+                        <label className="block text-[10px] uppercase tracking-[0.2em] font-black text-slate-450 mb-2">Upload Revised Proposal Document <span className="text-slate-400 font-semibold normal-case">(PDF or DOCX, optional)</span></label>
+                        <label className="flex items-center gap-3 p-3 bg-slate-50 border-2 border-dashed border-slate-200 hover:border-[#a75d24] rounded-xl cursor-pointer transition-colors group">
+                          <CloudUpload className="w-5 h-5 text-slate-400 group-hover:text-[#a75d24] transition-colors shrink-0" />
+                          <div className="flex-1 min-w-0">
+                            {proposalFileName ? (
+                              <p className="text-xs font-bold text-slate-700 truncate">{proposalFileName}</p>
+                            ) : (
+                              <p className="text-xs font-semibold text-slate-400">Click to browse or drag and drop your revised proposal</p>
+                            )}
+                          </div>
+                          <input
+                            type="file"
+                            accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                            className="hidden"
+                            onChange={(e) => {
+                              const f = e.target.files?.[0]
+                              if (f) { setProposalFile(f); setProposalFileName(f.name) }
+                            }}
+                          />
+                        </label>
+                        {proposalFile && (
+                          <button type="button" onClick={() => { setProposalFile(null); setProposalFileName('') }} className="mt-1.5 text-[10px] text-red-500 hover:text-red-700 font-bold flex items-center gap-1">
+                            <X className="w-3 h-3" /> Remove file
+                          </button>
+                        )}
                       </div>
 
                       <div className="pt-4 border-t border-slate-100 flex justify-end">

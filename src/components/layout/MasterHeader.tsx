@@ -92,7 +92,7 @@ export default function MasterHeader({ role = 'student' }: { role?: string }) {
             const { createClient } = await import('@/lib/supabase/client')
             const supabase = createClient()
             await supabase.auth.signOut()
-            window.location.href = '/'
+            window.location.href = '/login'
           }}
           className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl text-slate-400 hover:text-red-500 transition-colors"
           title="Log Out"
