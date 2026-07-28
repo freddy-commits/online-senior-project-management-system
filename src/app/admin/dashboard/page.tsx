@@ -53,7 +53,7 @@ export default async function AdminDashboardPage() {
     const userIds = pendingRequests.map(r => r.user_id)
     const { data: userProfiles } = await supabase
       .from('profiles')
-      .select('id, full_name, email')
+      .select('id, full_name, email, department, university_id')
       .in('id', userIds)
       
     enrichedRequests = pendingRequests.map(r => ({
@@ -388,16 +388,20 @@ export default async function AdminDashboardPage() {
             <div className="space-y-3">
               {enrichedRequests.length > 0 ? (
                 enrichedRequests.map((req) => (
-                  <div key={req.id} className="p-3 bg-slate-50 border border-slate-100 rounded-xl space-y-1">
-                    <span className="text-[8px] font-black uppercase text-amber-600 bg-amber-50 px-2 py-0.5 rounded border border-amber-100 inline-block">
-                      {req.requested_role?.replace('_', ' ')}
-                    </span>
-                    <span className="font-extrabold text-slate-900 text-xs block truncate mt-1">
-                      {req.profile?.full_name || 'Anonymous'}
-                    </span>
-                    <span className="text-[10px] text-slate-400 block truncate">
-                      {req.profile?.email || 'No email info'}
-                    </span>
+                  <div key={req.id} className="p-3 bg-slate-50 border border-slate-100 rounded-xl space-y-1.5">
+                    <div className="flex justify-between items-start gap-1">
+                      <span className="font-extrabold text-slate-900 text-xs block truncate max-w-[150px]">
+                        {req.profile?.full_name || 'Name not provided'}
+                      </span>
+                      <span className="text-[8px] font-black uppercase text-amber-600 bg-amber-50 px-2 py-0.5 rounded border border-amber-100 shrink-0">
+                        {req.requested_role?.replace('_', ' ')}
+                      </span>
+                    </div>
+                    <div className="text-[10px] text-slate-550 font-semibold space-y-0.5 leading-tight">
+                      <span className="block truncate">📧 {req.profile?.email || 'No email info'}</span>
+                      {req.profile?.university_id && <span className="block truncate">🆔 ID: {req.profile.university_id}</span>}
+                      {(req.department || req.profile?.department) && <span className="block truncate">🏫 Dept: {req.department || req.profile?.department}</span>}
+                    </div>
                   </div>
                 ))
               ) : (
