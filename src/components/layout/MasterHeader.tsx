@@ -82,23 +82,6 @@ export default function MasterHeader({ role = 'student' }: { role?: string }) {
             {fullName}
           </span>
         </Link>
-
-        {/* Divider */}
-        <div className="w-px h-8 bg-slate-200 dark:bg-slate-800 hidden sm:block" />
-
-        {/* Log Out Button */}
-        <button
-          onClick={async () => {
-            const { createClient } = await import('@/lib/supabase/client')
-            const supabase = createClient()
-            await supabase.auth.signOut()
-            window.location.href = '/login'
-          }}
-          className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl text-slate-400 hover:text-red-500 transition-colors"
-          title="Log Out"
-        >
-          <LogOut className="w-5 h-5" />
-        </button>
       </div>
     </header>
   )

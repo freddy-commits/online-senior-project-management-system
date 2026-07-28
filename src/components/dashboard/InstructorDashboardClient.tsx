@@ -434,7 +434,7 @@ export default function InstructorDashboardClient({
                         {project.status === 'approved' ? (
                           <a 
                             href={`/instructor/projects/${project.id}`}
-                            className="text-base font-black text-slate-900 leading-snug line-clamp-2 hover:text-indigo-650 transition-colors block"
+                            className="text-base font-black text-slate-900 leading-snug line-clamp-2 hover:text-indigo-600 transition-colors block"
                             title="View Project Milestones & Supervisor Marks"
                           >
                             {project.title}
@@ -461,7 +461,7 @@ export default function InstructorDashboardClient({
                             setSelectedProjectForApproval(project)
                             setSelectedSupervisorId('')
                           }}
-                          className="w-full py-2.5 bg-indigo-650 hover:bg-indigo-750 text-white font-bold rounded-xl text-[10px] uppercase tracking-widest transition-all cursor-pointer shadow-sm"
+                          className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-black rounded-xl text-[11px] uppercase tracking-widest transition-all cursor-pointer shadow-md shadow-indigo-600/20 active:scale-[0.98]"
                         >
                           Review & Allocate
                         </button>
@@ -487,7 +487,7 @@ export default function InstructorDashboardClient({
                 </div>
                 <button
                   onClick={() => setShowMilestoneModal(true)}
-                  className="px-5 py-2.5 bg-indigo-650 hover:bg-indigo-750 text-white font-extrabold rounded-xl text-[10px] uppercase tracking-widest flex items-center gap-1.5 shadow-md shrink-0 cursor-pointer"
+                  className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold rounded-xl text-[10px] uppercase tracking-widest flex items-center gap-1.5 shadow-md shrink-0 cursor-pointer"
                 >
                   <Plus className="w-4 h-4 stroke-[3]" /> Add Milestone
                 </button>
@@ -508,7 +508,7 @@ export default function InstructorDashboardClient({
                         </div>
                         <button
                           onClick={() => handleDeleteMilestone(d.id)}
-                          className="p-2 hover:bg-red-50 hover:text-red-650 text-slate-400 rounded-xl border border-transparent hover:border-red-200 transition-all cursor-pointer"
+                          className="p-2 hover:bg-red-50 hover:text-red-600 text-slate-400 rounded-xl border border-transparent hover:border-red-200 transition-all cursor-pointer"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
@@ -670,7 +670,7 @@ export default function InstructorDashboardClient({
                 </div>
                 <button
                   onClick={handleDownloadReport}
-                  className="px-5 py-2.5 bg-indigo-650 hover:bg-indigo-750 text-white font-extrabold rounded-xl text-[10px] uppercase tracking-widest flex items-center gap-1.5 shadow-md shrink-0 cursor-pointer"
+                  className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold rounded-xl text-[10px] uppercase tracking-widest flex items-center gap-1.5 shadow-md shrink-0 cursor-pointer"
                 >
                   <Download className="w-4 h-4" /> Export Cohort Report
                 </button>
@@ -809,7 +809,7 @@ export default function InstructorDashboardClient({
                             onClick={() => handleTogglePartnerApproval(partner.id, !!partner.is_approved)}
                             className={`px-3.5 py-1.5 font-extrabold rounded-lg text-[9px] uppercase tracking-wider transition-all cursor-pointer shadow-sm border ${
                               partner.is_approved 
-                                ? 'bg-red-50 hover:bg-red-100 text-red-650 border-red-200' 
+                                ? 'bg-red-50 hover:bg-red-100 text-red-600 border-red-200' 
                                 : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border-emerald-200'
                             }`}
                           >
@@ -933,7 +933,7 @@ export default function InstructorDashboardClient({
                   type="button"
                   onClick={handleRejectProject}
                   disabled={processing === selectedProjectForApproval.id}
-                  className="flex-1 py-3 bg-red-50 hover:bg-red-100 disabled:opacity-50 text-red-650 border border-red-200 font-bold rounded-xl text-[10px] uppercase tracking-widest transition-all cursor-pointer"
+                  className="flex-1 py-3 bg-red-50 hover:bg-red-100 disabled:opacity-50 text-red-600 border border-red-200 font-bold rounded-xl text-[10px] uppercase tracking-widest transition-all cursor-pointer"
                 >
                   Reject
                 </button>
@@ -1232,7 +1232,7 @@ export default function InstructorDashboardClient({
                   <button
                     type="submit"
                     disabled={processing === 'milestone'}
-                    className="px-6 py-2.5 bg-indigo-650 hover:bg-indigo-750 text-white text-xs font-black uppercase rounded-xl shadow-md cursor-pointer flex items-center gap-1.5"
+                    className="px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-black uppercase rounded-xl shadow-md cursor-pointer flex items-center gap-1.5"
                   >
                     {processing === 'milestone' ? (
                       <Loader2 className="w-3.5 h-3.5 animate-spin" />
