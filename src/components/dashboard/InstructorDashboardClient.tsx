@@ -108,22 +108,24 @@ export default function InstructorDashboardClient({
     if (newPartners) setPartners(newPartners)
   }
 
-  // Task: Review & Approve Proposal + Allocate Supervisor
+  // Task: Review & Approve Proposal + Optional Supervisor Allocation
   async function handleApproveProject(e: React.FormEvent) {
     e.preventDefault()
-    if (!selectedProjectForApproval || !selectedSupervisorId) return
+    if (!selectedProjectForApproval) return
     setProcessing(selectedProjectForApproval.id)
 
     try {
+      const updatePayload: Record<string, any> = { status: 'approved' }
+      if (selectedSupervisorId) {
+        updatePayload.instructor_id = selectedSupervisorId
+      }
+
       const { error } = await supabase
         .from('projects')
-        .update({
-          status: 'approved',
-          instructor_id: selectedSupervisorId
-        })
+        .update(updatePayload)
         .eq('id', selectedProjectForApproval.id)
       if (error) throw error
-      setSuccessMessage(`Project "${selectedProjectForApproval.title}" approved and supervisor allocated!`)
+      setSuccessMessage(`Project "${selectedProjectForApproval.title}" approved successfully!`)
     } catch (err: any) {
       console.error("Supabase write failed:", err)
       alert("Failed to approve project: " + (err.message || err))
@@ -404,6 +406,12 @@ export default function InstructorDashboardClient({
                   <h3 className="text-lg font-black text-slate-900">Academic Proposals & Allocation</h3>
                   <p className="text-xs text-slate-500 font-semibold mt-1">Review student research ideas and pitches. Approve proposal files and allocate active faculty supervisors.</p>
                 </div>
+                <a
+                  href="/instructor/vetting"
+                  className="px-4 py-2.5 bg-[#a75d24] hover:bg-[#8f4f1d] text-white font-extrabold rounded-xl text-[10px] uppercase tracking-widest flex items-center gap-2 shadow-sm shrink-0 transition-colors"
+                >
+                  <ShieldCheck className="w-4 h-4" /> Open Full Vetting Portal
+                </a>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {filteredProjects.map((project, idx) => (
@@ -861,12 +869,41 @@ export default function InstructorDashboardClient({
                   </div>
                 </div>
 
+                {/* Uploaded Proposal Document Download Card */}
+                {selectedProjectForApproval.proposal_url ? (
+                  <div className="bg-emerald-50/60 border border-emerald-200/70 rounded-2xl p-4 flex items-start gap-3">
+                    <div className="w-9 h-9 rounded-xl bg-emerald-100 border border-emerald-200 flex items-center justify-center shrink-0">
+                      <FileText className="w-4.5 h-4.5 text-emerald-600" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h4 className="text-xs font-black uppercase tracking-[0.15em] text-emerald-700 mb-0.5">Uploaded Proposal Document</h4>
+                      <p className="text-[11px] text-emerald-600 font-semibold mb-2.5 truncate" title={selectedProjectForApproval.proposal_url}>
+                        Full proposal document attached by student
+                      </p>
+                      <a
+                        href={selectedProjectForApproval.proposal_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-2 px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[10px] uppercase tracking-wider rounded-xl transition-all shadow-sm shadow-emerald-600/20 cursor-pointer"
+                      >
+                        <Download className="w-3.5 h-3.5" />
+                        Download / View Document
+                      </a>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="p-3 bg-amber-50 border border-amber-200/70 rounded-2xl text-[11px] text-amber-800 font-semibold flex items-center gap-2">
+                    <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
+                    No document file uploaded. Student provided title and abstract only.
+                  </div>
+                )}
+
                 <div>
                   <label className="block text-xs font-black uppercase tracking-[0.15em] text-slate-400 mb-2">
-                    Assign Faculty Supervisor
+                    Faculty Supervisor (Optional)
                   </label>
                   <p className="text-[11px] text-slate-500 mb-3 leading-relaxed font-semibold">
-                    Select a faculty supervisor to mentor this student's Capstone project.
+                    Note: Supervisor assignment is managed by the System Administrator in Admin panel, but you may optionally assign one here.
                   </p>
                   
                   <select
@@ -874,7 +911,7 @@ export default function InstructorDashboardClient({
                     onChange={(e) => setSelectedSupervisorId(e.target.value)}
                     className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-3 px-4 text-slate-800 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-400/30 focus:border-indigo-500 transition-all cursor-pointer"
                   >
-                    <option value="">Choose Supervisor...</option>
+                    <option value="">Do not assign supervisor now (Admin will assign)</option>
                     {supervisors.map(s => (
                       <option key={s.id} value={s.id} className="text-slate-800 font-bold bg-white">
                         {s.full_name} ({s.role})
@@ -903,15 +940,15 @@ export default function InstructorDashboardClient({
                 <button
                   type="button"
                   onClick={handleApproveProject}
-                  disabled={processing === selectedProjectForApproval.id || !selectedSupervisorId}
-                  className="flex-[2] py-3 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white font-bold rounded-xl text-[10px] uppercase tracking-widest shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer"
+                  disabled={processing === selectedProjectForApproval.id}
+                  className="flex-[2] py-3 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white font-bold rounded-xl text-[10px] uppercase tracking-widest shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer"
                 >
                   {processing === selectedProjectForApproval.id ? (
                     <Loader2 className="w-4 h-4 animate-spin" />
                   ) : (
                     <Check className="w-4 h-4" />
                   )}
-                  Approve & Assign
+                  Approve Proposal
                 </button>
               </div>
             </motion.div>
