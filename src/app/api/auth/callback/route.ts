@@ -188,6 +188,9 @@ export async function GET(request: Request) {
       response.cookies.set(name, value, options)
     })
 
+    // Clear the oauth_switch flag — it's no longer needed after the session is set
+    response.cookies.set('oauth_switch', '', { path: '/', maxAge: 0 })
+
     return response
 
   } catch (err: any) {

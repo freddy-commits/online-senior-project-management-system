@@ -151,8 +151,16 @@ export default function LoginPage() {
     setError('')
     try {
       const supabase = createClient()
-      // Note: Do NOT call signOut() here — it's slow and destroys the PKCE verifier
-      // The callback route handles session isolation properly
+      
+      // IMPORTANT: Sign out any existing session FIRST before triggering OAuth.
+      // This prevents the middleware from routing the new user to the old user's
+      // dashboard while the OAuth redirect is in flight.
+      await supabase.auth.signOut()
+
+      // Set a short-lived cookie flag that tells middleware to NOT redirect 
+      // during the OAuth handshake — prevents bouncing back to old dashboard.
+      document.cookie = 'oauth_switch=1; path=/; max-age=120; SameSite=Lax'
+
       const { error: oauthError } = await supabase.auth.signInWithOAuth({
         provider,
         options: {

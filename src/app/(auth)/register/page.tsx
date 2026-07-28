@@ -153,8 +153,14 @@ export default function RegisterPage() {
     setError('')
     try {
       const supabase = createClient()
-      // Note: Do NOT call signOut() here — it destroys the PKCE verifier cookie
-      // Session isolation is handled in the callback route
+
+      // IMPORTANT: Sign out any existing session FIRST before triggering OAuth.
+      // Prevents middleware from routing the new user to the old user's dashboard.
+      await supabase.auth.signOut()
+
+      // Set a short-lived cookie flag that tells middleware to NOT redirect
+      // during the OAuth handshake — prevents bouncing back to old dashboard.
+      document.cookie = 'oauth_switch=1; path=/; max-age=120; SameSite=Lax'
 
       // Store selected department in a cookie (expires in 5 minutes)
       const cookieOpts = 'path=/; max-age=300; SameSite=Lax'

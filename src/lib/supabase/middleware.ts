@@ -52,8 +52,10 @@ export async function updateSession(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser()
 
   // ── Already authenticated trying to visit /login or /register ─────────────
-  // Redirect them to their dashboard so they don't get stuck or see login again
-  if (user && isAuthPage) {
+  // BUT skip this redirect if the user just clicked "Continue with Google" on
+  // login/register — the oauth_switch cookie signals a new sign-in is in flight.
+  const oauthSwitch = request.cookies.get('oauth_switch')?.value
+  if (user && isAuthPage && !oauthSwitch) {
     const { data: profile } = await supabase
       .from('profiles')
       .select('role')
