@@ -269,10 +269,22 @@ export default function UserManagementPage() {
 
                       {/* Badge status */}
                       <td className="px-6 py-5">
-                        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl border text-[9px] font-bold ${roleInfo.bg} ${roleInfo.text} ${roleInfo.border}`}>
-                          <Icon className="w-3.5 h-3.5" />
-                          {roleInfo.label}
-                        </span>
+                        <div className="space-y-1">
+                          <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl border text-[9px] font-bold ${roleInfo.bg} ${roleInfo.text} ${roleInfo.border}`}>
+                            <Icon className="w-3.5 h-3.5" />
+                            {roleInfo.label}
+                          </span>
+                          {user.role === 'student' && user.needs_supervisor && (
+                            <span className="block text-[8px] font-black uppercase tracking-wider text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-lg w-fit animate-pulse">
+                              ⚠️ Awaiting Supervisor
+                            </span>
+                          )}
+                          {user.role === 'student' && user.supervisor_name && (
+                            <span className="block text-[8px] font-black uppercase tracking-wider text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-lg w-fit">
+                              ✓ {user.supervisor_name}
+                            </span>
+                          )}
+                        </div>
                       </td>
 
                       {/* Department */}

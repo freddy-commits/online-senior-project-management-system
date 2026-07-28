@@ -18,9 +18,11 @@ import {
   Archive,
   Inbox,
   CheckCircle2,
-  Download
+  Download,
+  ArrowLeft
 } from 'lucide-react'
 import ProjectDescription, { parseDescription } from '@/components/project/ProjectDescription'
+import Link from 'next/link'
 
 export default function InstructorVettingPage() {
   const [proposals, setProposals] = useState<any[]>([])
@@ -47,11 +49,39 @@ export default function InstructorVettingPage() {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
 
-    // Fetch all projects (both student proposals and industry pitches)
-    const { data: projs } = await supabase
+    // Fetch instructor profile to get department
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('department')
+      .eq('id', user.id)
+      .single()
+
+    const instructorDept = profile?.department
+
+    // If department exists, get student IDs in this department
+    let studentIds: string[] = []
+    if (instructorDept) {
+      const { data: deptStudents } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('role', 'student')
+        .eq('department', instructorDept)
+      studentIds = (deptStudents || []).map((s: any) => s.id)
+    }
+
+    // Fetch projects
+    let query = supabase
       .from('projects')
-      .select('*, student:student_id(full_name, email), industry_partner:industry_partner_id(full_name, email)')
+      .select('*, student:student_id(full_name, email, department), industry_partner:industry_partner_id(full_name, email)')
       .order('created_at', { ascending: false })
+
+    if (instructorDept) {
+      if (studentIds.length > 0) {
+        query = query.or(`industry_partner_id.not.is.null,student_id.in.(${studentIds.join(',')})`)
+      }
+    }
+
+    const { data: projs } = await query
 
     const enrichedProjs = (projs || []).map((p: any) => ({
       ...p,
@@ -231,10 +261,19 @@ export default function InstructorVettingPage() {
 
   return (
     <div className="max-w-6xl mx-auto pb-20 text-slate-800">
-      {/* Header section */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-black text-slate-900 mb-2 tracking-tight">Proposal Vetting Panel</h1>
-        <p className="text-slate-500 font-medium">Review and validate student research ideas and industry sponsorship pitches before allocation.</p>
+      {/* Header section with Close button */}
+      <div className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-200 pb-6">
+        <div>
+          <h1 className="text-3xl font-black text-slate-900 mb-1 tracking-tight">Proposal Vetting Panel</h1>
+          <p className="text-slate-500 font-medium text-xs">Review and validate student research ideas and industry sponsorship pitches before allocation.</p>
+        </div>
+        <Link
+          href="/instructor/dashboard"
+          className="self-start md:self-auto px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-extrabold text-xs uppercase tracking-wider rounded-xl transition-colors border border-slate-300 flex items-center gap-2 cursor-pointer shadow-sm shrink-0"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          Exit Vetting Hub
+        </Link>
       </div>
 
       {/* Tabs Menu */}

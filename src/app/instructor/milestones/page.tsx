@@ -57,11 +57,17 @@ export default async function InstructorMilestonesPage() {
     origin: p.industry_partner_id ? 'industry' : 'academic'
   })) || []
 
-  // Fetch supervisors
-  const { data: supervisors } = await supabase
-    .from('profiles')
-    .select('id, full_name')
-    .eq('role', 'supervisor')
+  // Fetch deliverables for these department projects
+  const projectIds = enrichedProjects.map((p: any) => p.id)
+  let deliverables: any[] = []
+  if (projectIds.length > 0) {
+    const { data: delivs } = await supabase
+      .from('deliverables')
+      .select('*, project:project_id(title)')
+      .in('project_id', projectIds)
+      .order('due_date', { ascending: true })
+    deliverables = delivs || []
+  }
 
   return (
     <div className="p-8 pb-20">
@@ -74,7 +80,7 @@ export default async function InstructorMilestonesPage() {
       )}
       <InstructorMilestonesClient 
         initialProjects={enrichedProjects} 
-        supervisors={supervisors || []} 
+        initialDeliverables={deliverables} 
       />
     </div>
   )

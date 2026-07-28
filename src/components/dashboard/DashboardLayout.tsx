@@ -175,20 +175,6 @@ export default function DashboardLayout({ children, role, userName }: DashboardL
               <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold text-white bg-blue-600`}>
                 {userName[0]}
               </div>
-              <button
-                onClick={async () => {
-                  await supabase.auth.signOut()
-                  if (typeof window !== 'undefined') {
-                    localStorage.removeItem('active_user_email')
-                    document.cookie = "demo_role=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC;"
-                  }
-                  window.location.href = '/login'
-                }}
-                title="Log Out"
-                className="p-2 text-slate-500 hover:text-red-650 hover:bg-red-50 rounded-xl transition-colors cursor-pointer border border-transparent hover:border-red-200"
-              >
-                <LogOut className="w-5 h-5" />
-              </button>
             </div>
           </div>
         </header>

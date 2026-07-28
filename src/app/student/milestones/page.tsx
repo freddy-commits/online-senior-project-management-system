@@ -205,7 +205,7 @@ export default function StudentMilestonesPage() {
   const { trackMode } = useTrack()
   const trackLabel = trackMode === 'thesis' ? 'CAPSTONE THESIS TRACK' : 'INDUSTRY TRACK'
   const isThesis = trackMode === 'thesis'
-  const isFullyActive = !!project && (!isThesis || (project.status === 'approved' && project.instructor_id !== null))
+  const isFullyActive = !!project && (project.status === 'approved' && project.instructor_id !== null)
 
   const supabase = createClient()
 
@@ -837,8 +837,8 @@ export default function StudentMilestonesPage() {
                       <div>
                         <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 block">Step 3</span>
                         <span className="text-xs font-bold text-slate-900 block mt-0.5">Supervisor Matching</span>
-                        <span className="text-[9px] text-slate-455 font-bold block mt-0.5">
-                          {currentStep === 2 ? 'Matching in progress' : 'Locked — Pending Vetting'}
+                        <span className="text-[9px] text-[#a75d24] font-bold block mt-0.5">
+                          {currentStep === 2 ? 'Awaiting Admin Supervisor Assignment' : 'Locked — Pending Vetting'}
                         </span>
                       </div>
                     </div>
@@ -859,8 +859,13 @@ export default function StudentMilestonesPage() {
                   <div className="p-5 bg-amber-50 border border-amber-100 rounded-2xl flex gap-3 text-amber-800">
                     <Clock className="w-5 h-5 shrink-0 mt-0.5" />
                     <div className="text-xs font-semibold leading-relaxed">
-                      <p className="font-bold">Next Steps for Verification</p>
-                      <p className="mt-1">Once the department approves this proposal and assigns your academic supervisor, your deliverables milestone timeline (with report uploads and repository sync actions) will activate here.</p>
+                      <p className="font-bold">Next Steps for Milestone Setup</p>
+                      <p className="mt-1">
+                        {currentStep === 2 
+                          ? "Your proposal has been APPROVED by your department instructor! The Administrator will now assign your academic supervisor. Once assigned, your project deliverables workspace will unlock automatically."
+                          : "Once the department approves this proposal and assigns your academic supervisor, your deliverables milestone timeline will activate here."
+                        }
+                      </p>
                     </div>
                   </div>
                 </div>

@@ -40,7 +40,7 @@ export async function getPendingRequests() {
   const userIds = requests.map((r: any) => r.user_id)
   const { data: profiles } = await adminSupabase
     .from('profiles')
-    .select('id, full_name, email, university_id')
+    .select('id, full_name, email, university_id, phone, department, avatar_url')
     .in('id', userIds)
 
   const profileMap = Object.fromEntries((profiles || []).map((p: any) => [p.id, p]))
@@ -48,7 +48,7 @@ export async function getPendingRequests() {
   // Step 3: Merge
   return requests.map((r: any) => ({
     ...r,
-    profiles: profileMap[r.user_id] || { full_name: 'Unknown', email: 'N/A', university_id: null }
+    profiles: profileMap[r.user_id] || { full_name: 'Name not provided', email: 'No email', university_id: null, phone: null, department: null }
   }))
 }
 

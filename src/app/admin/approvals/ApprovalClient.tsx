@@ -73,31 +73,38 @@ export default function ApprovalClient({ initialRequests }: { initialRequests: R
         </div>
       )}
 
-      {requests.map((request) => (
-        <div
-          key={request.id}
-          className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-5 border border-slate-200 dark:border-slate-800 rounded-2xl bg-slate-50/50 dark:bg-slate-900/50 gap-4 transition-colors hover:bg-slate-50 dark:hover:bg-slate-900"
-        >
-          <div className="space-y-2">
-            <div className="flex items-center gap-3">
-              <span className="font-bold text-slate-900 dark:text-white">
-                {(Array.isArray(request.profiles) ? request.profiles[0]?.full_name : request.profiles?.full_name) || 'Unknown User'}
-              </span>
-              <span className="px-2.5 py-1 rounded-md text-[10px] font-black uppercase tracking-wider bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400">
-                {request.requested_role}
-              </span>
+      {requests.map((request) => {
+        const prof = Array.isArray(request.profiles) ? request.profiles[0] : request.profiles
+        const name = prof?.full_name || 'Name not provided'
+        const email = prof?.email || 'No email'
+        const univId = prof?.university_id
+        const dept = request.department || prof?.department
+        const phone = prof?.phone
+
+        return (
+          <div
+            key={request.id}
+            className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-5 border border-slate-200 dark:border-slate-800 rounded-2xl bg-slate-50/50 dark:bg-slate-900/50 gap-4 transition-colors hover:bg-slate-50 dark:hover:bg-slate-900"
+          >
+            <div className="space-y-2">
+              <div className="flex items-center gap-3 flex-wrap">
+                <span className="font-black text-sm text-slate-900 dark:text-white">
+                  {name}
+                </span>
+                <span className="px-2.5 py-1 rounded-md text-[10px] font-black uppercase tracking-wider bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400">
+                  {request.requested_role?.replace('_', ' ')}
+                </span>
+              </div>
+              <div className="text-xs font-semibold text-slate-600 dark:text-slate-400 flex flex-wrap items-center gap-y-1 gap-x-4">
+                <span>📧 {email}</span>
+                {univId && <span>🆔 ID: {univId}</span>}
+                {dept && <span>🏫 Dept: {dept}</span>}
+                {phone && <span>📱 Phone: {phone}</span>}
+              </div>
+              <div className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+                Requested: {new Date(request.created_at).toLocaleDateString()}
+              </div>
             </div>
-            <div className="text-xs font-medium text-slate-500 dark:text-slate-400 flex flex-col sm:flex-row sm:gap-4">
-              <span>{Array.isArray(request.profiles) ? request.profiles[0]?.email : request.profiles?.email}</span>
-              {(Array.isArray(request.profiles) ? request.profiles[0]?.university_id : request.profiles?.university_id) && (
-                <span>ID: {Array.isArray(request.profiles) ? request.profiles[0]?.university_id : request.profiles?.university_id}</span>
-              )}
-              {request.department && <span>Dept: {request.department}</span>}
-            </div>
-            <div className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
-              Requested: {new Date(request.created_at).toLocaleDateString()}
-            </div>
-          </div>
           <div className="flex gap-2 w-full sm:w-auto">
             <button
               disabled={processingId === request.id}
@@ -125,7 +132,8 @@ export default function ApprovalClient({ initialRequests }: { initialRequests: R
             </button>
           </div>
         </div>
-      ))}
+      )
+      })}
     </div>
   );
 }

@@ -20,16 +20,36 @@ function getAdminClient() {
  */
 export async function getAllUsers() {
   const adminSupabase = getAdminClient()
-  const { data, error } = await adminSupabase
-    .from('profiles')
-    .select('*')
-    .order('full_name', { ascending: true })
+  const [
+    { data: profiles, error },
+    { data: projects }
+  ] = await Promise.all([
+    adminSupabase.from('profiles').select('*').order('full_name', { ascending: true }),
+    adminSupabase.from('projects').select('id, student_id, title, status, instructor_id, instructor:instructor_id(full_name)')
+  ])
 
   if (error) {
     console.error('getAllUsers error:', error.message)
     return []
   }
-  return data || []
+
+  const projectMap = Object.fromEntries((projects || []).map((p: any) => [p.student_id, p]))
+
+  return (profiles || []).map((u: any) => {
+    if (u.role === 'student') {
+      const proj = projectMap[u.id]
+      return {
+        ...u,
+        has_project: !!proj,
+        project_title: proj?.title || null,
+        project_status: proj?.status || null,
+        supervisor_id: proj?.instructor_id || null,
+        supervisor_name: proj?.instructor?.full_name || null,
+        needs_supervisor: proj?.status === 'approved' && !proj?.instructor_id
+      }
+    }
+    return u
+  })
 }
 
 /**
