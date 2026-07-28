@@ -103,8 +103,16 @@ export default function SupervisorDashboardClient({
     setIsAddingTask(false)
   }
 
-  const daysInMonth = Array.from({ length: 30 }, (_, i) => i + 1)
-  const currentDay = 23
+  // Mini Calendar — always reflects the actual current date
+  const _now = new Date()
+  const currentDay = _now.getDate()
+  const currentMonth = _now.getMonth()
+  const currentYear = _now.getFullYear()
+  const daysInMonthCount = new Date(currentYear, currentMonth + 1, 0).getDate()
+  const daysInMonth = Array.from({ length: daysInMonthCount }, (_, i) => i + 1)
+  const firstDayOfWeek = new Date(currentYear, currentMonth, 1).getDay()
+  const calendarBlanks = Array.from({ length: firstDayOfWeek })
+  const monthLabel = _now.toLocaleString('default', { month: 'long', year: 'numeric' })
 
   return (
     <div className="w-full max-w-6xl mx-auto space-y-6 pb-16 text-slate-800 font-sans">
@@ -411,7 +419,7 @@ export default function SupervisorDashboardClient({
               onClick={() => setIsCalendarCollapsed(!isCalendarCollapsed)}
               className="w-full flex items-center justify-between px-5 py-4 border-b border-slate-100 cursor-pointer hover:bg-slate-50 transition-colors"
             >
-              <span className="text-[10px] font-black text-slate-400 tracking-wider uppercase">July 2026</span>
+              <span className="text-[10px] font-black text-slate-400 tracking-wider uppercase">{monthLabel}</span>
               <div className="flex items-center gap-2">
                 <Calendar className="w-4 h-4 text-blue-600" />
                 <ChevronRight className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-200 ${isCalendarCollapsed ? '' : 'rotate-90'}`} />
@@ -423,7 +431,7 @@ export default function SupervisorDashboardClient({
                   <span>S</span><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span>
                 </div>
                 <div className="grid grid-cols-7 gap-1 text-center text-xs font-semibold text-slate-700">
-                  <span></span><span></span><span></span>
+                  {calendarBlanks.map((_, i) => <span key={`blank-${i}`}></span>)}
                   {daysInMonth.map((day) => {
                     const isToday = day === currentDay
                     return (

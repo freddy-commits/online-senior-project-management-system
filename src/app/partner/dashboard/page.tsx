@@ -226,8 +226,16 @@ export default function PartnerDashboardPage() {
            (p.description || '').toLowerCase().includes(searchQuery.toLowerCase())
   })
 
-  const daysInMonth = Array.from({ length: 30 }, (_, i) => i + 1)
-  const currentDay = 23
+  // Mini Calendar — always reflects the actual current date
+  const _now = new Date()
+  const currentDay = _now.getDate()
+  const currentMonth = _now.getMonth()
+  const currentYear = _now.getFullYear()
+  const daysInMonthCount = new Date(currentYear, currentMonth + 1, 0).getDate()
+  const daysInMonth = Array.from({ length: daysInMonthCount }, (_, i) => i + 1)
+  const firstDayOfWeek = new Date(currentYear, currentMonth, 1).getDay()
+  const calendarBlanks = Array.from({ length: firstDayOfWeek })
+  const monthLabel = _now.toLocaleString('default', { month: 'long', year: 'numeric' })
 
   return (
     <div className="w-full max-w-6xl mx-auto space-y-6 pb-16 text-slate-800 font-sans relative">
@@ -574,14 +582,14 @@ export default function PartnerDashboardPage() {
           {/* CALENDAR CARD */}
           <div className="bg-white border border-slate-200 rounded-[2rem] p-5 shadow-sm space-y-4">
             <div className="flex items-center justify-between border-b border-slate-100 pb-2">
-              <span className="text-[10px] font-black text-slate-400 tracking-wider uppercase">July 2026</span>
+              <span className="text-[10px] font-black text-slate-400 tracking-wider uppercase">{monthLabel}</span>
               <Calendar className="w-4 h-4 text-blue-600" />
             </div>
             <div className="grid grid-cols-7 gap-1 text-center text-[10px] font-extrabold text-slate-400 uppercase">
               <span>S</span><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span>
             </div>
             <div className="grid grid-cols-7 gap-1 text-center text-xs font-semibold text-slate-700">
-              <span></span><span></span><span></span>
+              {calendarBlanks.map((_, i) => <span key={`blank-${i}`}></span>)}
               {daysInMonth.map((day) => {
                 const isToday = day === currentDay
                 return (
