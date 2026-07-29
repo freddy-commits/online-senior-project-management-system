@@ -1,8 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, lazy, Suspense } from 'react'
 import Link from 'next/link'
-import DemoModal from './DemoModal'
+import dynamic from 'next/dynamic'
 import {
   GraduationCap,
   Users,
@@ -13,6 +13,9 @@ import {
   Briefcase,
   ClipboardCheck
 } from 'lucide-react'
+
+// Lazy-load DemoModal so framer-motion only loads when the button is clicked
+const DemoModal = dynamic(() => import('./DemoModal'), { ssr: false, loading: () => null })
 
 const FEATURES = [
   {

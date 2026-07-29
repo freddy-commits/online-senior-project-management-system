@@ -9,21 +9,28 @@ import SessionController from '@/components/providers/SessionController';
 const outfit = Outfit({
   subsets: ["latin"],
   variable: "--font-outfit",
-  weight: ["300", "400", "500", "600", "700", "800", "900"],
+  weight: ["700", "800", "900"],
+  display: "swap",
+  preload: true,
 });
 
 const plusJakarta = Plus_Jakarta_Sans({
   subsets: ["latin"],
   variable: "--font-plus-jakarta",
   weight: ["400", "500", "600", "700", "800"],
+  display: "swap",
+  preload: true,
 });
 
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
+  display: "swap",
+  preload: false,
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL('https://online-senior-project-management-sy.vercel.app'),
   title: "SeniorProj | Online Senior Project Management System",
   description: "A premium platform for university senior projects, connecting students, instructors, and industry partners.",
 };
@@ -47,6 +54,13 @@ export default async function RootLayout({
       suppressHydrationWarning
       className={`${outfit.variable} ${plusJakarta.variable} ${geistMono.variable} h-full antialiased`}
     >
+      <head>
+        {/* Preconnect to Google Fonts to eliminate DNS round-trip delay */}
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        {/* DNS prefetch for Supabase API */}
+        <link rel="dns-prefetch" href="https://supabase.co" />
+      </head>
       <body className="min-h-full flex flex-col">
         <I18nProvider locale={locale} messages={messages}>
           <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
