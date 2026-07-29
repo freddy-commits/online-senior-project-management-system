@@ -20,11 +20,11 @@ type Request = {
 
 export default function ApprovalClient({ initialRequests }: { initialRequests: Request[] }) {
   const [requests, setRequests] = useState<Request[]>(initialRequests);
-  const [processingId, setProcessingId] = useState<string | null>(null);
+  const [processingState, setProcessingState] = useState<{ id: string; action: 'approve' | 'reject' } | null>(null);
   const [message, setMessage] = useState<{ text: string, type: 'success' | 'error' } | null>(null);
 
   const handleApprove = async (id: string, userId: string, requestedRole: string) => {
-    setProcessingId(id);
+    setProcessingState({ id, action: 'approve' });
     setMessage(null);
     try {
       await approveRequest(id, userId, requestedRole);
@@ -33,12 +33,12 @@ export default function ApprovalClient({ initialRequests }: { initialRequests: R
     } catch (error: any) {
       setMessage({ text: error.message || 'Failed to approve request.', type: 'error' });
     } finally {
-      setProcessingId(null);
+      setProcessingState(null);
     }
   };
 
   const handleReject = async (id: string) => {
-    setProcessingId(id);
+    setProcessingState({ id, action: 'reject' });
     setMessage(null);
     try {
       await rejectRequest(id);
@@ -47,7 +47,7 @@ export default function ApprovalClient({ initialRequests }: { initialRequests: R
     } catch (error: any) {
       setMessage({ text: error.message || 'Failed to reject request.', type: 'error' });
     } finally {
-      setProcessingId(null);
+      setProcessingState(null);
     }
   };
 
@@ -81,6 +81,10 @@ export default function ApprovalClient({ initialRequests }: { initialRequests: R
         const dept = request.department || prof?.department
         const phone = prof?.phone
 
+        const isApproving = processingState?.id === request.id && processingState?.action === 'approve';
+        const isRejecting = processingState?.id === request.id && processingState?.action === 'reject';
+        const isProcessing = processingState?.id === request.id;
+
         return (
           <div
             key={request.id}
@@ -105,34 +109,34 @@ export default function ApprovalClient({ initialRequests }: { initialRequests: R
                 Requested: {new Date(request.created_at).toLocaleDateString()}
               </div>
             </div>
-          <div className="flex gap-2 w-full sm:w-auto">
-            <button
-              disabled={processingId === request.id}
-              onClick={() => handleApprove(request.id, request.user_id, request.requested_role)}
-              className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-black uppercase tracking-wider transition-colors disabled:opacity-50"
-            >
-              {processingId === request.id ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <CheckCircle className="w-4 h-4" />
-              )}
-              Approve
-            </button>
-            <button
-              disabled={processingId === request.id}
-              onClick={() => handleReject(request.id)}
-              className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2.5 bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-black uppercase tracking-wider transition-colors disabled:opacity-50"
-            >
-              {processingId === request.id ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <XCircle className="w-4 h-4" />
-              )}
-              Reject
-            </button>
+            <div className="flex gap-2 w-full sm:w-auto">
+              <button
+                disabled={isProcessing}
+                onClick={() => handleApprove(request.id, request.user_id, request.requested_role)}
+                className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-black uppercase tracking-wider transition-colors disabled:opacity-50"
+              >
+                {isApproving ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <CheckCircle className="w-4 h-4" />
+                )}
+                Approve
+              </button>
+              <button
+                disabled={isProcessing}
+                onClick={() => handleReject(request.id)}
+                className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 py-2.5 bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-black uppercase tracking-wider transition-colors disabled:opacity-50"
+              >
+                {isRejecting ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <XCircle className="w-4 h-4" />
+                )}
+                Reject
+              </button>
+            </div>
           </div>
-        </div>
-      )
+        )
       })}
     </div>
   );
