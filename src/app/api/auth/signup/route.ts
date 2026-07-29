@@ -95,8 +95,9 @@ export async function POST(request: NextRequest) {
       role: 'student', // ALWAYS 'student' — never set from client input
     }
 
-    // Save department for all roles that have a department concept
-    if (department && (requestedRole === 'instructor' || requestedRole === 'student' || requestedRole === 'supervisor')) {
+    // Save department for all roles that have a department
+    const rolesWithDept = ['student', 'instructor', 'supervisor', 'examiner']
+    if (department && rolesWithDept.includes(requestedRole)) {
       profileData.department = department
     }
 
@@ -113,8 +114,9 @@ export async function POST(request: NextRequest) {
       .upsert(profileData, { onConflict: 'id' })
 
     if (profileError) {
-      // Profile insert failed — log it but don't block the user
-      console.error('Profile upsert error (non-fatal):', profileError.message)
+      // Profile insert failed — this is critical, log full detail
+      console.error('Profile upsert FAILED:', JSON.stringify(profileError))
+      // Don't block registration — the user is created, profile can be patched
     }
 
     // Step 3: If the user selected an elevated role, create a role_request row.

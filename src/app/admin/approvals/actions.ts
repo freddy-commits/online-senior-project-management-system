@@ -43,13 +43,63 @@ export async function getPendingRequests() {
     .select('id, full_name, email, university_id, phone, department, avatar_url')
     .in('id', userIds)
 
+  // Step 3: For any profile with missing name/email, pull from auth.users as fallback
+  const incompleteIds = (profiles || []).filter((p: any) => !p.full_name || !p.email).map((p: any) => p.id)
+  const missingIds = userIds.filter((id: string) => !(profiles || []).find((p: any) => p.id === id))
+  const needsAuthLookup = [...incompleteIds, ...missingIds]
+
+  let authUsersMap: Record<string, any> = {}
+  if (needsAuthLookup.length > 0) {
+    // Fetch each user from auth.users to get their metadata
+    const authResults = await Promise.all(
+      needsAuthLookup.map(async (uid: string) => {
+        const { data } = await adminSupabase.auth.admin.getUserById(uid)
+        return data?.user
+      })
+    )
+    authUsersMap = Object.fromEntries(
+      authResults.filter(Boolean).map((u: any) => [
+        u.id,
+        {
+          full_name: u.user_metadata?.full_name || u.user_metadata?.name || null,
+          email: u.email || null,
+        }
+      ])
+    )
+
+    // Patch the profiles table for any users with missing data so future loads work
+    for (const uid of needsAuthLookup) {
+      const auth = authUsersMap[uid]
+      if (auth?.full_name || auth?.email) {
+        await adminSupabase
+          .from('profiles')
+          .upsert({
+            id: uid,
+            ...(auth.full_name ? { full_name: auth.full_name } : {}),
+            ...(auth.email ? { email: auth.email } : {}),
+          }, { onConflict: 'id' })
+      }
+    }
+  }
+
   const profileMap = Object.fromEntries((profiles || []).map((p: any) => [p.id, p]))
 
-  // Step 3: Merge
-  return requests.map((r: any) => ({
-    ...r,
-    profiles: profileMap[r.user_id] || { full_name: 'Name not provided', email: 'No email', university_id: null, phone: null, department: null }
-  }))
+  // Step 4: Merge profiles with auth fallback data
+  return requests.map((r: any) => {
+    const profile = profileMap[r.user_id] || {}
+    const authFallback = authUsersMap[r.user_id] || {}
+    return {
+      ...r,
+      profiles: {
+        full_name: profile.full_name || authFallback.full_name || 'Name not provided',
+        email: profile.email || authFallback.email || 'No email',
+        university_id: profile.university_id || null,
+        phone: profile.phone || null,
+        department: profile.department || r.department || null,
+        avatar_url: profile.avatar_url || null,
+      }
+    }
+  })
 }
 
 /**
