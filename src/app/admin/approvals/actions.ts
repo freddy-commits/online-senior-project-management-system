@@ -129,7 +129,14 @@ export async function approveRequest(
 
   const adminSupabase = getAdminClient()
 
-  // 1. Update the role_requests row
+  // 1. Fetch the request details to get the selected department
+  const { data: roleReq } = await adminSupabase
+    .from('role_requests')
+    .select('department')
+    .eq('id', requestId)
+    .single()
+
+  // 2. Update the role_requests row
   const { error: reqError } = await adminSupabase
     .from('role_requests')
     .update({ status: 'approved', reviewed_by: user.id })
@@ -137,10 +144,15 @@ export async function approveRequest(
 
   if (reqError) throw new Error(reqError.message)
 
-  // 2. Update the user's actual profile role
+  // 3. Update the user's profile with their new role AND department from registration
+  const profileUpdatePayload: Record<string, any> = { role: requestedRole }
+  if (roleReq?.department) {
+    profileUpdatePayload.department = roleReq.department
+  }
+
   const { error: profileError } = await adminSupabase
     .from('profiles')
-    .update({ role: requestedRole })
+    .update(profileUpdatePayload)
     .eq('id', userId)
 
   if (profileError) throw new Error(profileError.message)

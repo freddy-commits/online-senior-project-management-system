@@ -43,7 +43,28 @@ export default async function SupervisorDashboardPage() {
     }
   }
 
-  const supervisorDepartment = profile.department || null
+  let supervisorDepartment = profile.department || null
+
+  // If department is missing on profile, auto-recover it from role_requests (saved during registration)
+  if (!supervisorDepartment) {
+    const { data: roleReq } = await supabase
+      .from('role_requests')
+      .select('department')
+      .eq('user_id', user.id)
+      .not('department', 'is', null)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+
+    if (roleReq?.department) {
+      supervisorDepartment = roleReq.department
+      // Persist to profiles table so subsequent loads are instant
+      await supabase
+        .from('profiles')
+        .update({ department: roleReq.department })
+        .eq('id', user.id)
+    }
+  }
 
   // If department is missing, prompt the supervisor to select one
   if (!supervisorDepartment) {

@@ -45,7 +45,28 @@ export default async function InstructorDashboardPage() {
     }
   }
 
-  const instructorDepartment = profile.department || null
+  let instructorDepartment = profile.department || null
+
+  // If department is missing on profile, auto-recover it from role_requests (saved during registration)
+  if (!instructorDepartment) {
+    const { data: roleReq } = await supabase
+      .from('role_requests')
+      .select('department')
+      .eq('user_id', user.id)
+      .not('department', 'is', null)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+
+    if (roleReq?.department) {
+      instructorDepartment = roleReq.department
+      // Persist to profiles table so subsequent loads are instant
+      await supabase
+        .from('profiles')
+        .update({ department: roleReq.department })
+        .eq('id', user.id)
+    }
+  }
 
   // If department is missing, prompt the instructor to select one
   if (!instructorDepartment) {
