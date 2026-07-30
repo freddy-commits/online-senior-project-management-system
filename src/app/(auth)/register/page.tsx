@@ -3,7 +3,7 @@
 import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { 
   GraduationCap, 
@@ -15,7 +15,7 @@ import {
 } from 'lucide-react'
 import { SCHOOL_EMAIL_DOMAIN } from '@/lib/email-validation'
 import { getFriendlyAuthError } from '@/lib/error-messages'
-
+ 
 export default function RegisterPage() {
   const router = useRouter()
   const [error, setError] = useState('')
@@ -23,6 +23,13 @@ export default function RegisterPage() {
   const [loading, setLoading] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [selectedRole, setSelectedRole] = useState('student')
+
+  // Automatically sign out any existing session when registration loads
+  // so testers can immediately create new accounts in new tabs/windows.
+  useEffect(() => {
+    const supabase = createClient()
+    supabase.auth.signOut()
+  }, [])
   const [password, setPassword] = useState('')
   const [selectedDepartment, setSelectedDepartment] = useState('')
   const [studentId, setStudentId] = useState('')

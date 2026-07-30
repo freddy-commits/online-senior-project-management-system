@@ -46,7 +46,7 @@ export async function updateSession(request: NextRequest) {
     path.startsWith('/hub')
 
   // Auth pages — if the user is already logged in, redirect them to their dashboard
-  const isAuthPage = path.startsWith('/login') || path.startsWith('/register')
+  const isAuthPage = path.startsWith('/login')
 
   // Get user session (lightweight — uses cached cookie, no extra round-trip)
   const { data: { user } } = await supabase.auth.getUser()
