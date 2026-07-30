@@ -118,6 +118,20 @@ export default function UserManagementPage() {
     try {
       await assignSupervisorToStudent(selectedStudentForSupervisor.id, supervisorInput)
       const supervisor = supervisors.find(s => s.id === supervisorInput)
+      
+      // Update local state so it reflects immediately without a page reload
+      setUsers(prev => prev.map(u => {
+        if (u.id === selectedStudentForSupervisor.id) {
+          return {
+            ...u,
+            supervisor_id: supervisorInput,
+            supervisor_name: supervisor?.full_name || null,
+            needs_supervisor: false
+          }
+        }
+        return u
+      }))
+
       setMessage({ 
         text: `Successfully assigned ${supervisor?.full_name || 'supervisor'} to ${selectedStudentForSupervisor.full_name}.`, 
         type: 'success' 

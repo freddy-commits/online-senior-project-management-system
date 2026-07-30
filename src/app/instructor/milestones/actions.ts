@@ -40,8 +40,7 @@ export async function createInstructorMilestone(
     const isoDueDate = new Date(dueDate).toISOString()
     const payload = projectIds.map(pid => ({
       project_id: pid,
-      title,
-      description,
+      title: description ? `${title} (${description})` : title,
       due_date: isoDueDate,
       status: 'todo'
     }))

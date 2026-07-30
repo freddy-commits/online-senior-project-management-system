@@ -169,8 +169,8 @@ export default function SupervisorReviewPage() {
           </h2>
           
           <div className="space-y-4">
-            {deliverables.filter(item => item.status !== 'todo').length > 0 ?
-              deliverables.filter(item => item.status !== 'todo').map((item) => (
+            {deliverables.length > 0 ?
+              deliverables.map((item) => (
                 <div key={item.id} className="bg-white border border-slate-150 rounded-[2.25rem] p-6 shadow-sm hover:shadow-md transition-all">
                 <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-5 pb-5 border-b border-slate-50">
                   <div className="flex gap-4">

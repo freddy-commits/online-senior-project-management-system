@@ -535,15 +535,6 @@ export default function StudentMilestonesPage() {
                 {t('export_schedule')}
               </button>
             )}
-            {isFullyActive && (
-              <button 
-                onClick={() => setIsAddModalOpen(true)}
-                className="flex items-center gap-2 px-5 py-3 bg-[#a75d24] hover:bg-[#8f4f1d] text-white font-extrabold text-xs uppercase tracking-wider rounded-2xl transition-all shadow-md shadow-[#a75d24]/10 cursor-pointer select-none active:scale-[0.98]"
-              >
-                <Plus className="w-3.5 h-3.5" />
-                {t('new_milestone')}
-              </button>
-            )}
           </div>
         </div>
 
