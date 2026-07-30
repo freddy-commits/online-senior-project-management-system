@@ -67,7 +67,12 @@ export async function POST(request: NextRequest) {
       email,
       password,
       email_confirm: true,
-      user_metadata: { full_name: fullName },
+      user_metadata: {
+        full_name: fullName,
+        // Pass department into metadata so the handle_new_user DB trigger
+        // can write it directly to profiles on first insert.
+        ...(department ? { department } : {}),
+      },
     })
 
     if (createError) {

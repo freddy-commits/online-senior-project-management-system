@@ -45,20 +45,23 @@ AS $func$
 DECLARE
   v_role text;
   v_fullname text;
+  v_department text;
 BEGIN
   v_role := COALESCE(NEW.raw_user_meta_data->>'role', 'student');
   v_fullname := COALESCE(NEW.raw_user_meta_data->>'full_name', '');
+  v_department := COALESCE(NEW.raw_user_meta_data->>'department', NULL);
 
   -- Use canonical list of role names
   IF v_role NOT IN ('student', 'instructor', 'supervisor', 'industry_partner', 'examiner', 'admin') THEN
     v_role := 'student';
   END IF;
 
-  INSERT INTO public.profiles (id, email, full_name, role)
-  VALUES (NEW.id, COALESCE(NEW.email, ''), v_fullname, v_role)
+  INSERT INTO public.profiles (id, email, full_name, role, department)
+  VALUES (NEW.id, COALESCE(NEW.email, ''), v_fullname, v_role, v_department)
   ON CONFLICT (id) DO UPDATE SET
     full_name  = COALESCE(EXCLUDED.full_name, profiles.full_name),
-    role       = COALESCE(EXCLUDED.role, profiles.role);
+    role       = COALESCE(EXCLUDED.role, profiles.role),
+    department = COALESCE(profiles.department, EXCLUDED.department);
 
   RETURN NEW;
 EXCEPTION WHEN others THEN

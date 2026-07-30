@@ -619,7 +619,7 @@ export default function StudentDashboardClient({
                 </div>
                 <div className="flex items-center gap-2">
                   <BookOpen className="w-4 h-4 text-slate-400 shrink-0" />
-                  <span className="truncate">{profile?.department || 'Computer Science'}</span>
+                  <span className="truncate">{profile?.department || 'No Department Set'}</span>
                 </div>
               </div>
             </div>
