@@ -225,7 +225,7 @@ export default function SupervisorMilestonesClient({
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
         
         {/* Left: Milestones Log (Timeline) */}
-        <div className="lg:col-span-8 bg-white dark:bg-slate-900 border border-slate-150 dark:border-slate-850 rounded-[2rem] p-6 shadow-sm">
+        <div className="lg:col-span-12 bg-white dark:bg-slate-900 border border-slate-150 dark:border-slate-850 rounded-[2rem] p-6 shadow-sm">
           <h2 className="text-sm font-black text-slate-900 dark:text-white mb-5 flex items-center gap-2">
             <Target className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
             {t('milestone_planner')}
@@ -291,23 +291,9 @@ export default function SupervisorMilestonesClient({
 
                     <div className="flex items-center gap-2">
                       {item.status === 'todo' ? (
-                        <>
-                          <button
-                            onClick={() => {
-                              setRescheduleMilestone(item)
-                              setRescheduleDate(new Date(item.due_date).toISOString().split('T')[0])
-                            }}
-                            className="px-3 py-1.5 border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white rounded-lg text-[10px] font-black uppercase tracking-wider transition-all shadow-xs"
-                          >
-                            {t('reschedule')}
-                          </button>
-                          <button
-                            onClick={() => setDeleteMilestone(item)}
-                            className="px-3 py-1.5 border border-slate-200 dark:border-slate-800 hover:bg-rose-50 dark:hover:bg-rose-950/20 text-rose-600 dark:text-rose-450 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all shadow-xs"
-                          >
-                            {t('delete')}
-                          </button>
-                        </>
+                        <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">
+                          Awaiting Submission
+                        </span>
                       ) : item.status === 'submitted' ? (
                         <a 
                           href={`/supervisor/projects/${item.project_id}`}
@@ -322,72 +308,6 @@ export default function SupervisorMilestonesClient({
               ))}
             </div>
           )}
-        </div>
-
-        {/* Right: Add Milestone Form */}
-        <div className="lg:col-span-4 space-y-6">
-          <div className="bg-white dark:bg-slate-900 border border-slate-150 dark:border-slate-850 rounded-[2rem] p-6 shadow-sm">
-            <h3 className="text-sm font-black text-slate-900 dark:text-white mb-5 flex items-center gap-2">
-              <Plus className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
-              {t('create_milestone')}
-            </h3>
-
-            <form onSubmit={handleAddMilestone} className="space-y-4">
-              <div className="space-y-1">
-                <label className="text-[10px] font-black text-slate-400 dark:text-slate-550 uppercase tracking-widest block">
-                  {t('title_label')}
-                </label>
-                <input
-                  type="text"
-                  placeholder={t('title_placeholder')}
-                  value={newTitle}
-                  onChange={(e) => setNewTitle(e.target.value)}
-                  disabled={!selectedProjectId || actionProcessing}
-                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl py-2 px-3 text-xs text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-400/30 focus:border-indigo-500 transition-all font-semibold"
-                />
-              </div>
-
-              <div className="space-y-1">
-                <label className="text-[10px] font-black text-slate-400 dark:text-slate-550 uppercase tracking-widest block">
-                  {t('description_label')}
-                </label>
-                <textarea
-                  placeholder={t('desc_placeholder')}
-                  value={newDescription}
-                  onChange={(e) => setNewDescription(e.target.value)}
-                  disabled={!selectedProjectId || actionProcessing}
-                  rows={4}
-                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl py-2 px-3 text-xs text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-indigo-400/30 focus:border-indigo-500 transition-all font-semibold resize-none"
-                />
-              </div>
-
-              <div className="space-y-1">
-                <label className="text-[10px] font-black text-slate-400 dark:text-slate-550 uppercase tracking-widest block">
-                  {t('due_date_label')}
-                </label>
-                <input
-                  type="date"
-                  value={newDueDate}
-                  onChange={(e) => setNewDueDate(e.target.value)}
-                  disabled={!selectedProjectId || actionProcessing}
-                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl py-2 px-3 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-400/30 focus:border-indigo-500 transition-all font-semibold"
-                />
-              </div>
-
-              <button
-                type="submit"
-                disabled={!selectedProjectId || actionProcessing || !newTitle.trim() || !newDueDate}
-                className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 text-white rounded-xl text-xs font-black uppercase tracking-wider shadow-sm transition-all flex items-center justify-center gap-1.5 cursor-pointer disabled:bg-slate-100 dark:disabled:bg-slate-850 disabled:text-slate-400 dark:disabled:text-slate-655 disabled:cursor-not-allowed mt-2"
-              >
-                {actionProcessing ? (
-                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                ) : (
-                  <Plus className="w-3.5 h-3.5" />
-                )}
-                {t('add_button')}
-              </button>
-            </form>
-          </div>
         </div>
 
       </div>
