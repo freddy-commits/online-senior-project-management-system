@@ -14,6 +14,9 @@ import {
   Play,
   Pause,
   ArrowRight,
+  Briefcase,
+  Building,
+  Users,
 } from 'lucide-react'
 
 // ─── Slide definitions ────────────────────────────────────────────────────────
@@ -83,12 +86,12 @@ function WelcomeVisual() {
     <div className="relative w-full h-full flex items-center justify-center p-4">
       <div className="grid grid-cols-3 gap-3 w-full max-w-xs">
         {[
-          { label: 'Students', color: '#3B82F6', icon: '🎓' },
-          { label: 'Instructors', color: '#8B5CF6', icon: '📋' },
-          { label: 'Supervisors', color: '#10B981', icon: '🔬' },
-          { label: 'Partners', color: '#F59E0B', icon: '🏢' },
-          { label: 'Examiners', color: '#EF4444', icon: '⚖️' },
-          { label: 'Admins', color: '#6B7280', icon: '🛡️' },
+          { label: 'Students', color: '#3B82F6', Icon: GraduationCap },
+          { label: 'Instructors', color: '#8B5CF6', Icon: ClipboardCheck },
+          { label: 'Supervisors', color: '#10B981', Icon: Briefcase },
+          { label: 'Partners', color: '#F59E0B', Icon: Building },
+          { label: 'Examiners', color: '#EF4444', Icon: Users },
+          { label: 'Admins', color: '#6B7280', Icon: ShieldCheck },
         ].map((item) => (
           <motion.div
             key={item.label}
@@ -98,7 +101,7 @@ function WelcomeVisual() {
             className="flex flex-col items-center gap-1.5 p-3 rounded-2xl border"
             style={{ borderColor: item.color + '40', background: item.color + '12' }}
           >
-            <span className="text-xl">{item.icon}</span>
+            <item.Icon className="w-5 h-5 text-white/90" />
             <span className="text-[9px] font-black uppercase tracking-wider text-white/80">{item.label}</span>
           </motion.div>
         ))}
@@ -230,7 +233,7 @@ function MilestoneVisual() {
         transition={{ delay: 0.6 }}
         className="text-[10px] font-bold text-amber-400"
       >
-        Currently on: Build phase ⚡
+        Currently on: Build phase
       </motion.div>
     </div>
   )
@@ -240,7 +243,7 @@ function CollaborateVisual() {
   const messages = [
     { from: 'Supervisor', text: 'Great progress on chapter 2!', align: 'left', color: '#8B5CF6' },
     { from: 'Student', text: 'Thank you! Uploading the final draft now.', align: 'right', color: '#3B82F6' },
-    { from: 'Supervisor', text: 'Approved ✓ — see you at the defence.', align: 'left', color: '#8B5CF6' },
+    { from: 'Supervisor', text: 'Approved — see you at the defence.', align: 'left', color: '#8B5CF6' },
   ]
   return (
     <div className="flex flex-col gap-2 w-full max-w-xs px-4">
@@ -274,9 +277,9 @@ function CtaVisual() {
         initial={{ scale: 0.5, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         transition={{ type: 'spring', stiffness: 260, damping: 20 }}
-        className="text-6xl"
+        className="flex items-center justify-center p-3 rounded-full bg-amber-400/10 text-amber-400"
       >
-        🚀
+        <GraduationCap className="w-12 h-12" />
       </motion.div>
       <motion.div
         initial={{ opacity: 0, y: 10 }}

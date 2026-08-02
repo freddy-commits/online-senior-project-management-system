@@ -116,7 +116,7 @@ export async function supervisorGradeDeliverableAction(deliverableId: string, gr
           const { sendSMS } = await import('@/lib/sms/smsService')
           await sendSMS({
             recipientId: projObj.student_id,
-            message: `🎯 Milestone Updated: Your deliverable "${delivObj.title}" has been graded/reviewed by Dr. ${instructorProfile?.full_name || 'Faculty Supervisor'}. Grade: ${grade}.`
+            message: `Milestone Updated: Your deliverable "${delivObj.title}" has been graded/reviewed by Dr. ${instructorProfile?.full_name || 'Faculty Supervisor'}. Grade: ${grade}.`
           })
         }
       }

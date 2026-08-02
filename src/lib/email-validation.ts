@@ -6,8 +6,8 @@
 /** The allowed institutional email domain */
 export const SCHOOL_EMAIL_DOMAIN = 'ueab.ac.ke'
 
-/** Roles that require a school email (@ueab.ac.ke) */
-export const SCHOOL_EMAIL_REQUIRED_ROLES = ['student', 'instructor', 'supervisor', 'examiner_panel']
+/** Roles that require a school email (@ueab.ac.ke) - Empty to allow all email providers */
+export const SCHOOL_EMAIL_REQUIRED_ROLES: string[] = []
 
 /** Roles that require a Student ID */
 export const STUDENT_ID_ROLES = ['student']
@@ -31,13 +31,9 @@ export function isSchoolEmail(email: string): boolean {
 export function validateEmailForRole(email: string, role: string): string | null {
   if (!email) return 'Email is required.'
 
-  // Industry partners can use any email domain
-  if (!SCHOOL_EMAIL_REQUIRED_ROLES.includes(role)) {
-    return null
-  }
-
-  if (!isSchoolEmail(email)) {
-    return `Only UEAB school emails (@${SCHOOL_EMAIL_DOMAIN}) are accepted for ${role} registration.`
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+  if (!emailRegex.test(email.trim())) {
+    return 'Please enter a valid email address.'
   }
 
   return null

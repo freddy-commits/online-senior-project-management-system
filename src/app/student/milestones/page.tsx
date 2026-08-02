@@ -582,7 +582,7 @@ export default function StudentMilestonesPage() {
                       }}
                       className="flex items-center gap-1 text-[9px] font-black uppercase tracking-wider text-[#a75d24] hover:text-[#8f4f1d] bg-[#fdf5f0] hover:bg-[#fce9d8] px-2.5 py-1 rounded-lg transition-colors"
                     >
-                      📋 Paste from Clipboard
+                      Paste from Clipboard
                     </button>
                   </div>
                   <textarea
@@ -703,7 +703,7 @@ export default function StudentMilestonesPage() {
                             }}
                             className="flex items-center gap-1 text-[9px] font-black uppercase tracking-wider text-[#a75d24] hover:text-[#8f4f1d] bg-[#fdf5f0] hover:bg-[#fce9d8] px-2.5 py-1 rounded-lg transition-colors"
                           >
-                            📋 Paste from Clipboard
+                            Paste from Clipboard
                           </button>
                         </div>
                         <textarea

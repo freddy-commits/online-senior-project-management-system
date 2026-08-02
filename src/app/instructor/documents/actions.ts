@@ -104,7 +104,7 @@ export async function updateDeliverableStatusAdmin(
           const { sendSMS } = await import('@/lib/sms/smsService')
           await sendSMS({
             recipientId: projObj.student_id,
-            message: `🎯 Milestone Updated: Your deliverable "${delivObj.title}" has been graded/reviewed by Dr. ${instructorProfile?.full_name || 'Faculty Advisor'}. Grade: ${status === 'graded' ? (grade || 'Reviewed') : 'Revisions Requested'}.`
+            message: `Milestone Updated: Your deliverable "${delivObj.title}" has been graded/reviewed by Dr. ${instructorProfile?.full_name || 'Faculty Advisor'}. Grade: ${status === 'graded' ? (grade || 'Reviewed') : 'Revisions Requested'}.`
           })
         }
       }

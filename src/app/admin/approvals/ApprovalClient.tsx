@@ -100,10 +100,10 @@ export default function ApprovalClient({ initialRequests }: { initialRequests: R
                 </span>
               </div>
               <div className="text-xs font-semibold text-slate-600 dark:text-slate-400 flex flex-wrap items-center gap-y-1 gap-x-4">
-                <span>📧 {email}</span>
-                {univId && <span>🆔 ID: {univId}</span>}
-                {dept && <span>🏫 Dept: {dept}</span>}
-                {phone && <span>📱 Phone: {phone}</span>}
+                <span>Email: {email}</span>
+                {univId && <span>ID: {univId}</span>}
+                {dept && <span>Dept: {dept}</span>}
+                {phone && <span>Phone: {phone}</span>}
               </div>
               <div className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
                 Requested: {new Date(request.created_at).toLocaleDateString()}

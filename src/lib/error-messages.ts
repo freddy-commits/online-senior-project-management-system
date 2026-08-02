@@ -98,7 +98,7 @@ export function getFriendlyAuthError(raw: string): string {
 
   // ── Institutional email restriction ─────────────────────────────────────────
   if (msg.includes('ueab') || msg.includes('school email') || msg.includes('institutional')) {
-    return 'Students must register with a valid school email address (@ueab.ac.ke).'
+    return 'Please enter a valid email address.'
   }
 
   // ── Student/Staff ID ────────────────────────────────────────────────────────

@@ -48,7 +48,7 @@ export default function InstructorDashboardClient({
   const isCapstone = trackMode === 'thesis' || trackMode === 'advisor' || trackMode === 'supervisor' || trackMode === 'panel'
   
   // Tab Management
-  const [activeSubTab, setActiveSubTab] = useState<'proposals' | 'milestones' | 'panels' | 'grading' | 'reports' | 'partners'>('proposals')
+  const [activeSubTab, setActiveSubTab] = useState<'proposals' | 'milestones' | 'grading' | 'reports'>('proposals')
 
   const [projects, setProjects] = useState(initialProjects)
   const [deliverables, setDeliverables] = useState(initialDeliverables)
@@ -66,15 +66,15 @@ export default function InstructorDashboardClient({
   const [newMilestoneDesc, setNewMilestoneDesc] = useState('')
   const [newMilestoneDueDate, setNewMilestoneDueDate] = useState('')
 
-  // Panel Assigner State
-  const [selectedProjectForPanel, setSelectedProjectForPanel] = useState<any>(null)
-  const [examiner1, setExaminer1] = useState('')
-  const [examiner2, setExaminer2] = useState('')
-  const [examiner3, setExaminer3] = useState('')
-
   // Grading State
   const [editingGradeProject, setEditingGradeProject] = useState<any>(null)
   const [selectedGrade, setSelectedGrade] = useState('A')
+
+  function canGradeProject(proj: any) {
+    const projDeliverables = deliverables.filter((d: any) => d.project_id === proj.id)
+    if (projDeliverables.length === 0) return false
+    return projDeliverables.every((d: any) => d.status === 'submitted' || d.status === 'graded')
+  }
 
   const supabase = createClient()
 
@@ -213,34 +213,7 @@ export default function InstructorDashboardClient({
     await refreshData()
   }
 
-  // Task: Assign Examiner Panel
-  async function handleAssignExaminers(e: React.FormEvent) {
-    e.preventDefault()
-    if (!selectedProjectForPanel) return
-    setProcessing(selectedProjectForPanel.id)
 
-    const panelList = [examiner1, examiner2, examiner3].filter(Boolean)
-
-    try {
-      const { error } = await supabase
-        .from('projects')
-        .update({ examiner_panel: panelList })
-        .eq('id', selectedProjectForPanel.id)
-      if (error) throw error
-      setSuccessMessage("Examiner panel assigned successfully!")
-    } catch (err: any) {
-      console.error("Supabase write failed:", err)
-      alert("Failed to assign examiner panel: " + (err.message || err))
-    }
-
-    setTimeout(() => setSuccessMessage(''), 5000)
-    await refreshData()
-    setSelectedProjectForPanel(null)
-    setExaminer1('')
-    setExaminer2('')
-    setExaminer3('')
-    setProcessing(null)
-  }
 
   // Task: Publish Final Grades
   async function handleSaveGrade(e: React.FormEvent) {
@@ -249,14 +222,22 @@ export default function InstructorDashboardClient({
     setProcessing(editingGradeProject.id)
 
     try {
-      const { error } = await supabase
-        .from('projects')
-        .update({ 
-          grade: selectedGrade,
-          grade_published: true
-        })
-        .eq('id', editingGradeProject.id)
-      if (error) throw error
+      const { updateProjectGradeAdmin } = await import('@/app/instructor/documents/actions')
+      const actionRes = await updateProjectGradeAdmin(editingGradeProject.id, selectedGrade)
+      
+      if (!actionRes.success) {
+        // Fallback to client client write if action had issue
+        const { error } = await supabase
+          .from('projects')
+          .update({ 
+            grade: selectedGrade,
+            grade_published: true
+          })
+          .eq('id', editingGradeProject.id)
+        if (error) throw error
+      }
+
+      setProjects(prev => prev.map(p => p.id === editingGradeProject.id ? { ...p, grade: selectedGrade, grade_published: true } : p))
       setSuccessMessage(`Grade ${selectedGrade} published for "${editingGradeProject.title}"`)
     } catch (err: any) {
       console.error("Supabase write failed:", err)
@@ -364,15 +345,13 @@ export default function InstructorDashboardClient({
         </div>
       </div>
 
-      {/* Tab Menu - Six unified tabs */}
+      {/* Tab Menu - Unified tabs */}
       <div className="flex border-b border-slate-200 overflow-x-auto gap-6 no-scrollbar">
         {[
           { id: 'proposals', label: 'Proposals', icon: <FileText className="w-4 h-4" /> },
           { id: 'milestones', label: 'Milestones Config', icon: <Calendar className="w-4 h-4" /> },
-          { id: 'panels', label: 'Vetting Panels', icon: <Users className="w-4 h-4" /> },
           { id: 'grading', label: 'Grading Hub', icon: <Award className="w-4 h-4" /> },
-          { id: 'reports', label: 'Cohort Reports', icon: <BarChart3 className="w-4 h-4" /> },
-          { id: 'partners', label: 'Industry Partners', icon: <Building2 className="w-4 h-4" /> }
+          { id: 'reports', label: 'Cohort Reports', icon: <BarChart3 className="w-4 h-4" /> }
         ].map((tab) => (
           <button
             key={tab.id}
@@ -524,70 +503,7 @@ export default function InstructorDashboardClient({
             </div>
           )}
 
-          {/* TAB 3: ASSIGN EXAMINER PANEL */}
-          {activeSubTab === 'panels' && (
-            <div className="space-y-6">
-              <div className="bg-slate-50 border border-slate-200 rounded-3xl p-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                <div>
-                  <h3 className="text-lg font-black text-slate-900">Vetting & Examiner Panels</h3>
-                  <p className="text-xs text-slate-500 font-semibold mt-1">Allocate 3 faculty committee members to conduct project presentations and evaluate milestones.</p>
-                </div>
-              </div>
-              <div className="bg-white border border-slate-200 rounded-3xl overflow-hidden shadow-sm">
-                <table className="w-full text-left border-collapse">
-                  <thead>
-                    <tr className="bg-slate-50 border-b border-slate-200 text-[9px] font-black uppercase text-slate-400 tracking-wider">
-                      <th className="py-4 px-6">Project Title</th>
-                      <th className="py-4 px-6">Student Owner</th>
-                      <th className="py-4 px-6">Examiner Panel Members</th>
-                      <th className="py-4 px-6 text-right">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100 text-xs font-semibold text-slate-700">
-                    {filteredProjects.map((p) => (
-                      <tr key={p.id} className="hover:bg-slate-50/40 transition-colors">
-                        <td className="py-4 px-6 font-bold text-slate-900">{p.title}</td>
-                        <td className="py-4 px-6">{p.student?.full_name || 'Solo Track'}</td>
-                        <td className="py-4 px-6">
-                          {p.examiner_panel && p.examiner_panel.length > 0 ? (
-                            <div className="flex gap-2 flex-wrap">
-                              {p.examiner_panel.map((exId: string, idx: number) => {
-                                const name = supervisors.find(s => s.id === exId)?.full_name || 'Panel Member'
-                                return (
-                                  <span key={idx} className="px-2 py-1 bg-indigo-50 border border-indigo-100 text-indigo-700 rounded-lg text-[10px] font-bold">
-                                    {name}
-                                  </span>
-                                )
-                              })}
-                            </div>
-                          ) : (
-                            <span className="text-amber-600 font-bold flex items-center gap-1">
-                              <AlertCircle className="w-3.5 h-3.5" /> Pending Assignment
-                            </span>
-                          )}
-                        </td>
-                        <td className="py-4 px-6 text-right">
-                          <button
-                            onClick={() => {
-                              setSelectedProjectForPanel(p)
-                              setExaminer1(p.examiner_panel?.[0] || '')
-                              setExaminer2(p.examiner_panel?.[1] || '')
-                              setExaminer3(p.examiner_panel?.[2] || '')
-                            }}
-                            className="px-3.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-extrabold rounded-lg text-[9px] uppercase tracking-wider border border-slate-200 transition-all cursor-pointer shadow-sm"
-                          >
-                            Assign Panel
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
-
-          {/* TAB 4: PUBLISH GRADES */}
+          {/* TAB 3: PUBLISH GRADES */}
           {activeSubTab === 'grading' && (
             <div className="space-y-6">
               <div className="bg-slate-50 border border-slate-200 rounded-3xl p-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -642,15 +558,24 @@ export default function InstructorDashboardClient({
                           )}
                         </td>
                         <td className="py-4 px-6 text-right">
-                          <button
-                            onClick={() => {
-                              setEditingGradeProject(p)
-                              setSelectedGrade(p.grade || 'A')
-                            }}
-                            className="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-750 text-white font-extrabold rounded-lg text-[9px] uppercase tracking-wider transition-all cursor-pointer shadow-sm"
-                          >
-                            Enter Grade
-                          </button>
+                          {canGradeProject(p) ? (
+                            <button
+                              onClick={() => {
+                                setEditingGradeProject(p)
+                                setSelectedGrade(p.grade || 'A')
+                              }}
+                              className="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-750 text-white font-extrabold rounded-lg text-[9px] uppercase tracking-wider transition-all cursor-pointer shadow-sm"
+                            >
+                              Enter Grade
+                            </button>
+                          ) : (
+                            <span 
+                              title="Student must submit all required milestones before final cohort grade can be recorded."
+                              className="px-3.5 py-1.5 bg-slate-100 text-slate-400 font-extrabold rounded-lg text-[9px] uppercase tracking-wider cursor-not-allowed border border-slate-200 inline-block"
+                            >
+                              Awaiting Submissions
+                            </span>
+                          )}
                         </td>
                       </tr>
                     ))}
@@ -767,62 +692,7 @@ export default function InstructorDashboardClient({
             </div>
           )}
 
-          {/* TAB 6: APPROVE INDUSTRY PARTNERS */}
-          {activeSubTab === 'partners' && (
-            <div className="space-y-6">
-              <div className="bg-slate-50 border border-slate-200 rounded-3xl p-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                <div>
-                  <h3 className="text-lg font-black text-slate-900">Industry Partner Approvals</h3>
-                  <p className="text-xs text-slate-500 font-semibold mt-1">Review registered industry partners. Enable partner dashboard features and pitch submission capabilities.</p>
-                </div>
-              </div>
-              <div className="bg-white border border-slate-200 rounded-3xl overflow-hidden shadow-sm">
-                <table className="w-full text-left border-collapse">
-                  <thead>
-                    <tr className="bg-slate-50 border-b border-slate-200 text-[9px] font-black uppercase text-slate-400 tracking-wider">
-                      <th className="py-4 px-6">Company / Representative</th>
-                      <th className="py-4 px-6">Contact Email</th>
-                      <th className="py-4 px-6">Telephone</th>
-                      <th className="py-4 px-6">System Approval Status</th>
-                      <th className="py-4 px-6 text-right">Access Controls</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100 text-xs font-semibold text-slate-700">
-                    {partners.map((partner) => (
-                      <tr key={partner.id} className="hover:bg-slate-50/40 transition-colors">
-                        <td className="py-4 px-6 font-bold text-slate-900">{partner.full_name}</td>
-                        <td className="py-4 px-6">{partner.email}</td>
-                        <td className="py-4 px-6">{partner.phone || 'N/A'}</td>
-                        <td className="py-4 px-6">
-                          {partner.is_approved ? (
-                            <span className="px-2.5 py-1 bg-emerald-50 text-emerald-600 border border-emerald-100 rounded-lg text-[9px] font-black uppercase tracking-wider">
-                              APPROVED
-                            </span>
-                          ) : (
-                            <span className="px-2.5 py-1 bg-amber-50 text-amber-600 border border-amber-100 rounded-lg text-[9px] font-black uppercase tracking-wider">
-                              PENDING REVIEW
-                            </span>
-                          )}
-                        </td>
-                        <td className="py-4 px-6 text-right">
-                          <button
-                            onClick={() => handleTogglePartnerApproval(partner.id, !!partner.is_approved)}
-                            className={`px-3.5 py-1.5 font-extrabold rounded-lg text-[9px] uppercase tracking-wider transition-all cursor-pointer shadow-sm border ${
-                              partner.is_approved 
-                                ? 'bg-red-50 hover:bg-red-100 text-red-600 border-red-200' 
-                                : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border-emerald-200'
-                            }`}
-                          >
-                            {partner.is_approved ? 'Revoke' : 'Approve'}
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
+
 
         </motion.div>
       </AnimatePresence>
@@ -956,133 +826,7 @@ export default function InstructorDashboardClient({
         )}
       </AnimatePresence>
 
-      {/* Slide-over Panel Assigner Modal */}
-      <AnimatePresence>
-        {selectedProjectForPanel && (() => {
-          const projectDept = selectedProjectForPanel.student?.department
-          const filteredSupervisors = supervisors.filter(s => {
-            if (!projectDept) return true
-            return s.department?.toLowerCase() === projectDept.toLowerCase()
-          })
 
-          return (
-            <div className="fixed inset-0 z-[100] flex justify-end">
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                onClick={() => setSelectedProjectForPanel(null)}
-                className="absolute inset-0 bg-slate-900/20 backdrop-blur-sm cursor-pointer"
-              />
-              
-              <motion.div
-                initial={{ x: '100%' }}
-                animate={{ x: 0 }}
-                exit={{ x: '100%' }}
-                transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-                className="relative w-full max-w-md bg-white h-full shadow-2xl border-l border-slate-200 flex flex-col"
-              >
-                <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50">
-                  <div>
-                    <h3 className="text-lg font-black text-slate-900">Vetting Panel Committee</h3>
-                    <p className="text-[11px] text-slate-500 font-bold uppercase tracking-wider mt-1 truncate max-w-[280px]">
-                      {selectedProjectForPanel.title}
-                    </p>
-                    {projectDept && (
-                      <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-indigo-50 text-indigo-700 border border-indigo-200 mt-1">
-                        Department: {projectDept}
-                      </span>
-                    )}
-                  </div>
-                  <button 
-                    onClick={() => setSelectedProjectForPanel(null)}
-                    className="p-2 hover:bg-slate-200 rounded-xl transition-all cursor-pointer border border-slate-300"
-                  >
-                    <X className="w-5 h-5 text-slate-500" />
-                  </button>
-                </div>
-
-                <form onSubmit={handleAssignExaminers} className="flex-1 flex flex-col justify-between overflow-hidden">
-                  <div className="p-6 overflow-y-auto flex-1 space-y-6">
-                    <p className="text-xs text-slate-500 font-semibold leading-relaxed">
-                      Allocate up to 3 faculty examiners from the student's department to serve as the vetting board.
-                    </p>
-
-                    <div className="space-y-4">
-                      <div>
-                        <label className="block text-[10px] font-black uppercase text-slate-400 mb-1.5">Examiner 1 (Chair)</label>
-                        <select
-                          required
-                          value={examiner1}
-                          onChange={(e) => setExaminer1(e.target.value)}
-                          className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 px-4 text-slate-800 text-xs font-semibold cursor-pointer"
-                        >
-                          <option value="">Select Faculty...</option>
-                          {filteredSupervisors.map(s => (
-                            <option key={s.id} value={s.id}>{s.full_name}</option>
-                          ))}
-                        </select>
-                      </div>
-
-                      <div>
-                        <label className="block text-[10px] font-black uppercase text-slate-400 mb-1.5">Examiner 2</label>
-                        <select
-                          required
-                          value={examiner2}
-                          onChange={(e) => setExaminer2(e.target.value)}
-                          className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 px-4 text-slate-800 text-xs font-semibold cursor-pointer"
-                        >
-                          <option value="">Select Faculty...</option>
-                          {filteredSupervisors.map(s => (
-                            <option key={s.id} value={s.id}>{s.full_name}</option>
-                          ))}
-                        </select>
-                      </div>
-
-                      <div>
-                        <label className="block text-[10px] font-black uppercase text-slate-400 mb-1.5">Examiner 3</label>
-                        <select
-                          required
-                          value={examiner3}
-                          onChange={(e) => setExaminer3(e.target.value)}
-                          className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 px-4 text-slate-800 text-xs font-semibold cursor-pointer"
-                        >
-                          <option value="">Select Faculty...</option>
-                          {filteredSupervisors.map(s => (
-                            <option key={s.id} value={s.id}>{s.full_name}</option>
-                          ))}
-                        </select>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="p-6 border-t border-slate-100 bg-slate-50 flex gap-3 shrink-0">
-                    <button
-                      type="button"
-                      onClick={() => setSelectedProjectForPanel(null)}
-                      className="flex-1 py-3 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 font-bold rounded-xl text-[10px] uppercase tracking-widest transition-all cursor-pointer"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      type="submit"
-                      disabled={processing === selectedProjectForPanel.id || !examiner1 || !examiner2 || !examiner3}
-                      className="flex-[2] py-3 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white font-bold rounded-xl text-[10px] uppercase tracking-widest shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer"
-                    >
-                      {processing === selectedProjectForPanel.id ? (
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                      ) : (
-                        <Check className="w-4 h-4" />
-                      )}
-                      Assign Panel
-                    </button>
-                  </div>
-                </form>
-              </motion.div>
-            </div>
-          )
-        })()}
-      </AnimatePresence>
 
       {/* Grade Entry Dialog Modal */}
       <AnimatePresence>

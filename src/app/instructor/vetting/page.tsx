@@ -158,14 +158,14 @@ export default function InstructorVettingPage() {
               await sendNotificationEmail({
                 toEmail: studentEmail,
                 toName: studentName || 'Student',
-                subject: status === 'approved' ? '🎉 Project Proposal Approved!' : '📝 Revisions Requested on Project Proposal',
+                subject: status === 'approved' ? 'Project Proposal Approved!' : 'Revisions Requested on Project Proposal',
                 bodyText: status === 'approved'
                   ? `Hi ${studentName},\n\nWe are excited to inform you that your senior capstone project proposal "${currentProj.title}" has been APPROVED!\n\nYou can now log in to start submitting milestones.\n\nLink to portal: ${loginUrl}\n\nBest regards,\nProject Hub Administration`
                   : `Hi ${studentName},\n\nRevisions have been requested on your project proposal "${currentProj.title}" by your advisor.\n\nFeedback: ${feedback || 'Please log in to review standard syllabus criteria.'}\n\nLink to portal: ${loginUrl}\n\nBest regards,\nProject Hub Administration`,
                 bodyHtml: `
                   <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 12px; background: #fff; color: #334155;">
                     <h2 style="color: ${status === 'approved' ? '#10b981' : '#f59e0b'}; margin-bottom: 20px;">
-                      ${status === 'approved' ? '🎉 Proposal Approved!' : '📝 Revisions Requested'}
+                      ${status === 'approved' ? 'Proposal Approved!' : 'Revisions Requested'}
                     </h2>
                     <p>Hi <strong>${studentName}</strong>,</p>
                     <p>Your capstone advisor has updated your proposal status:</p>
