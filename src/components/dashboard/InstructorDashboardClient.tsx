@@ -76,6 +76,23 @@ export default function InstructorDashboardClient({
     return projDeliverables.every((d: any) => d.status === 'submitted' || d.status === 'graded')
   }
 
+  function getSupervisorMarksSummary(projId: string) {
+    const projDelivs = deliverables.filter((d: any) => d.project_id === projId)
+    if (projDelivs.length === 0) return 'No milestones'
+    
+    const gradedDelivs = projDelivs.filter((d: any) => d.status === 'graded' && d.grade)
+    if (gradedDelivs.length === 0) return `0/${projDelivs.length} marked`
+    
+    let totalScore = 0
+    gradedDelivs.forEach((d: any) => {
+      const raw = String(d.grade).replace('/20', '').trim()
+      const val = parseFloat(raw)
+      if (!isNaN(val)) totalScore += val
+    })
+    const avg = (totalScore / gradedDelivs.length).toFixed(1)
+    return `${avg}/20 avg (${gradedDelivs.length}/${projDelivs.length} graded)`
+  }
+
   const supabase = createClient()
 
   // Sync state helpers
@@ -472,7 +489,8 @@ export default function InstructorDashboardClient({
                     <tr className="bg-slate-50 border-b border-slate-200 text-[9px] font-black uppercase text-slate-400 tracking-wider">
                       <th className="py-4 px-6">Project</th>
                       <th className="py-4 px-6">Assigned Advisor</th>
-                      <th className="py-4 px-6">Grade Score</th>
+                      <th className="py-4 px-6">Supervisor Marks (/20)</th>
+                      <th className="py-4 px-6">Final Course Grade</th>
                       <th className="py-4 px-6">Publication Status</th>
                       <th className="py-4 px-6 text-right">Grade Entry</th>
                     </tr>
@@ -491,6 +509,11 @@ export default function InstructorDashboardClient({
                           <span className="text-[10px] text-slate-400 font-bold uppercase">{p.student?.full_name}</span>
                         </td>
                         <td className="py-4 px-6">{p.supervisor?.full_name || 'Unassigned'}</td>
+                        <td className="py-4 px-6">
+                          <span className="px-2.5 py-1 bg-slate-50 border border-slate-200 text-slate-700 rounded-lg text-xs font-bold">
+                            {getSupervisorMarksSummary(p.id)}
+                          </span>
+                        </td>
                         <td className="py-4 px-6">
                           {p.grade ? (
                             <span className="px-3 py-1 bg-emerald-50 border border-emerald-100 text-emerald-700 rounded-full font-black text-xs">
