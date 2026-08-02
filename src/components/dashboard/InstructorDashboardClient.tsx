@@ -48,7 +48,7 @@ export default function InstructorDashboardClient({
   const isCapstone = trackMode === 'thesis' || trackMode === 'advisor' || trackMode === 'supervisor' || trackMode === 'panel'
   
   // Tab Management
-  const [activeSubTab, setActiveSubTab] = useState<'proposals' | 'milestones' | 'grading' | 'reports'>('proposals')
+  const [activeSubTab, setActiveSubTab] = useState<'proposals' | 'grading' | 'reports'>('proposals')
 
   const [projects, setProjects] = useState(initialProjects)
   const [deliverables, setDeliverables] = useState(initialDeliverables)
@@ -349,7 +349,6 @@ export default function InstructorDashboardClient({
       <div className="flex border-b border-slate-200 overflow-x-auto gap-6 no-scrollbar">
         {[
           { id: 'proposals', label: 'Proposals', icon: <FileText className="w-4 h-4" /> },
-          { id: 'milestones', label: 'Milestones Config', icon: <Calendar className="w-4 h-4" /> },
           { id: 'grading', label: 'Grading Hub', icon: <Award className="w-4 h-4" /> },
           { id: 'reports', label: 'Cohort Reports', icon: <BarChart3 className="w-4 h-4" /> }
         ].map((tab) => (
@@ -456,52 +455,7 @@ export default function InstructorDashboardClient({
             </div>
           )}
 
-          {/* TAB 2: CONFIGURE MILESTONES */}
-          {activeSubTab === 'milestones' && (
-            <div className="space-y-6">
-              <div className="bg-slate-50 border border-slate-200 rounded-3xl p-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                <div>
-                  <h3 className="text-lg font-black text-slate-900">Cohort Milestone Configuration</h3>
-                  <p className="text-xs text-slate-500 font-semibold mt-1">Configure project submission schedules, due dates, and grading scopes for the current academic cohort.</p>
-                </div>
-                <button
-                  onClick={() => setShowMilestoneModal(true)}
-                  className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold rounded-xl text-[10px] uppercase tracking-widest flex items-center gap-1.5 shadow-md shrink-0 cursor-pointer"
-                >
-                  <Plus className="w-4 h-4 stroke-[3]" /> Add Milestone
-                </button>
-              </div>
 
-              <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm space-y-4">
-                {deliverables.length > 0 ? (
-                  <div className="divide-y divide-slate-100">
-                    {deliverables.map((d: any) => (
-                      <div key={d.id} className="py-4 first:pt-0 last:pb-0 flex items-center justify-between gap-6">
-                        <div className="space-y-1">
-                          <h4 className="font-black text-slate-800 text-sm">{d.title}</h4>
-                          <p className="text-xs text-slate-500 font-semibold leading-relaxed">{d.description}</p>
-                          <div className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest flex items-center gap-1 mt-1">
-                            <Clock className="w-3.5 h-3.5 text-indigo-500" />
-                            Due: {new Date(d.due_date).toLocaleDateString()}
-                          </div>
-                        </div>
-                        <button
-                          onClick={() => handleDeleteMilestone(d.id)}
-                          className="p-2 hover:bg-red-50 hover:text-red-600 text-slate-400 rounded-xl border border-transparent hover:border-red-200 transition-all cursor-pointer"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="py-12 text-center text-slate-400 font-semibold text-xs italic">
-                    No deliverables configured. Set up your first milestone above.
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
 
           {/* TAB 3: PUBLISH GRADES */}
           {activeSubTab === 'grading' && (
