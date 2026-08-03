@@ -127,7 +127,8 @@ export async function updateProjectGradeAdmin(projectId: string, grade: string) 
       .from('projects')
       .update({
         grade: grade,
-        grade_published: true
+        grade_published: true,
+        status: 'completed'
       })
       .eq('id', projectId)
 

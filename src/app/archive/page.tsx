@@ -75,27 +75,20 @@ export default function ProjectArchivePage() {
           `)
 
         // Role-based filtering:
-        // - Student: all completed projects (for reference/inspiration)
-        // - Instructor: projects they supervised
-        // - Supervisor: projects they supervised
-        // - Industry: projects they sponsored
-        // - Admin/Panel: all projects
-        if (role === 'instructor' || role === 'supervisor') {
+        // - Instructor/Supervisor/Admin/Student: fetch projects and filter completed
+        if (role === 'supervisor') {
           query = query.eq('instructor_id', user.id)
         } else if (role === 'industry') {
           query = query.eq('industry_partner_id', user.id)
         }
-        // Students and Admin see all completed projects
+        // Students, Instructors and Admin see completed projects in their scope
 
         const { data: rawProjects } = await query
         const projectsList = rawProjects || []
 
-        // Filter: only show projects that are completed
-        // A project is "completed" if:
-        // 1. status === 'completed', OR
-        // 2. It has a graded final deliverable
+        // Filter: show projects that are completed or graded
         const completedProjects = projectsList.filter((p: any) => {
-          if (p.status === 'completed') return true
+          if (p.status === 'completed' || p.grade || p.grade_published) return true
           const deliverables = p.deliverables || []
           const hasGradedFinal = deliverables.some((d: any) =>
             (d.title?.toLowerCase().includes('final') || d.title?.toLowerCase().includes('presentation')) &&
@@ -126,9 +119,7 @@ export default function ProjectArchivePage() {
         const mapped: ArchiveProject[] = completedProjects.map((p: any) => {
           const deliverables = p.deliverables || []
           const gradedDelivs = deliverables.filter((d: any) => d.status === 'graded' && d.grade)
-          const finalGrade = gradedDelivs.length > 0
-            ? gradedDelivs[gradedDelivs.length - 1].grade
-            : 'N/A'
+          const finalGrade = p.grade || (gradedDelivs.length > 0 ? gradedDelivs[gradedDelivs.length - 1].grade : 'N/A')
 
           const createdYear = new Date(p.created_at).getFullYear()
           const academicYear = `${createdYear}/${createdYear + 1}`
