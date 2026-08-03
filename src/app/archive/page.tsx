@@ -78,7 +78,7 @@ export default function ProjectArchivePage() {
         // - Instructor/Supervisor/Admin/Student: fetch projects and filter completed
         if (role === 'supervisor') {
           query = query.eq('instructor_id', user.id)
-        } else if (role === 'industry') {
+        } else if (role === 'industry' || role === 'industry_partner') {
           query = query.eq('industry_partner_id', user.id)
         }
         // Students, Instructors and Admin see completed projects in their scope
@@ -170,7 +170,8 @@ export default function ProjectArchivePage() {
     switch (userRole) {
       case 'instructor': return 'Projects You Supervised'
       case 'supervisor': return 'Projects You Mentored'
-      case 'industry': return 'Problems You Sponsored'
+      case 'industry':
+      case 'industry_partner': return 'Your Sponsored Industry Projects'
       case 'examiner_panel': return 'All Evaluated Projects'
       default: return 'Completed Projects'
     }
@@ -180,7 +181,8 @@ export default function ProjectArchivePage() {
     switch (userRole) {
       case 'instructor': return 'Browse projects you supervised that have been completed and graded.'
       case 'supervisor': return 'Review the final outcomes of projects you mentored.'
-      case 'industry': return 'View completed outcomes from the industry problems you submitted.'
+      case 'industry':
+      case 'industry_partner': return 'View completed outcomes from the industry problems you submitted.'
       case 'examiner_panel': return 'Full archive of evaluated and completed projects across all cohorts.'
       default: return 'Explore completed Capstone theses and Industry projects for inspiration and reference.'
     }
