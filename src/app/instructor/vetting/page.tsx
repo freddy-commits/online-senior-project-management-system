@@ -78,6 +78,8 @@ export default function InstructorVettingPage() {
     if (instructorDept) {
       if (studentIds.length > 0) {
         query = query.or(`industry_partner_id.not.is.null,student_id.in.(${studentIds.join(',')})`)
+      } else {
+        query = query.not('industry_partner_id', 'is', null)
       }
     }
 

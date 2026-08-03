@@ -126,7 +126,7 @@ export default async function InstructorDashboardPage() {
     studentIds = (deptStudents || []).map((s: any) => s.id)
   }
 
-  // Fetch projects — filtered to same-department students if department is set
+  // Fetch projects — filtered to same-department students or department-matched industry problem statements
   let projectsQuery = supabase
     .from('projects')
     .select('*, student:student_id(full_name, email, department), instructor:instructor_id(full_name), supervisor:instructor_id(full_name), partner:industry_partner_id(full_name)')
@@ -134,19 +134,34 @@ export default async function InstructorDashboardPage() {
 
   if (instructorDepartment) {
     if (studentIds.length > 0) {
-      projectsQuery = projectsQuery.in('student_id', studentIds)
+      projectsQuery = projectsQuery.or(`industry_partner_id.not.is.null,student_id.in.(${studentIds.join(',')})`)
     } else {
-      // No students in this department yet — show empty
-      projectsQuery = projectsQuery.eq('student_id', '00000000-0000-0000-0000-000000000000')
+      projectsQuery = projectsQuery.not('industry_partner_id', 'is', null)
     }
   }
 
   const { data: projects } = await projectsQuery
 
-  const enrichedProjects = projects?.map((p: any) => ({
-    ...p,
-    origin: p.industry_partner_id ? 'industry' : 'academic'
-  })) || []
+  const enrichedProjects = (projects || [])
+    .map((p: any) => {
+      let targetDept = 'General'
+      if (p.description?.includes('Target Department:')) {
+        const match = p.description.match(/Target Department:\s*([^|\n]+)/)
+        if (match && match[1]) targetDept = match[1].trim()
+      }
+      return {
+        ...p,
+        origin: p.industry_partner_id ? 'industry' : 'academic',
+        target_department: targetDept
+      }
+    })
+    .filter((p: any) => {
+      if (!instructorDepartment) return true
+      if (p.origin === 'industry') {
+        return p.target_department === instructorDepartment || p.target_department === 'General' || !p.description?.includes('Target Department:')
+      }
+      return true
+    })
 
   // Fetch supervisors
   const { data: supervisors } = await supabase
