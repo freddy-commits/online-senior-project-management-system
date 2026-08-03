@@ -65,7 +65,7 @@ export default function PartnerLayoutClient({ children, initialUserName }: Partn
 
   const menuItems = [
     { name: 'Dashboard', icon: <LayoutDashboard className="w-5 h-5" />, path: '/partner/dashboard' },
-    { name: 'Archive', icon: <Archive className="w-5 h-5" />, path: '/archive' },
+    { name: 'Archive', icon: <Archive className="w-5 h-5" />, path: '/partner/archive' },
     { name: 'Messages', icon: <MessageSquare className="w-5 h-5" />, path: '/messages' },
     { name: 'Settings', icon: <Settings className="w-5 h-5" />, path: '/partner/settings' },
   ]
@@ -73,28 +73,28 @@ export default function PartnerLayoutClient({ children, initialUserName }: Partn
   const unreadCount = notifications.filter(n => !n.is_read).length
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] text-slate-900 flex flex-col font-sans">
+    <div className="min-h-screen bg-[#F9FAFB] text-slate-900 flex flex-col font-sans">
       {/* Background Orbs */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-[-10%] right-[-10%] w-[40%] h-[40%] bg-indigo-100/60 blur-[120px] rounded-full" />
         <div className="absolute bottom-[-10%] left-[-10%] w-[40%] h-[40%] bg-purple-100/50 blur-[120px] rounded-full" />
       </div>
 
-      {/* Full-width Header with Top Navigation */}
-      <header className="h-20 bg-white/80 backdrop-blur-md border-b border-slate-200 sticky top-0 z-40 px-4 sm:px-8 flex items-center justify-between shadow-sm gap-4">
+      {/* Full-width Header matching Landing Page Navy Header */}
+      <header className="h-20 bg-[#111827] sticky top-0 z-40 px-4 sm:px-8 flex items-center justify-between shadow-md gap-4">
         <div className="flex items-center gap-3 sm:gap-8 min-w-0">
           {/* Brand Logo */}
           <Link href="/" className="flex items-center gap-2 sm:gap-3 shrink-0">
-            <div className="w-8 h-8 bg-[#e37b2d] rounded-lg flex items-center justify-center shrink-0">
-              <span className="text-white font-bold text-lg">P</span>
+            <div className="w-8 h-8 bg-[#F59E0B] rounded-lg flex items-center justify-center font-black text-[#111827] text-sm shrink-0">
+              P
             </div>
-            <span className="font-bold text-sm sm:text-lg tracking-tight text-slate-900 hidden sm:inline-block">
+            <span className="font-extrabold text-sm sm:text-lg tracking-tight text-white hidden sm:inline-block">
               Project Station
             </span>
           </Link>
 
           {/* Navigation Links in the Header for Partner portal */}
-          <nav className="flex items-center gap-0.5 sm:gap-1 bg-slate-100/80 p-1 sm:p-1.5 rounded-xl sm:rounded-2xl border border-slate-200/50 overflow-x-auto whitespace-nowrap scrollbar-none shrink-0 max-w-[45vw] sm:max-w-none">
+          <nav className="flex items-center gap-0.5 sm:gap-1 bg-slate-800/80 p-1 sm:p-1.5 rounded-xl sm:rounded-2xl border border-slate-700/60 overflow-x-auto whitespace-nowrap scrollbar-none shrink-0 max-w-[45vw] sm:max-w-none">
             {menuItems.map((item) => {
               const isActive = pathname === item.path || (item.path !== '/' && pathname.startsWith(item.path))
               return (
@@ -103,8 +103,8 @@ export default function PartnerLayoutClient({ children, initialUserName }: Partn
                   href={item.path}
                   className={`flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-4 py-2 sm:py-2.5 rounded-lg sm:rounded-xl text-[10px] sm:text-xs font-bold transition-all shrink-0 relative ${
                     isActive 
-                      ? 'text-indigo-600 bg-white shadow-sm shadow-slate-100' 
-                      : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50/50'
+                      ? 'text-[#111827] bg-[#F59E0B] shadow-sm font-extrabold' 
+                      : 'text-slate-300 hover:text-white hover:bg-slate-700/60'
                   }`}
                 >
                   <span className="scale-75 sm:scale-100">{item.icon}</span>
@@ -172,8 +172,8 @@ export default function PartnerLayoutClient({ children, initialUserName }: Partn
               {userName ? userName[0] : 'P'}
             </div>
             <div className="text-left hidden sm:block">
-              <div className="text-xs font-bold text-slate-900 leading-tight">{userName}</div>
-              <div className="text-[9px] text-indigo-600 font-extrabold uppercase tracking-wider mt-0.5">Industry Partner</div>
+              <div className="text-xs font-bold text-white leading-tight">{userName}</div>
+              <div className="text-[9px] text-[#F59E0B] font-extrabold uppercase tracking-wider mt-0.5">Industry Partner</div>
             </div>
           </Link>
 
@@ -182,10 +182,10 @@ export default function PartnerLayoutClient({ children, initialUserName }: Partn
               await supabase.auth.signOut()
               window.location.href = '/'
             }}
-            className="p-2 hover:bg-slate-100 rounded-xl transition-colors ml-2"
+            className="p-2 hover:bg-slate-800 text-slate-400 hover:text-white rounded-xl transition-colors ml-2"
             title="Log Out"
           >
-            <LogOut className="w-5 h-5 text-slate-500" />
+            <LogOut className="w-5 h-5" />
           </button>
         </div>
       </header>

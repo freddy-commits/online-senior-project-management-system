@@ -264,7 +264,7 @@ export default function PartnerDashboardPage() {
           
           <button 
             onClick={() => setActiveTab(activeTab === 'my-problems' ? 'submit-problem' : 'my-problems')}
-            className="px-5 py-2 rounded-full text-xs font-black uppercase tracking-wider bg-blue-600 hover:bg-blue-700 text-white shadow-sm shrink-0 cursor-pointer"
+            className="px-5 py-2.5 rounded-full text-xs font-black uppercase tracking-wider bg-[#F59E0B] hover:bg-[#d98506] text-[#111827] shadow-sm shrink-0 cursor-pointer transition-all"
           >
             {activeTab === 'my-problems' ? 'Submit Problem' : 'Back to List'}
           </button>
