@@ -83,10 +83,27 @@ export default function InstructorVettingPage() {
 
     const { data: projs } = await query
 
-    const enrichedProjs = (projs || []).map((p: any) => ({
-      ...p,
-      origin: p.industry_partner_id ? 'industry' : 'student'
-    }))
+    const enrichedProjs = (projs || [])
+      .map((p: any) => {
+        let targetDept = 'General'
+        if (p.description?.includes('Target Department:')) {
+          const match = p.description.match(/Target Department:\s*([^|\n]+)/)
+          if (match && match[1]) targetDept = match[1].trim()
+        }
+        return {
+          ...p,
+          origin: p.industry_partner_id ? 'industry' : 'student',
+          target_department: targetDept
+        }
+      })
+      .filter((p: any) => {
+        if (!instructorDept) return true
+        if (p.origin === 'industry') {
+          return p.target_department === instructorDept || p.target_department === 'General' || !p.description?.includes('Target Department:')
+        }
+        return true
+      })
+
     setProposals(enrichedProjs)
     
     // Auto-select first item in current view if possible
@@ -387,7 +404,7 @@ export default function InstructorVettingPage() {
                   <div className="overflow-hidden">
                     <h3 className="font-bold text-sm truncate leading-snug">{p.title}</h3>
                     
-                    <div className="flex items-center gap-2 mt-2">
+                    <div className="flex items-center gap-2 mt-2 flex-wrap">
                       <span className={`text-[8px] uppercase font-black px-2 py-0.5 rounded tracking-wider ${
                         p.origin === 'industry'
                           ? 'bg-purple-100 text-purple-700 border border-purple-200/50'
@@ -395,6 +412,11 @@ export default function InstructorVettingPage() {
                       }`}>
                         {p.origin === 'industry' ? 'Industry Sponsored' : 'Student Proposal'}
                       </span>
+                      {p.target_department && (
+                        <span className="text-[8px] uppercase font-black px-2 py-0.5 rounded tracking-wider bg-blue-50 text-blue-700 border border-blue-200/50">
+                          Dept: {p.target_department}
+                        </span>
+                      )}
                     </div>
 
                     <p className={`text-[10px] mt-2 font-semibold ${isSelected ? 'text-slate-300' : 'text-slate-400'}`}>

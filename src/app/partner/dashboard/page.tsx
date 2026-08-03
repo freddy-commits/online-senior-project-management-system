@@ -38,6 +38,7 @@ export default function PartnerDashboardPage() {
   
   // Submit form states
   const [probTitle, setProbTitle] = useState('')
+  const [probTargetDept, setProbTargetDept] = useState('Information Technology')
   const [probCategory, setProbCategory] = useState('Operations')
   const [probPriority, setProbPriority] = useState('High')
   const [probDesc, setProbDesc] = useState('')
@@ -173,7 +174,7 @@ export default function PartnerDashboardPage() {
       if (probSkills) {
         descriptionWithBrief += `\n\nRequired Skills: ${probSkills}`
       }
-      descriptionWithBrief += `\n\nCategory: ${probCategory} | Priority: ${probPriority}`
+      descriptionWithBrief += `\n\nTarget Department: ${probTargetDept} | Category: ${probCategory} | Priority: ${probPriority}`
       if (uploadedFileUrl) {
         descriptionWithBrief += `\n\n[Attached Brief: ${uploadedFileName} | ${uploadedFileUrl}]`
       }
@@ -414,6 +415,23 @@ export default function PartnerDashboardPage() {
                     placeholder="e.g. Customer Churn Prediction Model"
                     className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-xs font-bold text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500" 
                   />
+                </div>
+
+                <div>
+                  <label className="block text-[9px] uppercase tracking-[0.2em] font-black text-slate-450 mb-2">Target Academic Department *</label>
+                  <select 
+                    value={probTargetDept}
+                    onChange={(e) => setProbTargetDept(e.target.value)}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500 cursor-pointer font-extrabold"
+                  >
+                    <option value="Information Technology">Information Technology</option>
+                    <option value="Computer Science">Computer Science</option>
+                    <option value="Mathematics">Mathematics</option>
+                    <option value="Software Engineering">Software Engineering</option>
+                    <option value="Cybersecurity">Cybersecurity</option>
+                    <option value="Business Information Systems">Business Information Systems</option>
+                    <option value="General">General / All Departments</option>
+                  </select>
                 </div>
 
                 <div>
