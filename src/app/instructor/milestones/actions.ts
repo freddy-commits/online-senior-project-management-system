@@ -54,6 +54,7 @@ export async function createInstructorMilestone(
     if (error) throw error
 
     revalidatePath('/instructor/milestones')
+    revalidatePath('/instructor/dashboard')
     revalidatePath('/student/milestones')
     return { success: true, data }
   } catch (err: any) {

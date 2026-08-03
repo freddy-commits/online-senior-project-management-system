@@ -160,10 +160,16 @@ export default async function InstructorDashboardPage() {
     .select('id, full_name, role, email, phone')
     .eq('role', 'industry')
 
-  // Fetch deliverables
-  const { data: deliverables } = await supabase
-    .from('deliverables')
-    .select('*')
+  // Fetch deliverables for department projects
+  const projectIds = enrichedProjects.map((p: any) => p.id)
+  let deliverables: any[] = []
+  if (projectIds.length > 0) {
+    const { fetchDepartmentDeliverables } = await import('@/app/instructor/milestones/actions')
+    const res = await fetchDepartmentDeliverables(projectIds)
+    if (res.success && res.data) {
+      deliverables = res.data
+    }
+  }
 
   return (
     <div className="p-4 md:p-8 pb-20">

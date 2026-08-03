@@ -111,11 +111,14 @@ export default function InstructorDashboardClient({
     }
 
     // Refresh Deliverables
-    const { data: newDeliverables } = await supabase
-      .from('deliverables')
-      .select('*')
-      .order('due_date', { ascending: true })
-    if (newDeliverables) setDeliverables(newDeliverables)
+    const pIds = (newProjects || projects).map((p: any) => p.id)
+    if (pIds.length > 0) {
+      const { fetchDepartmentDeliverables } = await import('@/app/instructor/milestones/actions')
+      const delivRes = await fetchDepartmentDeliverables(pIds)
+      if (delivRes.success && delivRes.data) {
+        setDeliverables(delivRes.data)
+      }
+    }
 
     // Refresh Partners
     const { data: newPartners } = await supabase
