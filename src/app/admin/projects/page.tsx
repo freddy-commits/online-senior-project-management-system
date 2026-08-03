@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { fetchAdminProjectsAndDeliverables } from './actions'
 import {
   FolderKanban,
   Search,
@@ -52,43 +53,56 @@ export default function AdminProjectOversight() {
 
   useEffect(() => {
     async function fetchData() {
-      // Fetch ALL projects — admin sees everything
-      const { data: projs } = await supabase
-        .from('projects')
-        .select(`
-          *,
-          student:student_id(full_name, email, department),
-          instructor:instructor_id(full_name, email)
-        `)
-        .order('created_at', { ascending: false })
-
-      setProjects(projs || [])
-
-      // Fetch all milestones for progress calculation
-      const { data: ms } = await supabase
-        .from('milestones')
-        .select('id, project_id, status')
-
-      setMilestones(ms || [])
+      const res = await fetchAdminProjectsAndDeliverables()
+      if (res.success) {
+        setProjects(res.projects || [])
+        setMilestones(res.deliverables || [])
+      } else {
+        const { data: projs } = await supabase
+          .from('projects')
+          .select(`
+            *,
+            student:student_id(full_name, email, department),
+            instructor:instructor_id(full_name, email)
+          `)
+          .order('created_at', { ascending: false })
+        setProjects(projs || [])
+      }
       setLoading(false)
     }
     fetchData()
   }, [])
 
   function getProgress(projectId: string) {
+    const proj = projects.find(p => p.id === projectId)
+    if (proj && (proj.status === 'completed' || proj.grade || proj.grade_published)) {
+      return 100
+    }
     const pms = milestones.filter(m => m.project_id === projectId)
-    if (!pms.length) return 0
-    const done = pms.filter(m => m.status === 'completed' || m.status === 'approved').length
+    if (!pms.length) {
+      return (proj?.status === 'completed' || proj?.grade) ? 100 : 0
+    }
+    const done = pms.filter(m => m.status === 'completed' || m.status === 'graded' || m.status === 'submitted' || m.status === 'approved').length
     return Math.round((done / pms.length) * 100)
   }
 
   function getMilestoneStats(projectId: string) {
+    const proj = projects.find(p => p.id === projectId)
+    const isProjDone = proj && (proj.status === 'completed' || proj.grade || proj.grade_published)
     const pms = milestones.filter(m => m.project_id === projectId)
+    if (isProjDone) {
+      return {
+        total: pms.length || 1,
+        done: pms.length || 1,
+        inProgress: 0,
+        pending: 0,
+      }
+    }
     return {
       total: pms.length,
-      done: pms.filter(m => m.status === 'completed' || m.status === 'approved').length,
-      inProgress: pms.filter(m => m.status === 'in_progress').length,
-      pending: pms.filter(m => !m.status || m.status === 'pending').length,
+      done: pms.filter(m => m.status === 'completed' || m.status === 'graded' || m.status === 'submitted' || m.status === 'approved').length,
+      inProgress: pms.filter(m => m.status === 'in_progress' || m.status === 'submitted').length,
+      pending: pms.filter(m => !m.status || m.status === 'pending' || m.status === 'todo').length,
     }
   }
 
@@ -247,7 +261,9 @@ export default function AdminProjectOversight() {
           {filtered.map(project => {
             const progress = getProgress(project.id)
             const ms = getMilestoneStats(project.id)
-            const statusCfg = STATUS_CONFIG[project.status] || STATUS_CONFIG['pending']
+            const isCompleted = project.status === 'completed' || project.grade || project.grade_published
+            const statusKey = isCompleted ? 'completed' : project.status
+            const statusCfg = STATUS_CONFIG[statusKey] || STATUS_CONFIG['pending']
 
             return (
               <motion.div
