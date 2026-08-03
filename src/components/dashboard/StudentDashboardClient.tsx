@@ -22,7 +22,8 @@ import {
   User,
   Sliders,
   TrendingUp,
-  FileSignature
+  FileSignature,
+  Award
 } from 'lucide-react'
 
 import { useTrack } from '@/components/providers/TrackProvider'
@@ -72,6 +73,16 @@ export default function StudentDashboardClient({
     return d.status === 'todo' && d.due_date && new Date(d.due_date).getTime() < Date.now()
   }).length
   
+  const gradedDeliverables = deliverables.filter((d: any) => d.status === 'graded' && d.grade)
+  let totalScoreSum = 0
+  gradedDeliverables.forEach((d: any) => {
+    const raw = String(d.grade).replace('/20', '').trim()
+    const val = parseFloat(raw)
+    if (!isNaN(val)) totalScoreSum += val
+  })
+  const avgScore = gradedDeliverables.length > 0 ? (totalScoreSum / gradedDeliverables.length).toFixed(1) : null
+  const finalGradeDisplay = activeProject?.grade || (avgScore !== null ? `Grade ${parseFloat(avgScore) >= 16 ? 'A' : parseFloat(avgScore) >= 13 ? 'B' : 'C'}` : null)
+
   const healthPercent = Math.max(0, 100 - overdueCount * 25)
 
   let healthLabel = 'Excellent'
@@ -200,7 +211,7 @@ export default function StudentDashboardClient({
                     </div>
 
                     {/* Stats cards row */}
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
                       <div className="bg-white border border-slate-200 rounded-3xl p-5 shadow-sm">
                         <span className="text-[10px] font-black text-slate-400 tracking-wider uppercase block">Project Health</span>
                         <span className="text-3xl font-black text-slate-900 mt-2 block">{healthPercent}%</span>
@@ -212,7 +223,7 @@ export default function StudentDashboardClient({
                         <span className="text-[10px] font-black text-slate-400 tracking-wider uppercase block">Total Progress</span>
                         <span className="text-3xl font-black text-[#F59E0B] mt-2 block">{progressPercent}%</span>
                         <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase bg-blue-50 text-blue-600 border border-blue-100 mt-2">
-                          In Motion
+                          {progressPercent === 100 ? 'Completed' : 'In Motion'}
                         </span>
                       </div>
                       <div className="bg-white border border-slate-200 rounded-3xl p-5 shadow-sm">
@@ -220,6 +231,15 @@ export default function StudentDashboardClient({
                         <span className="text-3xl font-black text-slate-900 mt-2 block">{completedCount} <span className="text-sm text-slate-400 font-semibold">/ {totalCount}</span></span>
                         <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase bg-slate-50 text-slate-650 border border-slate-100 mt-2">
                           Completed
+                        </span>
+                      </div>
+                      <div className="bg-white border border-indigo-200 bg-gradient-to-br from-white to-indigo-50/40 rounded-3xl p-5 shadow-sm">
+                        <span className="text-[10px] font-black text-indigo-600 tracking-wider uppercase block">Final Awarded Grade</span>
+                        <span className="text-3xl font-black text-indigo-900 mt-2 block">
+                          {finalGradeDisplay || 'In Review'}
+                        </span>
+                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase bg-emerald-50 text-emerald-700 border border-emerald-200 mt-2">
+                          {activeProject?.grade ? 'Grade Published' : (avgScore ? `Avg: ${avgScore}/20 Marks` : 'Awaiting Grade')}
                         </span>
                       </div>
                     </div>
@@ -263,6 +283,73 @@ export default function StudentDashboardClient({
                           <text x="340" y="190" fontSize="9" fontWeight="bold" fill="#94a3b8" textAnchor="middle">May</text>
                         </svg>
                       </div>
+                    </div>
+
+                    {/* Supervisor Evaluation & Milestone Marks Breakdown */}
+                    <div className="bg-white border border-slate-200 rounded-[2rem] p-6 shadow-sm space-y-4">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-4">
+                        <div>
+                          <h3 className="text-sm font-black text-slate-900 uppercase tracking-wider flex items-center gap-2">
+                            <Award className="w-4 h-4 text-indigo-600" /> Supervisor Evaluation &amp; Milestone Marks
+                          </h3>
+                          <p className="text-[11px] text-slate-500 font-semibold mt-0.5">
+                            Detailed marks awarded for each milestone deliverable and final cohort grade.
+                          </p>
+                        </div>
+                        {finalGradeDisplay && (
+                          <div className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-50 border border-indigo-200 rounded-2xl text-xs font-black text-indigo-700">
+                            <span>FINAL COHORT GRADE:</span>
+                            <span className="text-sm bg-indigo-600 text-white px-2.5 py-0.5 rounded-lg">{finalGradeDisplay}</span>
+                          </div>
+                        )}
+                      </div>
+
+                      {deliverables.length === 0 ? (
+                        <p className="text-xs text-slate-400 font-semibold italic py-4">No deliverables configured yet.</p>
+                      ) : (
+                        <div className="overflow-x-auto">
+                          <table className="w-full text-left border-collapse">
+                            <thead>
+                              <tr className="border-b border-slate-100 text-[10px] font-black uppercase tracking-wider text-slate-400 bg-slate-50/50">
+                                <th className="py-3 px-4">Milestone Title</th>
+                                <th className="py-3 px-4">Due Date</th>
+                                <th className="py-3 px-4">Status</th>
+                                <th className="py-3 px-4 text-right">Awarded Mark</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-100 text-xs font-semibold text-slate-700">
+                              {deliverables.map((d: any, idx: number) => (
+                                <tr key={d.id || idx} className="hover:bg-slate-50/50 transition-colors">
+                                  <td className="py-3.5 px-4 font-bold text-slate-900">{d.title}</td>
+                                  <td className="py-3.5 px-4 text-slate-500">
+                                    {d.due_date ? new Date(d.due_date).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' }) : 'N/A'}
+                                  </td>
+                                  <td className="py-3.5 px-4">
+                                    <span className={`px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase ${
+                                      d.status === 'graded' || d.status === 'completed'
+                                        ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                                        : d.status === 'submitted'
+                                        ? 'bg-blue-50 text-blue-700 border border-blue-200'
+                                        : 'bg-slate-100 text-slate-500 border border-slate-200'
+                                    }`}>
+                                      {d.status === 'graded' ? 'GRADED' : d.status === 'submitted' ? 'SUBMITTED' : 'PENDING'}
+                                    </span>
+                                  </td>
+                                  <td className="py-3.5 px-4 text-right font-black">
+                                    {d.grade ? (
+                                      <span className="px-3 py-1 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-lg text-xs font-black">
+                                        {d.grade}
+                                      </span>
+                                    ) : (
+                                      <span className="text-slate-400 italic text-[11px]">Unmarked</span>
+                                    )}
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      )}
                     </div>
                   </>
                 )}
@@ -309,7 +396,7 @@ export default function StudentDashboardClient({
                     </div>
 
                     {/* Stats cards row */}
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
                       <div className="bg-white border border-slate-200 rounded-3xl p-5 shadow-sm">
                         <span className="text-[10px] font-black text-slate-400 tracking-wider uppercase block">Project Health</span>
                         <span className="text-3xl font-black text-slate-900 mt-2 block">{healthPercent}%</span>
@@ -321,7 +408,7 @@ export default function StudentDashboardClient({
                         <span className="text-[10px] font-black text-slate-400 tracking-wider uppercase block">Total Progress</span>
                         <span className="text-3xl font-black text-[#F59E0B] mt-2 block">{progressPercent}%</span>
                         <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase bg-[#fdf5f0] text-[#a75d24] border border-[#a75d24]/10 mt-2">
-                          In Progress
+                          {progressPercent === 100 ? 'Completed' : 'In Progress'}
                         </span>
                       </div>
                       <div className="bg-white border border-slate-200 rounded-3xl p-5 shadow-sm">
@@ -329,6 +416,15 @@ export default function StudentDashboardClient({
                         <span className="text-3xl font-black text-slate-900 mt-2 block">{completedCount} <span className="text-sm text-slate-400 font-semibold">/ {totalCount}</span></span>
                         <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase bg-slate-50 text-slate-650 border border-slate-100 mt-2">
                           Graded
+                        </span>
+                      </div>
+                      <div className="bg-white border border-indigo-200 bg-gradient-to-br from-white to-indigo-50/40 rounded-3xl p-5 shadow-sm">
+                        <span className="text-[10px] font-black text-indigo-600 tracking-wider uppercase block">Final Awarded Grade</span>
+                        <span className="text-3xl font-black text-indigo-900 mt-2 block">
+                          {finalGradeDisplay || 'In Review'}
+                        </span>
+                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase bg-emerald-50 text-emerald-700 border border-emerald-200 mt-2">
+                          {activeProject?.grade ? 'Grade Published' : (avgScore ? `Avg: ${avgScore}/20 Marks` : 'Awaiting Grade')}
                         </span>
                       </div>
                     </div>
@@ -378,6 +474,73 @@ export default function StudentDashboardClient({
                           )
                         })()}
                       </div>
+                    </div>
+
+                    {/* Supervisor Evaluation & Milestone Marks Breakdown */}
+                    <div className="bg-white border border-slate-200 rounded-[2rem] p-6 shadow-sm space-y-4">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-4">
+                        <div>
+                          <h3 className="text-sm font-black text-slate-900 uppercase tracking-wider flex items-center gap-2">
+                            <Award className="w-4 h-4 text-indigo-600" /> Supervisor Evaluation &amp; Milestone Marks
+                          </h3>
+                          <p className="text-[11px] text-slate-500 font-semibold mt-0.5">
+                            Detailed marks awarded for each milestone deliverable and final cohort grade.
+                          </p>
+                        </div>
+                        {finalGradeDisplay && (
+                          <div className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-50 border border-indigo-200 rounded-2xl text-xs font-black text-indigo-700">
+                            <span>FINAL COHORT GRADE:</span>
+                            <span className="text-sm bg-indigo-600 text-white px-2.5 py-0.5 rounded-lg">{finalGradeDisplay}</span>
+                          </div>
+                        )}
+                      </div>
+
+                      {deliverables.length === 0 ? (
+                        <p className="text-xs text-slate-400 font-semibold italic py-4">No deliverables configured yet.</p>
+                      ) : (
+                        <div className="overflow-x-auto">
+                          <table className="w-full text-left border-collapse">
+                            <thead>
+                              <tr className="border-b border-slate-100 text-[10px] font-black uppercase tracking-wider text-slate-400 bg-slate-50/50">
+                                <th className="py-3 px-4">Milestone Title</th>
+                                <th className="py-3 px-4">Due Date</th>
+                                <th className="py-3 px-4">Status</th>
+                                <th className="py-3 px-4 text-right">Awarded Mark</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-100 text-xs font-semibold text-slate-700">
+                              {deliverables.map((d: any, idx: number) => (
+                                <tr key={d.id || idx} className="hover:bg-slate-50/50 transition-colors">
+                                  <td className="py-3.5 px-4 font-bold text-slate-900">{d.title}</td>
+                                  <td className="py-3.5 px-4 text-slate-500">
+                                    {d.due_date ? new Date(d.due_date).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' }) : 'N/A'}
+                                  </td>
+                                  <td className="py-3.5 px-4">
+                                    <span className={`px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase ${
+                                      d.status === 'graded' || d.status === 'completed'
+                                        ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                                        : d.status === 'submitted'
+                                        ? 'bg-blue-50 text-blue-700 border border-blue-200'
+                                        : 'bg-slate-100 text-slate-500 border border-slate-200'
+                                    }`}>
+                                      {d.status === 'graded' ? 'GRADED' : d.status === 'submitted' ? 'SUBMITTED' : 'PENDING'}
+                                    </span>
+                                  </td>
+                                  <td className="py-3.5 px-4 text-right font-black">
+                                    {d.grade ? (
+                                      <span className="px-3 py-1 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-lg text-xs font-black">
+                                        {d.grade}
+                                      </span>
+                                    ) : (
+                                      <span className="text-slate-400 italic text-[11px]">Unmarked</span>
+                                    )}
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      )}
                     </div>
                   </>
                 )}
