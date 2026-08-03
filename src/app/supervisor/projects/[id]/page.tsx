@@ -13,7 +13,8 @@ import {
   ChevronRight,
   ShieldCheck,
   Lock,
-  X
+  X,
+  Video
 } from 'lucide-react'
 import { 
   getSupervisorProjectDetails, 
@@ -196,6 +197,23 @@ export default function SupervisorReviewPage() {
                           </span>
                         )}
                       </div>
+
+                      {(item.meeting_url || item.description?.includes('Zoom')) && (
+                        <div className="mt-3 p-2.5 bg-indigo-50 border border-indigo-200 rounded-xl flex items-center justify-between gap-3">
+                          <div className="flex items-center gap-2">
+                            <Video className="w-4 h-4 text-indigo-600 shrink-0" />
+                            <span className="text-[11px] font-black text-indigo-900">Defense Zoom Link:</span>
+                          </div>
+                          <a
+                            href={item.meeting_url || (item.description?.split('Zoom Defense Link: ')[1] || '#')}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="px-3 py-1 bg-indigo-600 hover:bg-indigo-700 text-white font-black text-[9px] uppercase tracking-wider rounded-lg shadow-sm flex items-center gap-1 shrink-0"
+                          >
+                            Join Zoom <ExternalLink className="w-3 h-3" />
+                          </a>
+                        </div>
+                      )}
                     </div>
                   </div>
 

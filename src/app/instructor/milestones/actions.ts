@@ -24,7 +24,8 @@ export async function createInstructorMilestone(
   projectIds: string[],
   title: string,
   description: string,
-  dueDate: string
+  dueDate: string,
+  meetingUrl?: string
 ) {
   try {
     const userClient = await createServerUserClient()
@@ -38,12 +39,28 @@ export async function createInstructorMilestone(
     }
 
     const isoDueDate = new Date(dueDate).toISOString()
-    const payload = projectIds.map(pid => ({
-      project_id: pid,
-      title: description ? `${title} (${description})` : title,
-      due_date: isoDueDate,
-      status: 'todo'
-    }))
+    const payload = projectIds.map(pid => {
+      let finalTitle = title
+      if (meetingUrl) {
+        finalTitle = `${title} [Zoom Defense]`
+      } else if (description) {
+        finalTitle = `${title} (${description})`
+      }
+
+      let finalDesc = description
+      if (meetingUrl) {
+        finalDesc = `${description ? description + ' | ' : ''}Zoom Defense Link: ${meetingUrl}`
+      }
+
+      return {
+        project_id: pid,
+        title: finalTitle,
+        description: finalDesc,
+        due_date: isoDueDate,
+        status: 'todo',
+        meeting_url: meetingUrl || null
+      }
+    })
 
     const adminSupabase = createAdminClient()
     const { data, error } = await adminSupabase

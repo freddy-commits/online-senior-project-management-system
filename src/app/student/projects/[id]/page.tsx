@@ -20,7 +20,8 @@ import {
   ListTodo,
   Plus,
   Lock,
-  Users
+  Users,
+  Video
 } from 'lucide-react'
 
 export default function ProjectDetailsPage() {
@@ -192,6 +193,23 @@ export default function ProjectDetailsPage() {
                       <div>
                         <h3 className="font-bold text-lg text-slate-900">{item.title}</h3>
                         <p className="text-xs text-slate-500 font-medium mt-1">Due: {item.due_date ? new Date(item.due_date).toLocaleDateString() : 'TBD'}</p>
+                        
+                        {(item.meeting_url || item.description?.includes('Zoom')) && (
+                          <div className="mt-3 p-3 bg-indigo-50 border border-indigo-200 rounded-2xl flex items-center justify-between gap-3">
+                            <div className="flex items-center gap-2">
+                              <Video className="w-4 h-4 text-indigo-600 shrink-0" />
+                              <span className="text-xs font-black text-indigo-900">Instructor Defense Zoom Link:</span>
+                            </div>
+                            <a
+                              href={item.meeting_url || (item.description?.split('Zoom Defense Link: ')[1] || '#')}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white font-black text-[10px] uppercase tracking-wider rounded-xl shadow-sm flex items-center gap-1.5 shrink-0"
+                            >
+                              Join Presentation <ExternalLink className="w-3 h-3" />
+                            </a>
+                          </div>
+                        )}
                       </div>
                     </div>
                     <div className={`px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest ${

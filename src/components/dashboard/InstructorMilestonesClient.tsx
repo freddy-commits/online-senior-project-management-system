@@ -49,6 +49,7 @@ export default function InstructorMilestonesClient({
   const [mTitle, setMTitle] = useState('')
   const [mDescription, setMDescription] = useState('')
   const [mDueDate, setMDueDate] = useState('')
+  const [mZoomLink, setMZoomLink] = useState('')
   const [selectedProjectIds, setSelectedProjectIds] = useState<string[]>([])
   const [isCreatingMilestone, setIsCreatingMilestone] = useState(false)
   const [mError, setMError] = useState('')
@@ -148,7 +149,7 @@ export default function InstructorMilestonesClient({
     setIsCreatingMilestone(true)
     setMError('')
 
-    const res = await createInstructorMilestone(selectedProjectIds, mTitle.trim(), mDescription.trim(), mDueDate)
+    const res = await createInstructorMilestone(selectedProjectIds, mTitle.trim(), mDescription.trim(), mDueDate, mZoomLink.trim())
     if (!res.success) {
       setMError(res.error || 'Failed to create milestone.')
       setIsCreatingMilestone(false)
@@ -168,6 +169,7 @@ export default function InstructorMilestonesClient({
     setMTitle('')
     setMDescription('')
     setMDueDate('')
+    setMZoomLink('')
     setSelectedProjectIds([])
   }
 
@@ -575,6 +577,19 @@ export default function InstructorMilestonesClient({
                     value={mDueDate}
                     onChange={(e) => setMDueDate(e.target.value)}
                     className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 px-4 text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 cursor-pointer"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-black uppercase tracking-wider text-slate-600 mb-1">
+                    Defense / Presentation Zoom Link (Optional)
+                  </label>
+                  <input
+                    type="url"
+                    value={mZoomLink}
+                    onChange={(e) => setMZoomLink(e.target.value)}
+                    placeholder="https://zoom.us/j/123456789 or Google Meet link for final defense"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 px-4 text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
                   />
                 </div>
 
