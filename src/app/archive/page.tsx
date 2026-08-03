@@ -196,7 +196,6 @@ export default function ProjectArchivePage() {
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-100 pb-6">
           <div className="space-y-1.5">
             <span className="text-[10px] font-black text-indigo-600 uppercase tracking-widest flex items-center gap-1.5">
-              <Sparkles className="w-3.5 h-3.5" />
               {getRoleLabel()}
             </span>
             <h1 className="text-3xl font-black text-slate-900 tracking-tight">Project Archive</h1>

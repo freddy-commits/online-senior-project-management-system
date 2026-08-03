@@ -507,7 +507,7 @@ export default function StudentMilestonesPage() {
             exit={{ opacity: 0, y: -20, scale: 0.95 }}
             className="fixed top-24 right-8 z-50 bg-[#0b192f] text-white py-3.5 px-6 rounded-2xl shadow-xl border border-slate-700/50 flex items-center gap-3 text-xs font-bold"
           >
-            <Sparkles className="w-4.5 h-4.5 text-[#e37b2d]" />
+            <CheckCircle2 className="w-4.5 h-4.5 text-[#e37b2d]" />
             <span>{successToast}</span>
           </motion.div>
         )}
@@ -1228,7 +1228,6 @@ export default function StudentMilestonesPage() {
               {/* Modal Header */}
               <div className="bg-slate-50/50 dark:bg-slate-950/40 border-b border-slate-100 dark:border-slate-800 px-8 py-5 flex items-center justify-between">
                 <h3 className="text-lg font-black text-slate-900 dark:text-white flex items-center gap-2">
-                  <Sparkles className="w-5 h-5 text-[#a75d24]" />
                   Create Workspace Milestone
                 </h3>
                 <button 

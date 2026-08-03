@@ -214,7 +214,7 @@ export default function StudentDocumentsPage() {
             exit={{ opacity: 0, y: -16, scale: 0.95 }}
             className="fixed top-24 right-8 z-50 bg-slate-905 dark:bg-slate-800 text-white dark:text-slate-100 py-3.5 px-6 rounded-2xl shadow-xl border border-slate-700/50 flex items-center gap-3 text-xs font-bold"
           >
-            <Sparkles className="w-4 h-4 text-indigo-400" />
+            <CheckCircle2 className="w-4 h-4 text-indigo-400" />
             {toast}
           </motion.div>
         )}

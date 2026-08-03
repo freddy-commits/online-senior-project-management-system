@@ -544,7 +544,7 @@ export default function InstructorDocumentsClient({
             exit={{ opacity: 0, y: -20, scale: 0.95 }}
             className="fixed top-8 right-8 z-50 bg-slate-900 text-white py-4 px-6 rounded-2xl shadow-2xl border border-slate-700/50 flex items-center gap-3 text-xs font-bold font-sans"
           >
-            <Sparkles className="w-4.5 h-4.5 text-indigo-400" />
+            <CheckCircle2 className="w-4.5 h-4.5 text-indigo-400" />
             {toast}
           </motion.div>
         )}

@@ -617,7 +617,6 @@ export default function StudentDashboard() {
                           <p className="text-[10px] uppercase tracking-[0.35em] text-slate-600 font-black">Consultation Log</p>
                           <p className="mt-2 text-sm text-slate-700">Track office-hour requests and approval status.</p>
                         </div>
-                        <Sparkles className="w-5 h-5 text-emerald-600" />
                       </div>
                       <div className="space-y-3">
                         {meetingLogs.map((meeting) => (
