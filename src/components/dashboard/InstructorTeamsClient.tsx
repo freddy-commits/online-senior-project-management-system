@@ -178,8 +178,8 @@ export default function InstructorTeamsClient({
       setError('Please provide a team name.')
       return
     }
-    if (selectedStudents.length < 3) {
-      setError('A team must have at least 3 members (Min: 3, Max: 6).')
+    if (selectedStudents.length < 1) {
+      setError('Please select at least 1 student for the team.')
       return
     }
     setConfirming(true)
@@ -334,7 +334,7 @@ export default function InstructorTeamsClient({
   })
 
   // List of active projects for dropdown mapping (only show projects that do not have a team assigned yet)
-  const availableIndustryProjects = projects.filter(p => p.industry_partner_id && !p.team_id)
+  const availableIndustryProjects = projects.filter(p => (p.industry_partner_id || p.origin === 'industry') && !p.team_id && p.status !== 'rejected')
 
   // Collapse / Expand utilities for existing teams
   const [allCollapsed, setAllCollapsed] = useState(true)
@@ -635,7 +635,7 @@ export default function InstructorTeamsClient({
                     <div className="text-center text-slate-400 select-none py-4">
                       <UserPlus className="w-9 h-9 text-slate-300 mx-auto mb-2" />
                       <p className="text-xs font-bold">Drag students here or select on the left to add</p>
-                      <p className="text-[10px] mt-1 font-semibold">Min: 3 | Max: 6 Members</p>
+                      <p className="text-[10px] mt-1 font-semibold">Min: 1 | Max: 6 Members</p>
                     </div>
                   )}
 
