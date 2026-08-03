@@ -117,12 +117,14 @@ export default async function InstructorDashboardPage() {
 
   // Fetch students in the same department first (to filter projects)
   let studentIds: string[] = []
+  let deptStudentsList: any[] = []
   if (instructorDepartment) {
     const { data: deptStudents } = await supabase
       .from('profiles')
-      .select('id')
+      .select('id, full_name, email, department')
       .eq('role', 'student')
       .eq('department', instructorDepartment)
+    deptStudentsList = deptStudents || []
     studentIds = (deptStudents || []).map((s: any) => s.id)
   }
 
@@ -186,6 +188,12 @@ export default async function InstructorDashboardPage() {
     }
   }
 
+  // Fetch teams
+  const { data: teams } = await supabase
+    .from('teams')
+    .select('*')
+    .order('created_at', { ascending: false })
+
   return (
     <div className="p-4 md:p-8 pb-20">
       {/* Department filter notice */}
@@ -200,6 +208,8 @@ export default async function InstructorDashboardPage() {
         supervisors={supervisors || []} 
         industryPartners={industryPartners || []}
         initialDeliverables={deliverables || []}
+        teams={teams || []}
+        students={deptStudentsList || []}
       />
     </div>
   )

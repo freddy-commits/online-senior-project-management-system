@@ -37,12 +37,16 @@ export default function InstructorDashboardClient({
   initialProjects, 
   supervisors,
   industryPartners,
-  initialDeliverables
+  initialDeliverables,
+  teams = [],
+  students = []
 }: { 
   initialProjects: ProjectType[], 
   supervisors: any[],
   industryPartners: any[],
-  initialDeliverables: any[]
+  initialDeliverables: any[],
+  teams?: any[],
+  students?: any[]
 }) {
   const { trackMode } = useTrack()
   const isCapstone = trackMode === 'thesis' || trackMode === 'advisor' || trackMode === 'supervisor' || trackMode === 'panel'
@@ -57,6 +61,7 @@ export default function InstructorDashboardClient({
   // Approval Modal State
   const [selectedProjectForApproval, setSelectedProjectForApproval] = useState<any>(null)
   const [selectedSupervisorId, setSelectedSupervisorId] = useState<string>('')
+  const [selectedTeamId, setSelectedTeamId] = useState<string>('')
   const [processing, setProcessing] = useState<string | null>(null)
   const [successMessage, setSuccessMessage] = useState('')
 
@@ -128,7 +133,7 @@ export default function InstructorDashboardClient({
     if (newPartners) setPartners(newPartners)
   }
 
-  // Task: Review & Approve Proposal + Optional Supervisor Allocation
+  // Task: Review & Approve Proposal + Optional Supervisor Allocation + Team Squad Allocation
   async function handleApproveProject(e: React.FormEvent) {
     e.preventDefault()
     if (!selectedProjectForApproval) return
@@ -139,13 +144,16 @@ export default function InstructorDashboardClient({
       if (selectedSupervisorId) {
         updatePayload.instructor_id = selectedSupervisorId
       }
+      if (selectedTeamId) {
+        updatePayload.team_id = selectedTeamId
+      }
 
       const { error } = await supabase
         .from('projects')
         .update(updatePayload)
         .eq('id', selectedProjectForApproval.id)
       if (error) throw error
-      setSuccessMessage(`Project "${selectedProjectForApproval.title}" approved successfully!`)
+      setSuccessMessage(`Project "${selectedProjectForApproval.title}" approved and allocated successfully!`)
     } catch (err: any) {
       console.error("Supabase write failed:", err)
       alert("Failed to approve project: " + (err.message || err))
@@ -154,6 +162,8 @@ export default function InstructorDashboardClient({
     setTimeout(() => setSuccessMessage(''), 5000)
     await refreshData()
     setSelectedProjectForApproval(null)
+    setSelectedSupervisorId('')
+    setSelectedTeamId('')
     setProcessing(null)
   }
 
@@ -323,7 +333,8 @@ export default function InstructorDashboardClient({
   const totalTeams = industryProjects.length
   const queueSize = filteredProjects.filter(p => p.status === 'pending').length
   const approvals = filteredProjects.filter(p => p.status === 'approved').length
-  const milestoneCount = deliverables.length
+  const activeProjectIds = new Set(filteredProjects.map(p => p.id))
+  const milestoneCount = deliverables.filter((d: any) => activeProjectIds.has(d.project_id)).length
 
   return (
     <div className="w-full max-w-6xl mx-auto space-y-8 pb-16 text-slate-800 font-sans">
@@ -753,18 +764,49 @@ export default function InstructorDashboardClient({
                     Faculty Supervisor (Optional)
                   </label>
                   <p className="text-[11px] text-slate-500 mb-3 leading-relaxed font-semibold">
-                    Note: Supervisor assignment is managed by the System Administrator in Admin panel, but you may optionally assign one here.
+                    Select the faculty supervisor who will mentor and grade this project.
                   </p>
                   
                   <select
                     value={selectedSupervisorId}
                     onChange={(e) => setSelectedSupervisorId(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-3 px-4 text-slate-800 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-400/30 focus:border-indigo-500 transition-all cursor-pointer"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-3 px-4 text-slate-800 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-400/30 focus:border-indigo-500 transition-all cursor-pointer font-bold"
                   >
-                    <option value="">Do not assign supervisor now (Admin will assign)</option>
+                    <option value="">Do not assign supervisor now</option>
                     {supervisors.map(s => (
                       <option key={s.id} value={s.id} className="text-slate-800 font-bold bg-white">
                         {s.full_name} ({s.role})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="block text-xs font-black uppercase tracking-[0.15em] text-slate-400">
+                      Assign Student Squad / Team
+                    </label>
+                    <a 
+                      href="/instructor/teams" 
+                      target="_blank"
+                      className="text-[10px] font-black text-indigo-600 hover:underline uppercase tracking-wider flex items-center gap-1"
+                    >
+                      <Users className="w-3 h-3" /> Create New Squad
+                    </a>
+                  </div>
+                  <p className="text-[11px] text-slate-500 mb-3 leading-relaxed font-semibold">
+                    Form a student team to execute this industry challenge or research project.
+                  </p>
+                  
+                  <select
+                    value={selectedTeamId}
+                    onChange={(e) => setSelectedTeamId(e.target.value)}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-3 px-4 text-slate-800 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-400/30 focus:border-indigo-500 transition-all cursor-pointer font-bold"
+                  >
+                    <option value="">Do not assign squad now (Assign later in Team Station)</option>
+                    {teams.map((t: any) => (
+                      <option key={t.id} value={t.id} className="text-slate-800 font-bold bg-white">
+                        {t.name}
                       </option>
                     ))}
                   </select>
