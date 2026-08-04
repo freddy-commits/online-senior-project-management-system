@@ -171,6 +171,12 @@ export default async function InstructorDashboardPage() {
     .select('id, full_name, role, email, department')
     .in('role', ['supervisor', 'instructor'])
 
+  // Fetch examiners for examiner panel allocation
+  const { data: examiners } = await supabase
+    .from('profiles')
+    .select('id, full_name, role, email, department')
+    .in('role', ['examiner', 'examiner_panel', 'instructor', 'supervisor'])
+
   // Fetch industry partners
   const { data: industryPartners } = await supabase
     .from('profiles')
@@ -206,6 +212,7 @@ export default async function InstructorDashboardPage() {
       <InstructorDashboardClient 
         initialProjects={enrichedProjects} 
         supervisors={supervisors || []} 
+        examiners={examiners || []}
         industryPartners={industryPartners || []}
         initialDeliverables={deliverables || []}
         teams={teams || []}

@@ -36,6 +36,7 @@ type ProjectType = any
 export default function InstructorDashboardClient({ 
   initialProjects, 
   supervisors,
+  examiners = [],
   industryPartners,
   initialDeliverables,
   teams = [],
@@ -43,6 +44,7 @@ export default function InstructorDashboardClient({
 }: { 
   initialProjects: ProjectType[], 
   supervisors: any[],
+  examiners?: any[],
   industryPartners: any[],
   initialDeliverables: any[],
   teams?: any[],
@@ -62,6 +64,9 @@ export default function InstructorDashboardClient({
   const [selectedProjectForApproval, setSelectedProjectForApproval] = useState<any>(null)
   const [selectedSupervisorId, setSelectedSupervisorId] = useState<string>('')
   const [selectedTeamId, setSelectedTeamId] = useState<string>('')
+  const [selectedExaminer1, setSelectedExaminer1] = useState<string>('')
+  const [selectedExaminer2, setSelectedExaminer2] = useState<string>('')
+  const [selectedExaminer3, setSelectedExaminer3] = useState<string>('')
   const [processing, setProcessing] = useState<string | null>(null)
   const [successMessage, setSuccessMessage] = useState('')
 
@@ -133,7 +138,7 @@ export default function InstructorDashboardClient({
     if (newPartners) setPartners(newPartners)
   }
 
-  // Task: Review & Approve Proposal + Optional Supervisor Allocation + Team Squad Allocation
+  // Task: Review & Approve Proposal + Optional Supervisor Allocation + Team Squad Allocation + Examiner Panel Assignment
   async function handleApproveProject(e: React.FormEvent) {
     e.preventDefault()
     if (!selectedProjectForApproval) return
@@ -146,6 +151,11 @@ export default function InstructorDashboardClient({
       }
       if (selectedTeamId) {
         updatePayload.team_id = selectedTeamId
+      }
+
+      const panelList = [selectedExaminer1, selectedExaminer2, selectedExaminer3].filter(Boolean)
+      if (panelList.length > 0) {
+        updatePayload.examiner_panel = panelList
       }
 
       const { error } = await supabase
@@ -164,6 +174,9 @@ export default function InstructorDashboardClient({
     setSelectedProjectForApproval(null)
     setSelectedSupervisorId('')
     setSelectedTeamId('')
+    setSelectedExaminer1('')
+    setSelectedExaminer2('')
+    setSelectedExaminer3('')
     setProcessing(null)
   }
 
@@ -504,6 +517,7 @@ export default function InstructorDashboardClient({
                       <th className="py-4 px-6">Project</th>
                       <th className="py-4 px-6">Assigned Advisor</th>
                       <th className="py-4 px-6">Supervisor Marks (/20)</th>
+                      <th className="py-4 px-6">Panel Vetting Status</th>
                       <th className="py-4 px-6">Final Course Grade</th>
                       <th className="py-4 px-6">Publication Status</th>
                       <th className="py-4 px-6 text-right">Grade Entry</th>
@@ -527,6 +541,17 @@ export default function InstructorDashboardClient({
                           <span className="px-2.5 py-1 bg-slate-50 border border-slate-200 text-slate-700 rounded-lg text-xs font-bold">
                             {getSupervisorMarksSummary(p.id)}
                           </span>
+                        </td>
+                        <td className="py-4 px-6">
+                          {p.review_completed ? (
+                            <span className="px-2.5 py-1 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-lg text-[9px] font-black uppercase tracking-wider inline-flex items-center gap-1">
+                              <CheckCircle2 className="w-3 h-3 text-emerald-600" /> Reviewed
+                            </span>
+                          ) : (
+                            <span className="px-2.5 py-1 bg-amber-50 text-amber-700 border border-amber-200 rounded-lg text-[9px] font-black uppercase tracking-wider inline-flex items-center gap-1">
+                              <Clock className="w-3 h-3 text-amber-600" /> Pending Vetting
+                            </span>
+                          )}
                         </td>
                         <td className="py-4 px-6">
                           {p.grade ? (
@@ -811,6 +836,50 @@ export default function InstructorDashboardClient({
                     ))}
                   </select>
                 </div>
+
+                <div>
+                  <label className="block text-xs font-black uppercase tracking-[0.15em] text-slate-400 mb-2">
+                    Assign Panel Examiners Committee
+                  </label>
+                  <p className="text-[11px] text-slate-500 mb-3 leading-relaxed font-semibold">
+                    Assign up to 3 faculty examiners from your department to vet project deliverables, post oral defense questions, and view candidate submissions.
+                  </p>
+                  
+                  <div className="space-y-2">
+                    <select
+                      value={selectedExaminer1}
+                      onChange={(e) => setSelectedExaminer1(e.target.value)}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 px-3 text-slate-800 text-xs font-bold focus:outline-none focus:ring-2 focus:ring-indigo-400/30 cursor-pointer"
+                    >
+                      <option value="">Select Panel Examiner 1</option>
+                      {examiners.map(ex => (
+                        <option key={ex.id} value={ex.id}>{ex.full_name} ({ex.department || 'Faculty'})</option>
+                      ))}
+                    </select>
+
+                    <select
+                      value={selectedExaminer2}
+                      onChange={(e) => setSelectedExaminer2(e.target.value)}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 px-3 text-slate-800 text-xs font-bold focus:outline-none focus:ring-2 focus:ring-indigo-400/30 cursor-pointer"
+                    >
+                      <option value="">Select Panel Examiner 2 (Optional)</option>
+                      {examiners.map(ex => (
+                        <option key={ex.id} value={ex.id}>{ex.full_name} ({ex.department || 'Faculty'})</option>
+                      ))}
+                    </select>
+
+                    <select
+                      value={selectedExaminer3}
+                      onChange={(e) => setSelectedExaminer3(e.target.value)}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 px-3 text-slate-800 text-xs font-bold focus:outline-none focus:ring-2 focus:ring-indigo-400/30 cursor-pointer"
+                    >
+                      <option value="">Select Panel Examiner 3 (Optional)</option>
+                      {examiners.map(ex => (
+                        <option key={ex.id} value={ex.id}>{ex.full_name} ({ex.department || 'Faculty'})</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
               </div>
 
               <div className="p-6 border-t border-slate-100 bg-slate-50 flex gap-3 shrink-0">
@@ -878,18 +947,49 @@ export default function InstructorDashboardClient({
                 </button>
               </div>
 
-              <form onSubmit={handleSaveGrade} className="p-6 space-y-4">
+              <form onSubmit={handleSaveGrade} className="p-6 space-y-4 max-h-[85vh] overflow-y-auto">
                 <div className="space-y-1">
                   <span className="text-[10px] font-black uppercase text-slate-450 tracking-wider">Project Title</span>
                   <p className="text-xs font-bold text-slate-900 leading-snug">{editingGradeProject.title}</p>
                 </div>
 
+                {/* Supervisor Marks Summary */}
+                <div className="bg-slate-50 border border-slate-200 p-3 rounded-2xl space-y-1">
+                  <span className="text-[9px] font-black uppercase text-slate-400 tracking-wider block">Supervisor Evaluation Summary</span>
+                  <p className="text-xs font-black text-indigo-700">{getSupervisorMarksSummary(editingGradeProject.id)}</p>
+                </div>
+
+                {/* Panel Examiner Vetting Audit */}
                 <div className="space-y-2">
-                  <label className="block text-[10px] font-black uppercase text-slate-450 tracking-wider">Select Final Grade Mark</label>
+                  <span className="text-[9px] font-black uppercase text-slate-400 tracking-wider block">Panel Examiner Vetting Status</span>
+                  {editingGradeProject.review_completed ? (
+                    <div className="bg-emerald-50 border border-emerald-200 p-3 rounded-2xl space-y-1.5 text-xs">
+                      <div className="flex items-center gap-1.5 text-emerald-700 font-extrabold text-[10px] uppercase">
+                        <CheckCircle2 className="w-3.5 h-3.5" /> Committee Vetting Completed
+                      </div>
+                      {editingGradeProject.review_notes && (
+                        <p className="text-[11px] text-slate-700 font-semibold italic">"{editingGradeProject.review_notes}"</p>
+                      )}
+                      {editingGradeProject.review_questions && (
+                        <div className="text-[10px] text-slate-600 font-medium">
+                          <strong className="text-slate-800">Defense Questions:</strong> {editingGradeProject.review_questions}
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="bg-amber-50 border border-amber-200 p-3 rounded-2xl text-[11px] text-amber-800 font-semibold flex items-center gap-2">
+                      <Clock className="w-4 h-4 text-amber-600 shrink-0" />
+                      Pending Panel Examiner Vetting — Panel examiners have been notified to review this submission.
+                    </div>
+                  )}
+                </div>
+
+                <div className="space-y-2 pt-1 border-t border-slate-100">
+                  <label className="block text-[10px] font-black uppercase text-slate-450 tracking-wider">Select Final Published Grade Mark</label>
                   <select
                     value={selectedGrade}
                     onChange={(e) => setSelectedGrade(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-250 rounded-xl py-3 px-4 text-slate-800 text-sm font-semibold cursor-pointer"
+                    className="w-full bg-slate-50 border border-slate-250 rounded-xl py-3 px-4 text-slate-800 text-sm font-black cursor-pointer focus:ring-2 focus:ring-indigo-400/30"
                   >
                     {['A', 'B', 'C', 'D', 'F'].map(g => (
                       <option key={g} value={g}>Grade {g}</option>
@@ -897,7 +997,7 @@ export default function InstructorDashboardClient({
                   </select>
                 </div>
 
-                <div className="flex gap-3 pt-4 justify-end">
+                <div className="flex gap-3 pt-4 justify-end border-t border-slate-100">
                   <button
                     type="button"
                     onClick={() => setEditingGradeProject(null)}
@@ -915,7 +1015,7 @@ export default function InstructorDashboardClient({
                     ) : (
                       <Check className="w-3.5 h-3.5" />
                     )}
-                    Save & Publish
+                    Save & Publish Grade
                   </button>
                 </div>
               </form>
