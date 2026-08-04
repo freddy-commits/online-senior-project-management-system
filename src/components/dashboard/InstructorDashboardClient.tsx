@@ -403,8 +403,7 @@ export default function InstructorDashboardClient({
       <div className="flex border-b border-slate-200 overflow-x-auto gap-6 no-scrollbar">
         {[
           { id: 'proposals', label: 'Proposals', icon: <FileText className="w-4 h-4" /> },
-          { id: 'grading', label: 'Grading Hub', icon: <Award className="w-4 h-4" /> },
-          { id: 'reports', label: 'Cohort Reports', icon: <BarChart3 className="w-4 h-4" /> }
+          { id: 'grading', label: 'Grading Hub', icon: <Award className="w-4 h-4" /> }
         ].map((tab) => (
           <button
             key={tab.id}
@@ -611,126 +610,7 @@ export default function InstructorDashboardClient({
             </div>
           )}
 
-          {/* TAB 5: COHORT REPORTS */}
-          {activeSubTab === 'reports' && (
-            <div className="space-y-6">
-              <div className="bg-slate-50 border border-slate-200 rounded-3xl p-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                <div>
-                  <h3 className="text-lg font-black text-slate-900">Cohort Performance Analytics</h3>
-                  <p className="text-xs text-slate-500 font-semibold mt-1">Visualize stats of deliverables compliance, grades distribution, and partner engagements.</p>
-                </div>
-                <div className="flex gap-2 shrink-0 flex-wrap">
-                  <button
-                    onClick={() => handleDownloadReport('excel')}
-                    className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold rounded-xl text-[10px] uppercase tracking-widest flex items-center gap-1.5 shadow-md cursor-pointer"
-                  >
-                    <Download className="w-3.5 h-3.5" /> Export Excel (CSV)
-                  </button>
-                  <button
-                    onClick={() => handleDownloadReport('document')}
-                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-extrabold rounded-xl text-[10px] uppercase tracking-widest flex items-center gap-1.5 shadow-md cursor-pointer"
-                  >
-                    <Download className="w-3.5 h-3.5" /> Export Doc (TXT)
-                  </button>
-                  <button
-                    onClick={() => handleDownloadReport('json')}
-                    className="px-4 py-2 bg-slate-700 hover:bg-slate-800 text-white font-extrabold rounded-xl text-[10px] uppercase tracking-widest flex items-center gap-1.5 shadow-md cursor-pointer"
-                  >
-                    <Download className="w-3.5 h-3.5" /> Export JSON
-                  </button>
-                </div>
-              </div>
 
-              {/* Analytical Charts */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                
-                {/* Chart 1: Grade Distributions */}
-                <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm space-y-4">
-                  <h4 className="text-xs font-black uppercase tracking-wider text-slate-400">Grade Distribution</h4>
-                  <div className="space-y-3">
-                    {[
-                      { letter: 'A (Outstanding)', count: projects.filter(p => p.grade === 'A').length, pct: 45 },
-                      { letter: 'B (Competent)', count: projects.filter(p => p.grade === 'B').length, pct: 30 },
-                      { letter: 'C (Passing)', count: projects.filter(p => p.grade === 'C').length, pct: 15 },
-                      { letter: 'F (Failing)', count: projects.filter(p => p.grade === 'F').length, pct: 5 }
-                    ].map((row, i) => (
-                      <div key={i} className="space-y-1.5">
-                        <div className="flex justify-between text-xs font-bold text-slate-700">
-                          <span>Grade {row.letter}</span>
-                          <span>{row.count} ({row.count > 0 ? row.pct : 0}%)</span>
-                        </div>
-                        <div className="h-2 bg-slate-100 rounded-full border border-slate-200/50 overflow-hidden">
-                          <div 
-                            className="bg-indigo-500 h-full rounded-full transition-all" 
-                            style={{ width: `${row.count > 0 ? row.pct : 0}%` }} 
-                          />
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Chart 2: Milestone Submissions */}
-                <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm space-y-4">
-                  <h4 className="text-xs font-black uppercase tracking-wider text-slate-400">Submission Rates</h4>
-                  <div className="flex flex-col items-center justify-center py-6 space-y-3">
-                    <div className="relative w-28 h-28 flex items-center justify-center">
-                      <svg className="w-full h-full transform -rotate-90">
-                        <circle cx="56" cy="56" r="48" className="stroke-slate-100 fill-none" strokeWidth="8" />
-                        <circle 
-                          cx="56" cy="56" r="48" 
-                          className="stroke-emerald-550 fill-none" 
-                          strokeWidth="8" 
-                          strokeDasharray="301" 
-                          strokeDashoffset="75" // 75% complete
-                        />
-                      </svg>
-                      <div className="absolute text-center">
-                        <span className="text-2xl font-black text-slate-900">75%</span>
-                        <span className="text-[8px] text-slate-400 font-extrabold uppercase block tracking-wider mt-0.5">Compliant</span>
-                      </div>
-                    </div>
-                    <span className="text-[10px] font-bold text-slate-400 text-center uppercase tracking-wide">
-                      Average deliverables submitted on time.
-                    </span>
-                  </div>
-                </div>
-
-                {/* Chart 3: Track Engagement */}
-                <div className="bg-white border border-slate-200 rounded-3xl p-6 shadow-sm space-y-4">
-                  <h4 className="text-xs font-black uppercase tracking-wider text-slate-400">Project Track Breakdown</h4>
-                  <div className="space-y-4">
-                    <div className="space-y-1">
-                      <div className="flex justify-between text-xs font-bold text-slate-700">
-                        <span>Academic Thesis / Capstone</span>
-                        <span>{soloProjects.length} Projects</span>
-                      </div>
-                      <div className="h-3 bg-slate-100 rounded-full border border-slate-200/50 overflow-hidden">
-                        <div 
-                          className="bg-emerald-500 h-full rounded-full" 
-                          style={{ width: `${projects.length > 0 ? (soloProjects.length / projects.length) * 100 : 0}%` }} 
-                        />
-                      </div>
-                    </div>
-
-                    <div className="space-y-1">
-                      <div className="flex justify-between text-xs font-bold text-slate-700">
-                        <span>Industry Sponsored Briefs</span>
-                        <span>{industryProjects.length} Projects</span>
-                      </div>
-                      <div className="h-3 bg-slate-100 rounded-full border border-slate-200/50 overflow-hidden">
-                        <div 
-                          className="bg-purple-500 h-full rounded-full" 
-                          style={{ width: `${projects.length > 0 ? (industryProjects.length / projects.length) * 100 : 0}%` }} 
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-              </div>
-            </div>
-          )}
 
 
 

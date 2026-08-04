@@ -94,12 +94,14 @@ export default function MasterSidebar({ role = 'student' }: { role?: string }) {
           { name: 'Role Approvals', path: `/admin/approvals`, match: `/admin/approvals`, icon: <Sliders className="w-5 h-5" /> },
           { name: 'All Projects', path: `/admin/projects`, match: `/admin/projects`, icon: <FileText className="w-5 h-5" /> },
           { name: 'User Management', path: `/admin/users`, match: `/admin/users`, icon: <Users className="w-5 h-5" /> },
+          { name: 'Reports', path: `/admin/reports`, match: `/admin/reports`, icon: <FileText className="w-5 h-5" /> }
         ]
       : [
           { name: t('dashboard'), path: `/${activeRole}/dashboard`, match: `/${activeRole}/dashboard`, icon: <LayoutDashboard className="w-5 h-5" /> },
           { name: t('milestones'), path: `/${activeRole}/milestones`, match: `/${activeRole}/milestones`, icon: <Target className="w-5 h-5" /> },
           { name: t('teams'), path: `/${activeRole}/teams`, match: `/${activeRole}/teams`, icon: <Users className="w-5 h-5" /> },
           { name: t('documents'), path: `/${activeRole}/documents`, match: `/${activeRole}/documents`, icon: <FileText className="w-5 h-5" /> },
+          ...(activeRole === 'instructor' || activeRole === 'supervisor' ? [{ name: 'Reports', path: `/${activeRole}/reports`, match: `/${activeRole}/reports`, icon: <FileText className="w-5 h-5" /> }] : []),
           { name: t('archive'), path: `/archive`, match: `/archive`, icon: <Archive className="w-5 h-5" /> },
         ]
 
