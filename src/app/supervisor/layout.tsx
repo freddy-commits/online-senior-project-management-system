@@ -23,7 +23,7 @@ export default async function SupervisorLayout({ children }: { children: React.R
       student: '/student/dashboard',
       instructor: '/instructor/dashboard',
       industry_partner: '/partner/dashboard',
-      examiner: '/admin/dashboard',
+      examiner: '/admin',
       admin: '/admin/dashboard',
     }
     redirect(roleRouteMap[profile?.role ?? ''] ?? '/student/dashboard')

@@ -23,7 +23,7 @@ export default async function InstructorLayout({ children }: { children: React.R
       student: '/student/dashboard',
       supervisor: '/supervisor/dashboard',
       industry_partner: '/partner/dashboard',
-      examiner: '/admin/dashboard',
+      examiner: '/admin',
       admin: '/admin/dashboard',
     }
     redirect(roleRouteMap[profile?.role ?? ''] ?? '/student/dashboard')

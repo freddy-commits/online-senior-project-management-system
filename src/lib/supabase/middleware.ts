@@ -7,7 +7,7 @@ const ROLE_DASHBOARD_MAP: Record<string, string> = {
   instructor:       '/instructor/dashboard',
   supervisor:       '/supervisor/dashboard',
   industry_partner: '/partner/dashboard',
-  examiner:         '/admin/dashboard',
+  examiner:         '/admin',
   admin:            '/admin/dashboard',
 }
 

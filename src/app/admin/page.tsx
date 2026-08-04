@@ -55,7 +55,7 @@ export default function AdminDashboard() {
         .single()
 
       let hasAccess = false
-      if (prof.role === 'examiner_panel') {
+      if (prof.role === 'examiner' || prof.role === 'examiner_panel' || prof.role === 'admin') {
         hasAccess = true
       } else if (prof.role === 'supervisor' || prof.role === 'instructor') {
         const { data: examinerProjs } = await supabase
@@ -69,7 +69,7 @@ export default function AdminDashboard() {
       }
 
       if (!hasAccess) {
-        window.location.href = `/${prof?.role || ''}/dashboard`
+        window.location.href = '/student/dashboard'
         return
       }
       setProfile(prof)

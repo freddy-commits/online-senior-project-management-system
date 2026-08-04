@@ -111,7 +111,7 @@ export default function LoginPage() {
         instructor:       '/instructor/dashboard',
         supervisor:       '/supervisor/dashboard',
         industry_partner: '/partner/dashboard',
-        examiner:         '/admin/dashboard',
+        examiner:         '/admin',
         admin:            '/admin/dashboard',
       }
 

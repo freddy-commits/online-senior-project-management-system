@@ -21,7 +21,7 @@ export default async function PartnerLayout({ children }: { children: React.Reac
       student: '/student/dashboard',
       instructor: '/instructor/dashboard',
       supervisor: '/supervisor/dashboard',
-      examiner: '/admin/dashboard',
+      examiner: '/admin',
       admin: '/admin/dashboard',
     }
     redirect(roleRouteMap[profile?.role ?? ''] ?? '/student/dashboard')
