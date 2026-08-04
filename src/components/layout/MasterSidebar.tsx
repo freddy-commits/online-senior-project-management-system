@@ -16,7 +16,7 @@ export default function MasterSidebar({ role = 'student' }: { role?: string }) {
   const [profile, setProfile] = useState<{ full_name: string; role: string; email: string } | null>(null)
   const [isCollapsed, setIsCollapsed] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
-  const [isExaminer, setIsExaminer] = useState(false)
+  const [isAssignedExaminer, setIsAssignedExaminer] = useState(false)
   
   useEffect(() => {
     async function loadProfile() {
@@ -42,7 +42,7 @@ export default function MasterSidebar({ role = 'student' }: { role?: string }) {
               }
 
               if (assignedAsExaminer) {
-                setIsExaminer(true)
+                setIsAssignedExaminer(true)
               }
             }
           }
@@ -213,7 +213,7 @@ export default function MasterSidebar({ role = 'student' }: { role?: string }) {
 
         {/* Footer Settings, Logout & Profile Card */}
         <div className={`p-4 border-t border-white/5 shrink-0 space-y-3 ${isCollapsed ? 'px-2' : 'px-4'}`}>
-          {isExaminer && (
+          {isAssignedExaminer && (
             <div className="pb-2">
               {showAdminMenu ? (
                 <Link 
