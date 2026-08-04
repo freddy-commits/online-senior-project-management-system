@@ -138,7 +138,7 @@ export default function SupervisorReportsPage() {
           <p className="text-xs text-slate-500 font-semibold mt-1">Select your preferred export layout to save reports to your local machine.</p>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 pt-2">
+        <div className="grid grid-cols-1 sm:grid-cols-4 gap-6 pt-2">
           {/* Card 1 */}
           <div className="border border-slate-150 p-6 rounded-2xl flex flex-col justify-between space-y-4">
             <div>
@@ -172,6 +172,21 @@ export default function SupervisorReportsPage() {
           {/* Card 3 */}
           <div className="border border-slate-150 p-6 rounded-2xl flex flex-col justify-between space-y-4">
             <div>
+              <span className="text-[9px] font-black text-amber-600 bg-amber-50 border border-amber-100 rounded px-2 py-0.5 uppercase tracking-wide">PDF / PRINT</span>
+              <h4 className="text-sm font-black text-slate-800 mt-3">Save PDF / Print</h4>
+              <p className="text-[11px] text-slate-450 font-semibold mt-1">Generate a clean, print-friendly version of the cohort dashboard to save as PDF or print.</p>
+            </div>
+            <button
+              onClick={() => window.print()}
+              className="w-full py-2.5 bg-amber-650 hover:bg-amber-700 text-white font-extrabold rounded-xl text-xs uppercase tracking-wider transition-colors cursor-pointer flex items-center justify-center gap-1.5"
+            >
+              <FileText className="w-3.5 h-3.5" /> Print / Save PDF
+            </button>
+          </div>
+
+          {/* Card 4 */}
+          <div className="border border-slate-150 p-6 rounded-2xl flex flex-col justify-between space-y-4">
+            <div>
               <span className="text-[9px] font-black text-slate-500 bg-slate-50 border border-slate-200 rounded px-2 py-0.5 uppercase tracking-wide">Programmatic Data</span>
               <h4 className="text-sm font-black text-slate-800 mt-3">Raw Data Object (JSON)</h4>
               <p className="text-[11px] text-slate-450 font-semibold mt-1">Best format for backing up database entries and programmatic system migrations.</p>
@@ -184,6 +199,44 @@ export default function SupervisorReportsPage() {
             </button>
           </div>
         </div>
+      </div>
+
+      {/* Hidden print-only stylesheet & layout wrapper */}
+      <div className="hidden print:block mt-8 font-sans">
+        <style dangerouslySetInnerHTML={{ __html: `
+          @media print {
+            body * { visibility: hidden; }
+            .print\\:block, .print\\:block * { visibility: visible; }
+            .print\\:block { position: absolute; left: 0; top: 0; width: 100%; }
+            nav, header, button, aside, .no-print { display: none !important; }
+          }
+        `}} />
+        <div className="border-b-2 border-slate-900 pb-4 mb-6">
+          <h1 className="text-2xl font-black text-slate-900">Online Senior Project Management System</h1>
+          <p className="text-sm font-bold text-slate-500 mt-1">Supervisor Team Allocation & Progress Report &mdash; Generated Live</p>
+        </div>
+        <table className="w-full text-left border-collapse text-xs">
+          <thead>
+            <tr className="border-b-2 border-slate-300">
+              <th className="py-2 font-black">Project Title</th>
+              <th className="py-2 font-black">Student Lead</th>
+              <th className="py-2 font-black">Track Type</th>
+              <th className="py-2 font-black">Deliverable Progress</th>
+              <th className="py-2 font-black">Milestones</th>
+            </tr>
+          </thead>
+          <tbody>
+            {projects.map((p, idx) => (
+              <tr key={idx} className="border-b border-slate-200">
+                <td className="py-2.5 font-bold pr-2">{p.title}</td>
+                <td className="py-2.5">{p.student?.full_name || 'Solo Student'}</td>
+                <td className="py-2.5">{p.industry_partner_id ? 'Industry Sponsored' : 'Academic Thesis'}</td>
+                <td className="py-2.5">{getProjectProgress(p.deliverables)}%</td>
+                <td className="py-2.5 font-bold">{getMilestoneDoneFraction(p.deliverables)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
     </div>
   )
