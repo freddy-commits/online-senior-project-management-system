@@ -21,10 +21,11 @@ import {
   Bookmark,
   Mail,
   Calendar,
-  Check,
-  X
+  X,
+  Download
 } from 'lucide-react'
 import { useTrack } from '@/components/providers/TrackProvider'
+import { downloadReportFile } from '@/lib/utils/reportExporter'
 
 interface SupervisorDashboardClientProps {
   initialProfile: any
@@ -103,6 +104,35 @@ export default function SupervisorDashboardClient({
     setIsAddingTask(false)
   }
 
+  // Supervisor Report Downloader
+  function handleDownloadSupervisorReport(format: 'excel' | 'document' | 'json') {
+    const reportData = projectList.map((p) => ({
+      title: p.title,
+      studentName: p.student?.full_name || 'Solo Student',
+      advisor: p.supervisor?.full_name || 'Assigned',
+      track: p.origin === 'industry' ? 'Industry Sponsored' : 'Academic Solo',
+      progress: `${getProjectProgress(p.deliverables)}%`,
+      milestones: getMilestoneDoneFraction(p.deliverables)
+    }))
+
+    const columns = [
+      { header: 'Project Title', key: 'title' },
+      { header: 'Student Lead', key: 'studentName' },
+      { header: 'Supervisor/Advisor', key: 'advisor' },
+      { header: 'Track Type', key: 'track' },
+      { header: 'Deliverable Progress', key: 'progress' },
+      { header: 'Milestones Completed', key: 'milestones' }
+    ]
+
+    downloadReportFile({
+      title: `Supervisor Capstone Allocation & Progress Report`,
+      data: reportData,
+      columns,
+      format,
+      fileNamePrefix: 'supervisor_allocation_report'
+    })
+  }
+
   // Mini Calendar — always reflects the actual current date
   const _now = new Date()
   const currentDay = _now.getDate()
@@ -118,22 +148,36 @@ export default function SupervisorDashboardClient({
     <div className="w-full max-w-6xl mx-auto space-y-6 pb-16 text-slate-800 font-sans">
       
       {/* Search & Greeting Row */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-white border border-slate-200 rounded-[2rem] p-6 shadow-sm">
+      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 bg-white border border-slate-200 rounded-[2rem] p-6 shadow-sm">
         <div>
           <h1 className="text-xl font-black text-slate-900 tracking-tight">
             Academic Supervisor Desk
           </h1>
           <p className="text-xs text-slate-450 font-semibold mt-0.5">Manage undergraduate teams and research candidacies.</p>
         </div>
-        <div className="relative w-full sm:w-64">
-          <input 
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search projects or students..."
-            className="w-full bg-slate-50 border border-slate-200 rounded-full py-2 pl-10 pr-4 text-xs font-bold text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500"
-          />
-          <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+        <div className="flex items-center gap-2 flex-wrap w-full md:w-auto">
+          <button
+            onClick={() => handleDownloadSupervisorReport('excel')}
+            className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black uppercase tracking-wider rounded-xl transition-all cursor-pointer shadow-sm flex items-center gap-1.5"
+          >
+            <Download className="w-3.5 h-3.5" /> Excel (CSV)
+          </button>
+          <button
+            onClick={() => handleDownloadSupervisorReport('document')}
+            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-black uppercase tracking-wider rounded-xl transition-all cursor-pointer shadow-sm flex items-center gap-1.5"
+          >
+            <Download className="w-3.5 h-3.5" /> Doc (TXT)
+          </button>
+          <div className="relative w-full sm:w-48">
+            <input 
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search projects..."
+              className="w-full bg-slate-50 border border-slate-200 rounded-full py-2 pl-9 pr-4 text-xs font-bold text-slate-900 placeholder:text-slate-400 focus:outline-none"
+            />
+            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+          </div>
         </div>
       </div>
 

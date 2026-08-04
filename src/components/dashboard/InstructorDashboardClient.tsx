@@ -308,22 +308,39 @@ export default function InstructorDashboardClient({
     setProcessing(null)
   }
 
-  // Task: Generate Cohort Reports (Mock download)
-  function handleDownloadReport() {
-    const header = "Project Station - Cohort Report\nGenerated: " + new Date().toLocaleDateString() + "\n\n"
-    const statsStr = `Total projects: ${projects.length}\nApproved: ${projects.filter(p => p.status === 'approved').length}\nPending: ${projects.filter(p => p.status === 'pending').length}\n\n`
-    const listStr = projects.map(p => `- ${p.title} (${p.student?.full_name || 'Solo'}): Status=${p.status}, Grade=${p.grade || 'N/A'}`).join('\n')
-    
-    const blob = new Blob([header + statsStr + listStr], { type: 'text/plain' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `cohort_report_${Date.now()}.txt`
-    document.body.appendChild(a)
-    a.click()
-    document.body.removeChild(a)
-    setSuccessMessage("Cohort report generated and downloaded!")
-    setTimeout(() => setSuccessMessage(''), 4500)
+  // Task: Generate Cohort Reports (Multi-format exporter)
+  function handleDownloadReport(format: 'excel' | 'document' | 'json') {
+    const reportData = projects.map(p => ({
+      title: p.title,
+      studentName: p.student?.full_name || 'Solo Student',
+      studentEmail: p.student?.email || 'N/A',
+      supervisorName: p.supervisor?.full_name || 'Unassigned',
+      status: p.status,
+      grade: p.grade || 'Not Graded',
+      origin: p.origin === 'industry' ? 'Industry Sponsored' : 'Academic Solo'
+    }))
+
+    const columns = [
+      { header: 'Project Title', key: 'title' },
+      { header: 'Student Name', key: 'studentName' },
+      { header: 'Student Email', key: 'studentEmail' },
+      { header: 'Advisor / Supervisor', key: 'supervisorName' },
+      { header: 'Status', key: 'status' },
+      { header: 'Course Grade', key: 'grade' },
+      { header: 'Track Type', key: 'origin' }
+    ]
+
+    import('@/lib/utils/reportExporter').then(({ downloadReportFile }) => {
+      downloadReportFile({
+        title: 'Senior Project and Industry Cohort Report',
+        data: reportData,
+        columns,
+        format,
+        fileNamePrefix: 'cohort_performance_report'
+      })
+      setSuccessMessage(`Cohort report downloaded successfully as ${format.toUpperCase()}!`)
+      setTimeout(() => setSuccessMessage(''), 4500)
+    })
   }
 
   // Filters projects based on active switcher track
@@ -602,12 +619,26 @@ export default function InstructorDashboardClient({
                   <h3 className="text-lg font-black text-slate-900">Cohort Performance Analytics</h3>
                   <p className="text-xs text-slate-500 font-semibold mt-1">Visualize stats of deliverables compliance, grades distribution, and partner engagements.</p>
                 </div>
-                <button
-                  onClick={handleDownloadReport}
-                  className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold rounded-xl text-[10px] uppercase tracking-widest flex items-center gap-1.5 shadow-md shrink-0 cursor-pointer"
-                >
-                  <Download className="w-4 h-4" /> Export Cohort Report
-                </button>
+                <div className="flex gap-2 shrink-0 flex-wrap">
+                  <button
+                    onClick={() => handleDownloadReport('excel')}
+                    className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold rounded-xl text-[10px] uppercase tracking-widest flex items-center gap-1.5 shadow-md cursor-pointer"
+                  >
+                    <Download className="w-3.5 h-3.5" /> Export Excel (CSV)
+                  </button>
+                  <button
+                    onClick={() => handleDownloadReport('document')}
+                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-extrabold rounded-xl text-[10px] uppercase tracking-widest flex items-center gap-1.5 shadow-md cursor-pointer"
+                  >
+                    <Download className="w-3.5 h-3.5" /> Export Doc (TXT)
+                  </button>
+                  <button
+                    onClick={() => handleDownloadReport('json')}
+                    className="px-4 py-2 bg-slate-700 hover:bg-slate-800 text-white font-extrabold rounded-xl text-[10px] uppercase tracking-widest flex items-center gap-1.5 shadow-md cursor-pointer"
+                  >
+                    <Download className="w-3.5 h-3.5" /> Export JSON
+                  </button>
+                </div>
               </div>
 
               {/* Analytical Charts */}

@@ -24,9 +24,11 @@ import {
   Mail,
   Calendar,
   Check,
-  ChevronRight
+  ChevronRight,
+  Download
 } from 'lucide-react'
 import ProjectDescription from '@/components/project/ProjectDescription'
+import { downloadReportFile } from '@/lib/utils/reportExporter'
 
 export default function PartnerDashboardPage() {
   const router = useRouter()
@@ -210,6 +212,33 @@ export default function PartnerDashboardPage() {
     }
   }
 
+  // Partner Report Exporter
+  function handleDownloadPartnerReport(format: 'excel' | 'document' | 'json') {
+    const reportData = projects.map(p => ({
+      title: p.title,
+      status: p.status,
+      assignedTeam: p.teams?.name || 'Awaiting Squad Matchmaking',
+      studentLead: p.student?.full_name || 'Unassigned',
+      studentEmail: p.student?.email || 'N/A'
+    }))
+
+    const columns = [
+      { header: 'Challenge / Problem Statement', key: 'title' },
+      { header: 'Vetting Status', key: 'status' },
+      { header: 'Assigned Student Squad', key: 'assignedTeam' },
+      { header: 'Student Lead', key: 'studentLead' },
+      { header: 'Student Email', key: 'studentEmail' }
+    ]
+
+    downloadReportFile({
+      title: 'Industry Partner Problem Statement Vetting & Projects Report',
+      data: reportData,
+      columns,
+      format,
+      fileNamePrefix: 'partner_sponsored_projects_report'
+    })
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
@@ -249,18 +278,32 @@ export default function PartnerDashboardPage() {
           </h1>
           <p className="text-xs text-slate-450 font-semibold mt-0.5">Submit organizational challenges and monitor senior projects.</p>
         </div>
-        <div className="flex gap-3 items-center w-full sm:w-auto">
+        <div className="flex gap-3 items-center w-full sm:w-auto flex-wrap">
           {activeTab === 'my-problems' && (
-            <div className="relative w-full sm:w-64">
-              <input 
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search statements..."
-                className="w-full bg-slate-50 border border-slate-200 rounded-full py-2 pl-10 pr-4 text-xs font-bold text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500"
-              />
-              <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-            </div>
+            <>
+              <button
+                onClick={() => handleDownloadPartnerReport('excel')}
+                className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black uppercase tracking-wider rounded-xl transition-all cursor-pointer shadow-sm flex items-center gap-1.5"
+              >
+                <Download className="w-3.5 h-3.5" /> Excel
+              </button>
+              <button
+                onClick={() => handleDownloadPartnerReport('document')}
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-black uppercase tracking-wider rounded-xl transition-all cursor-pointer shadow-sm flex items-center gap-1.5"
+              >
+                <Download className="w-3.5 h-3.5" /> Doc
+              </button>
+              <div className="relative w-full sm:w-48">
+                <input 
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search statements..."
+                  className="w-full bg-slate-50 border border-slate-200 rounded-full py-2 pl-9 pr-4 text-xs font-bold text-slate-900 placeholder:text-slate-400 focus:outline-none"
+                />
+                <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+              </div>
+            </>
           )}
           
           <button 

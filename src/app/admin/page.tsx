@@ -20,9 +20,11 @@ import {
   ExternalLink,
   LayoutDashboard,
   UserPlus,
-  ShieldCheck
+  ShieldCheck,
+  Download
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { downloadReportFile } from '@/lib/utils/reportExporter'
 
 export default function AdminDashboard() {
   const [profile, setProfile] = useState<any>(null)
@@ -284,6 +286,44 @@ export default function AdminDashboard() {
     setProcessing(null)
   }
 
+  // Admin / Examiner Report Downloader
+  function handleDownloadAdminReport(format: 'excel' | 'document' | 'json') {
+    const reportData = projects.map((p, idx) => ({
+      title: p.title,
+      studentName: p.student?.full_name || 'Solo Student',
+      studentEmail: p.student?.email || 'N/A',
+      advisor: p.instructor?.full_name || 'Pending',
+      status: p.status,
+      reviewCompleted: p.review_completed ? 'Completed' : 'Pending Review',
+      reviewNotes: p.review_notes || 'No notes',
+      grade: p.grade || 'N/A',
+      defenseDate: `June ${12 + (idx % 5) * 3}th, 2026`
+    }))
+
+    const columns = [
+      { header: 'Project Title', key: 'title' },
+      { header: 'Student Name', key: 'studentName' },
+      { header: 'Student Email', key: 'studentEmail' },
+      { header: 'Advisor', key: 'advisor' },
+      { header: 'Proposal Status', key: 'status' },
+      { header: 'Panel Vetting', key: 'reviewCompleted' },
+      { header: 'Vetting Notes', key: 'reviewNotes' },
+      { header: 'Published Grade', key: 'grade' },
+      { header: 'Defense Schedule', key: 'defenseDate' }
+    ]
+
+    downloadReportFile({
+      title: `${profile.role === 'admin' ? 'Admin Cohort Status Report' : 'Examiner Panel Evaluation Report'}`,
+      data: reportData,
+      columns,
+      format,
+      fileNamePrefix: profile.role === 'admin' ? 'admin_cohort_report' : 'examiner_evaluation_report'
+    })
+
+    setSuccessMessage(`Report downloaded successfully as ${format.toUpperCase()}!`)
+    setTimeout(() => setSuccessMessage(''), 4500)
+  }
+
   if (loading || !profile) {
     return (
       <div className="min-h-screen bg-[#f8fafc] flex items-center justify-center">
@@ -324,12 +364,26 @@ export default function AdminDashboard() {
             </div>
             <div>
               <h1 className="text-2xl font-black text-slate-900 tracking-tight leading-tight">
-                Capstone Evaluation Panel
+                {profile.role === 'admin' ? 'System Administrator Portal' : 'Capstone Evaluation Panel'}
               </h1>
               <p className="text-xs font-semibold text-slate-400 mt-1">
-                {profile.full_name || 'Dr. Sarah Johnson'} - Senior Capstone Evaluator
+                {profile.full_name || 'Dr. Sarah Johnson'} &mdash; {profile.role === 'admin' ? 'Platform Administrator' : 'Senior Capstone Evaluator'}
               </p>
             </div>
+          </div>
+          <div className="flex items-center gap-2 flex-wrap">
+            <button
+              onClick={() => handleDownloadAdminReport('excel')}
+              className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black uppercase tracking-wider rounded-xl transition-all cursor-pointer shadow-sm flex items-center gap-1.5"
+            >
+              <Download className="w-4 h-4" /> Excel (CSV)
+            </button>
+            <button
+              onClick={() => handleDownloadAdminReport('document')}
+              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-black uppercase tracking-wider rounded-xl transition-all cursor-pointer shadow-sm flex items-center gap-1.5"
+            >
+              <Download className="w-4 h-4" /> Doc (TXT)
+            </button>
           </div>
         </div>
 
