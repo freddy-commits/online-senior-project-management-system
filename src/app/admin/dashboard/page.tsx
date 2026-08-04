@@ -32,6 +32,11 @@ export default async function AdminDashboardPage() {
     redirect('/student/dashboard')
   }
 
+  // Redirect Panel Examiners to /admin (which renders the Panel Examiner Evaluation Panel)
+  if (profile.role === 'examiner' || profile.role === 'examiner_panel') {
+    redirect('/admin')
+  }
+
   // Fetch stats & pending requests
   const [
     { count: pendingCount }, 
