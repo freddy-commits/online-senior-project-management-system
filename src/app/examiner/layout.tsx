@@ -4,7 +4,7 @@ import MasterSidebar from '@/components/layout/MasterSidebar'
 import MasterHeader from '@/components/layout/MasterHeader'
 import { TrackProvider } from '@/components/providers/TrackProvider'
 
-export default async function AdminLayout({ children }: { children: React.ReactNode }) {
+export default async function ExaminerLayout({ children }: { children: React.ReactNode }) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
@@ -18,13 +18,13 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     .eq('id', user.id)
     .single()
 
-  if (profile?.role !== 'admin') {
+  if (!profile || (profile.role !== 'examiner' && profile.role !== 'examiner_panel')) {
     const roleRouteMap: Record<string, string> = {
       student: '/student/dashboard',
       instructor: '/instructor/dashboard',
       supervisor: '/supervisor/dashboard',
       industry_partner: '/partner/dashboard',
-      examiner: '/examiner/dashboard',
+      admin: '/admin/dashboard',
     }
     redirect(roleRouteMap[profile?.role ?? ''] ?? '/student/dashboard')
   }
@@ -32,9 +32,9 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   return (
     <TrackProvider>
       <div className="h-screen max-h-screen bg-[#f8fafc] dark:bg-slate-950 flex overflow-hidden font-sans text-slate-900 dark:text-slate-100">
-        <MasterSidebar role={profile?.role === 'admin' ? 'admin' : 'examiner'} />
+        <MasterSidebar role="examiner" />
         <main className="flex-1 flex flex-col h-screen max-h-screen overflow-hidden relative bg-[#f8fafc] dark:bg-slate-950">
-          <MasterHeader role={profile?.role === 'admin' ? 'admin' : 'examiner'} />
+          <MasterHeader role="examiner" />
           <div className="flex-1 overflow-y-auto">
             {children}
           </div>
