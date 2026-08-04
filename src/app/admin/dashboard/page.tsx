@@ -165,77 +165,13 @@ export default async function AdminDashboardPage() {
             Welcome back, {profile.full_name?.split(' ')[0] || 'Admin'}
           </h1>
         </div>
-        <div className="flex items-center gap-2 flex-wrap w-full sm:w-auto">
-          <button
-            onClick={async () => {
-              const { downloadReportFile } = await import('@/lib/utils/reportExporter');
-              const { data: projs } = await supabase.from('projects').select('*, student:student_id(full_name, email, department), instructor:instructor_id(full_name, email)');
-              const reportData = (projs || []).map(p => ({
-                title: p.title,
-                studentName: p.student?.full_name || 'Solo Student',
-                studentEmail: p.student?.email || 'N/A',
-                advisor: p.instructor?.full_name || 'Pending',
-                status: p.status,
-                grade: p.grade || 'N/A'
-              }));
-              downloadReportFile({
-                title: 'Admin Cohort Status Report',
-                data: reportData,
-                columns: [
-                  { header: 'Project Title', key: 'title' },
-                  { header: 'Student Name', key: 'studentName' },
-                  { header: 'Student Email', key: 'studentEmail' },
-                  { header: 'Advisor', key: 'advisor' },
-                  { header: 'Proposal Status', key: 'status' },
-                  { header: 'Published Grade', key: 'grade' }
-                ],
-                format: 'excel',
-                fileNamePrefix: 'admin_cohort_report'
-              });
-            }}
-            className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black uppercase tracking-wider rounded-xl transition-all cursor-pointer shadow-sm flex items-center gap-1.5"
-          >
-            Excel (CSV)
-          </button>
-          <button
-            onClick={async () => {
-              const { downloadReportFile } = await import('@/lib/utils/reportExporter');
-              const { data: projs } = await supabase.from('projects').select('*, student:student_id(full_name, email, department), instructor:instructor_id(full_name, email)');
-              const reportData = (projs || []).map(p => ({
-                title: p.title,
-                studentName: p.student?.full_name || 'Solo Student',
-                studentEmail: p.student?.email || 'N/A',
-                advisor: p.instructor?.full_name || 'Pending',
-                status: p.status,
-                grade: p.grade || 'N/A'
-              }));
-              downloadReportFile({
-                title: 'Admin Cohort Status Report',
-                data: reportData,
-                columns: [
-                  { header: 'Project Title', key: 'title' },
-                  { header: 'Student Name', key: 'studentName' },
-                  { header: 'Student Email', key: 'studentEmail' },
-                  { header: 'Advisor', key: 'advisor' },
-                  { header: 'Proposal Status', key: 'status' },
-                  { header: 'Published Grade', key: 'grade' }
-                ],
-                format: 'document',
-                fileNamePrefix: 'admin_cohort_report'
-              });
-            }}
-            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-black uppercase tracking-wider rounded-xl transition-all cursor-pointer shadow-sm flex items-center gap-1.5"
-          >
-            Doc (TXT)
-          </button>
-          <div className="relative w-full sm:w-48">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-            <input 
-              type="text" 
-              placeholder="Search resources..."
-              className="w-full bg-slate-50 border border-slate-200 rounded-full py-2 pl-10 pr-4 text-xs font-bold text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500"
-            />
-          </div>
+        <div className="relative w-full sm:w-64">
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+          <input 
+            type="text" 
+            placeholder="Search resources..."
+            className="w-full bg-slate-50 border border-slate-200 rounded-full py-2 pl-10 pr-4 text-xs font-bold text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500"
+          />
         </div>
       </div>
 

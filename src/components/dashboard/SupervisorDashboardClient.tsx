@@ -148,7 +148,6 @@ export default function SupervisorDashboardClient({
   return (
     <div className="w-full max-w-6xl mx-auto space-y-6 pb-16 text-slate-800 font-sans">
       
-      {/* Search & Greeting Row */}
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 bg-white border border-slate-200 rounded-[2rem] p-6 shadow-sm">
         <div>
           <h1 className="text-xl font-black text-slate-900 tracking-tight">
@@ -157,18 +156,6 @@ export default function SupervisorDashboardClient({
           <p className="text-xs text-slate-450 font-semibold mt-0.5">Manage undergraduate teams and research candidacies.</p>
         </div>
         <div className="flex items-center gap-2 flex-wrap w-full md:w-auto">
-          <button
-            onClick={() => handleDownloadSupervisorReport('excel')}
-            className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black uppercase tracking-wider rounded-xl transition-all cursor-pointer shadow-sm flex items-center gap-1.5"
-          >
-            <Download className="w-3.5 h-3.5" /> Excel (CSV)
-          </button>
-          <button
-            onClick={() => handleDownloadSupervisorReport('document')}
-            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-black uppercase tracking-wider rounded-xl transition-all cursor-pointer shadow-sm flex items-center gap-1.5"
-          >
-            <Download className="w-3.5 h-3.5" /> Doc (TXT)
-          </button>
           <div className="relative w-full sm:w-48">
             <input 
               type="text"
