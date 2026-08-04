@@ -179,12 +179,9 @@ export async function resetUserPasswordByEmail(email: string) {
           body: JSON.stringify({
             from: 'Project Hub <onboarding@resend.dev>',
             to: email,
-            subject: '🔑 Temporary Password for Project Station',
+            subject: 'Temporary Password for Project Station',
             html: `
               <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 20px; background: #fff; color: #334155; box-shadow: 0 10px 30px rgba(0,0,0,0.05);">
-                <div style="text-align: center; margin-bottom: 24px;">
-                  <span style="font-size: 40px;">🔑</span>
-                </div>
                 <h2 style="color: #4f46e5; margin-bottom: 12px; font-weight: 800; text-align: center; font-size: 22px;">Temporary Password Issued</h2>
                 <p style="font-size: 14px; line-height: 1.6; text-align: center; color: #64748b;">We received a request to recover your password. Please use the temporary password below to sign in:</p>
                 

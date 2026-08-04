@@ -106,11 +106,11 @@ export default function PartnerProjectDetailsPage() {
         await sendNotificationEmail({
           toEmail: project.student.email,
           toName: project.student.full_name || 'Student',
-          subject: `🏢 Industry Sponsor Review: ${project.title}`,
+          subject: `Industry Sponsor Review: ${project.title}`,
           bodyText: `Hi ${project.student.full_name},\n\nYour Industry Sponsor (${partnerName}) has posted a professional review on your project "${project.title}".\n\nReview Comments: "${feedback}"\n\nPlease log in to see full details.\n\nLink to portal: ${loginUrl}\n\nBest regards,\nProject Hub Administration`,
           bodyHtml: `
             <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; rounded: 12px; background: #fff; color: #334155;">
-              <h2 style="color: #4f46e5; margin-bottom: 20px;">🏢 Industry Sponsor Review</h2>
+              <h2 style="color: #4f46e5; margin-bottom: 20px;">Industry Sponsor Review</h2>
               <p>Hi <strong>${project.student.full_name}</strong>,</p>
               <p>Your industry sponsor <strong>${partnerName}</strong> has reviewed your project progress:</p>
               <blockquote style="background: #f8fafc; border-left: 4px solid #4f46e5; padding: 12px; margin: 16px 0; font-style: italic;">
@@ -231,7 +231,7 @@ export default function PartnerProjectDetailsPage() {
                         <div className="flex items-center gap-1.5">
                           <span className="text-sm font-black text-slate-900 truncate">{member.profiles?.full_name || 'Unknown'}</span>
                           {isLead && (
-                            <span className="px-1.5 py-0.5 bg-indigo-600 text-white text-[8px] font-black uppercase rounded shrink-0">★ Leader</span>
+                            <span className="px-1.5 py-0.5 bg-indigo-600 text-white text-[8px] font-black uppercase rounded shrink-0">Leader</span>
                           )}
                         </div>
                         <span className="text-xs text-slate-400 block mt-0.5 truncate">{member.profiles?.email}</span>

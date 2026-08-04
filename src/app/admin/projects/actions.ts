@@ -47,33 +47,13 @@ export async function fetchAdminProjectsAndDeliverables() {
     let filteredProjects = projects || []
 
     // If logged in as Panel Examiner (role === 'examiner' or 'examiner_panel'),
-    // restrict view to ONLY projects from their department or assigned to them!
+    // If logged in as Panel Examiner (role === 'examiner' or 'examiner_panel'),
+    // restrict view to ONLY projects explicitly assigned to them by admin!
     if (userRole === 'examiner' || userRole === 'examiner_panel') {
       filteredProjects = filteredProjects.filter((p: any) => {
-        // 1. Explicitly assigned to this examiner
-        if (p.examiner_panel && Array.isArray(p.examiner_panel) && p.examiner_panel.includes(userId)) {
-          return true
-        }
-        if (p.examiner_id === userId) {
-          return true
-        }
-
-        // 2. Department match
-        if (userDept) {
-          let targetDept = 'General'
-          if (p.description?.includes('Target Department:')) {
-            const match = p.description.match(/Target Department:\s*([^|\n]+)/)
-            if (match && match[1]) targetDept = match[1].trim()
-          }
-          const studentDept = p.student?.department
-
-          if (studentDept && studentDept === userDept) return true
-          if (targetDept && targetDept === userDept) return true
-
-          return false
-        }
-
-        return true
+        const isAssignedInPanel = p.examiner_panel && Array.isArray(p.examiner_panel) && p.examiner_panel.includes(userId)
+        const isAssignedAsExaminer = p.examiner_id === userId
+        return isAssignedInPanel || isAssignedAsExaminer
       })
     }
 

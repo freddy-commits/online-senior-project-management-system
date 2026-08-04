@@ -63,7 +63,7 @@ export async function createAnnouncementNotifications(announcement: Announcement
       .map((user: any) => 
         sendSMS({
           recipientId: user.id,
-          message: `📣 [Project Hub Announcement] ${announcement.title}: "${announcement.content.slice(0, 60)}..." Log in to view details.`
+          message: `[Project Hub Announcement] ${announcement.title}: "${announcement.content.slice(0, 60)}..." Log in to view details.`
         }).catch(err => {
           console.error(`[NotificationService] Error sending SMS to ${user.full_name}:`, err)
         })

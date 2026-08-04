@@ -403,9 +403,9 @@ export default async function AdminDashboardPage() {
                       </span>
                     </div>
                     <div className="text-[10px] text-slate-550 font-semibold space-y-0.5 leading-tight">
-                      <span className="block truncate">📧 {req.profile?.email || 'No email info'}</span>
-                      {req.profile?.university_id && <span className="block truncate">🆔 ID: {req.profile.university_id}</span>}
-                      {(req.department || req.profile?.department) && <span className="block truncate">🏫 Dept: {req.department || req.profile?.department}</span>}
+                      <span className="block truncate">Email: {req.profile?.email || 'No email info'}</span>
+                      {req.profile?.university_id && <span className="block truncate">ID: {req.profile.university_id}</span>}
+                      {(req.department || req.profile?.department) && <span className="block truncate">Dept: {req.department || req.profile?.department}</span>}
                     </div>
                   </div>
                 ))

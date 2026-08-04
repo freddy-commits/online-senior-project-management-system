@@ -103,33 +103,15 @@ export default function AdminDashboard() {
       console.warn("Live Supabase fetch failed, reading from Sandbox db:", err)
     }
 
-    // Filter to keep ONLY projects where this panel member is assigned or matching examiner's department
-    const assignedProjects = projs.filter((p: any) => {
-      // 1. Explicitly assigned to this examiner
-      if (p.examiner_panel && Array.isArray(p.examiner_panel) && p.examiner_panel.includes(activeUserId)) {
-        return true
-      }
-      if (p.examiner_id === activeUserId) {
-        return true
-      }
-
-      // 2. Department match
-      if (profile?.department) {
-        let targetDept = 'General'
-        if (p.description?.includes('Target Department:')) {
-          const match = p.description.match(/Target Department:\s*([^|\n]+)/)
-          if (match && match[1]) targetDept = match[1].trim()
-        }
-        const studentDept = p.student?.department
-
-        if (studentDept && studentDept === profile.department) return true
-        if (targetDept && targetDept === profile.department) return true
-
-        return false
-      }
-
-      return true
-    })
+    // Filter to keep ONLY projects where this panel member is explicitly assigned by admin
+    const isExaminerRole = profile?.role === 'examiner' || profile?.role === 'examiner_panel'
+    const assignedProjects = isExaminerRole
+      ? projs.filter((p: any) => {
+          const isAssignedInPanel = p.examiner_panel && Array.isArray(p.examiner_panel) && p.examiner_panel.includes(activeUserId)
+          const isAssignedAsExaminer = p.examiner_id === activeUserId
+          return isAssignedInPanel || isAssignedAsExaminer
+        })
+      : projs
     
     // Attach deliverables to projects
     const enriched = assignedProjects.map((p: any) => {
@@ -201,11 +183,11 @@ export default function AdminDashboard() {
         await sendNotificationEmail({
           toEmail: studentEmail,
           toName: studentName,
-          subject: '🛡️ Examiner Panel Vetting & Feedback Posted',
+          subject: 'Examiner Panel Vetting & Feedback Posted',
           bodyText: `Hi ${studentName},\n\nThe examiner panel has completed the evaluation of your project proposal: "${evaluatingProject.title}".\n\nReview Notes: ${evalNotes}\n\nDefense Questions to Address:\n${questions}\n\nPlease log in to your Student Dashboard to review this feedback: ${loginUrl}/login\n\nBest regards,\nProject Hub Administration`,
           bodyHtml: `
             <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 12px; background: #fff; color: #334155;">
-              <h2 style="color: #4f46e5; margin-bottom: 20px;">🛡️ Examiner Panel Feedback Posted</h2>
+              <h2 style="color: #4f46e5; margin-bottom: 20px;">Examiner Panel Feedback Posted</h2>
               <p>Hi <strong>${studentName}</strong>,</p>
               <p>The examiner panel has evaluated your project proposal for <strong>"${evaluatingProject.title}"</strong> and submitted the following feedback:</p>
               <blockquote style="background: #f8fafc; border-left: 4px solid #4f46e5; padding: 12px; margin: 16px 0;">
@@ -227,7 +209,7 @@ export default function AdminDashboard() {
 
       await sendSMS({
         recipientId: evaluatingProject.student_id,
-        message: `🛡️ Panel Vetting: Vetting feedback & defense questions have been posted for your capstone project: "${evaluatingProject.title}". Please log in to review.`
+        message: `Panel Vetting: Vetting feedback & defense questions have been posted for your capstone project: "${evaluatingProject.title}". Please log in to review.`
       })
     } catch (notifyErr) {
       console.error("Notification dispatch failed:", notifyErr)
