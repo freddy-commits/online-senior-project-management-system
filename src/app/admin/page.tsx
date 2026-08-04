@@ -88,7 +88,7 @@ export default function AdminDashboard() {
     try {
       const { data, error } = await supabase
         .from('projects')
-        .select('*, student:student_id(full_name, email), instructor:instructor_id(full_name, email)')
+        .select('*, student:student_id(full_name, email, department), instructor:instructor_id(full_name, email)')
         .order('created_at', { ascending: false })
       if (error) throw error
       projs = data || []
@@ -103,13 +103,33 @@ export default function AdminDashboard() {
       console.warn("Live Supabase fetch failed, reading from Sandbox db:", err)
     }
 
-    // Filter out industry projects: keep only academic/capstone projects
-    const capstoneOnly = projs.filter((p: any) => !p.industry_partner_id)
-    
-    // Filter to keep ONLY projects where this panel member is assigned in examiner_panel
-    const assignedProjects = capstoneOnly.filter((p: any) => 
-      p.examiner_panel && Array.isArray(p.examiner_panel) && p.examiner_panel.includes(activeUserId)
-    )
+    // Filter to keep ONLY projects where this panel member is assigned or matching examiner's department
+    const assignedProjects = projs.filter((p: any) => {
+      // 1. Explicitly assigned to this examiner
+      if (p.examiner_panel && Array.isArray(p.examiner_panel) && p.examiner_panel.includes(activeUserId)) {
+        return true
+      }
+      if (p.examiner_id === activeUserId) {
+        return true
+      }
+
+      // 2. Department match
+      if (profile?.department) {
+        let targetDept = 'General'
+        if (p.description?.includes('Target Department:')) {
+          const match = p.description.match(/Target Department:\s*([^|\n]+)/)
+          if (match && match[1]) targetDept = match[1].trim()
+        }
+        const studentDept = p.student?.department
+
+        if (studentDept && studentDept === profile.department) return true
+        if (targetDept && targetDept === profile.department) return true
+
+        return false
+      }
+
+      return true
+    })
     
     // Attach deliverables to projects
     const enriched = assignedProjects.map((p: any) => {

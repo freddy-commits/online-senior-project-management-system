@@ -47,6 +47,7 @@ export default function AdminProjectOversight() {
   const [fundNote, setFundNote] = useState('')
   const [fundLoading, setFundLoading] = useState(false)
   const [fundSuccess, setFundSuccess] = useState('')
+  const [userDept, setUserDept] = useState<string | null>(null)
   const [processing, setProcessing] = useState<string | null>(null)
 
   const supabase = createClient()
@@ -57,6 +58,9 @@ export default function AdminProjectOversight() {
       if (res.success) {
         setProjects(res.projects || [])
         setMilestones(res.deliverables || [])
+        if (res.userRole === 'examiner' || res.userRole === 'examiner_panel') {
+          setUserDept(res.userDept || null)
+        }
       } else {
         const { data: projs } = await supabase
           .from('projects')
@@ -194,8 +198,18 @@ export default function AdminProjectOversight() {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
         <div>
+          {userDept && (
+            <div className="mb-2 inline-flex items-center gap-2 px-3.5 py-1.5 bg-indigo-50 border border-indigo-200 rounded-full text-xs font-black text-indigo-700 uppercase tracking-wider">
+              <span className="w-2 h-2 rounded-full bg-indigo-500 shrink-0" />
+              Department: {userDept} (Assigned Projects Only)
+            </div>
+          )}
           <h1 className="text-2xl font-black text-slate-900 tracking-tight">Project Oversight</h1>
-          <p className="text-sm text-slate-500 mt-1">Full visibility into all student projects — monitor progress, detect bias, and fund promising work.</p>
+          <p className="text-sm text-slate-500 mt-1">
+            {userDept 
+              ? `Visibility into projects assigned to ${userDept} department — monitor progress and conduct evaluations.`
+              : 'Full visibility into all student projects — monitor progress, detect bias, and fund promising work.'}
+          </p>
         </div>
       </div>
 
