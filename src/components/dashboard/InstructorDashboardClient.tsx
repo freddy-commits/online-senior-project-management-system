@@ -64,9 +64,7 @@ export default function InstructorDashboardClient({
   const [selectedProjectForApproval, setSelectedProjectForApproval] = useState<any>(null)
   const [selectedSupervisorId, setSelectedSupervisorId] = useState<string>('')
   const [selectedTeamId, setSelectedTeamId] = useState<string>('')
-  const [selectedExaminer1, setSelectedExaminer1] = useState<string>('')
-  const [selectedExaminer2, setSelectedExaminer2] = useState<string>('')
-  const [selectedExaminer3, setSelectedExaminer3] = useState<string>('')
+
   const [processing, setProcessing] = useState<string | null>(null)
   const [successMessage, setSuccessMessage] = useState('')
 
@@ -153,10 +151,7 @@ export default function InstructorDashboardClient({
         updatePayload.team_id = selectedTeamId
       }
 
-      const panelList = [selectedExaminer1, selectedExaminer2, selectedExaminer3].filter(Boolean)
-      if (panelList.length > 0) {
-        updatePayload.examiner_panel = panelList
-      }
+
 
       const { error } = await supabase
         .from('projects')
@@ -174,9 +169,7 @@ export default function InstructorDashboardClient({
     setSelectedProjectForApproval(null)
     setSelectedSupervisorId('')
     setSelectedTeamId('')
-    setSelectedExaminer1('')
-    setSelectedExaminer2('')
-    setSelectedExaminer3('')
+
     setProcessing(null)
   }
 
@@ -837,48 +830,11 @@ export default function InstructorDashboardClient({
                   </select>
                 </div>
 
-                <div>
-                  <label className="block text-xs font-black uppercase tracking-[0.15em] text-slate-400 mb-2">
-                    Assign Panel Examiners Committee
-                  </label>
-                  <p className="text-[11px] text-slate-500 mb-3 leading-relaxed font-semibold">
-                    Assign up to 3 faculty examiners from your department to vet project deliverables, post oral defense questions, and view candidate submissions.
+                <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 flex items-start gap-2.5 text-xs text-amber-800">
+                  <span className="shrink-0 font-black text-amber-600 mt-0.5">i</span>
+                  <p className="font-semibold leading-relaxed">
+                    Panel Examiner assignment is handled by the <strong>System Administrator</strong> after proposal approval. Approve this proposal first, then the admin will assign the examiner committee.
                   </p>
-                  
-                  <div className="space-y-2">
-                    <select
-                      value={selectedExaminer1}
-                      onChange={(e) => setSelectedExaminer1(e.target.value)}
-                      className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 px-3 text-slate-800 text-xs font-bold focus:outline-none focus:ring-2 focus:ring-indigo-400/30 cursor-pointer"
-                    >
-                      <option value="">Select Panel Examiner 1</option>
-                      {examiners.map(ex => (
-                        <option key={ex.id} value={ex.id}>{ex.full_name} ({ex.department || 'Faculty'})</option>
-                      ))}
-                    </select>
-
-                    <select
-                      value={selectedExaminer2}
-                      onChange={(e) => setSelectedExaminer2(e.target.value)}
-                      className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 px-3 text-slate-800 text-xs font-bold focus:outline-none focus:ring-2 focus:ring-indigo-400/30 cursor-pointer"
-                    >
-                      <option value="">Select Panel Examiner 2 (Optional)</option>
-                      {examiners.map(ex => (
-                        <option key={ex.id} value={ex.id}>{ex.full_name} ({ex.department || 'Faculty'})</option>
-                      ))}
-                    </select>
-
-                    <select
-                      value={selectedExaminer3}
-                      onChange={(e) => setSelectedExaminer3(e.target.value)}
-                      className="w-full bg-slate-50 border border-slate-200 rounded-xl py-2.5 px-3 text-slate-800 text-xs font-bold focus:outline-none focus:ring-2 focus:ring-indigo-400/30 cursor-pointer"
-                    >
-                      <option value="">Select Panel Examiner 3 (Optional)</option>
-                      {examiners.map(ex => (
-                        <option key={ex.id} value={ex.id}>{ex.full_name} ({ex.department || 'Faculty'})</option>
-                      ))}
-                    </select>
-                  </div>
                 </div>
               </div>
 
