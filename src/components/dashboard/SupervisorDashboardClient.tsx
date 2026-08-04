@@ -22,7 +22,8 @@ import {
   Mail,
   Calendar,
   X,
-  Download
+  Download,
+  Check
 } from 'lucide-react'
 import { useTrack } from '@/components/providers/TrackProvider'
 import { downloadReportFile } from '@/lib/utils/reportExporter'
