@@ -74,15 +74,16 @@ export default function AdminDashboard() {
       }
       setProfile(prof)
 
-      await fetchDashboardData(prof.id)
+      await fetchDashboardData(prof.id, prof)
       setLoading(false)
     }
 
     initPanelDashboard()
   }, [])
 
-  async function fetchDashboardData(userId?: string) {
-    const activeUserId = userId || profile?.id
+  async function fetchDashboardData(userId?: string, userProf?: any) {
+    const activeProfile = userProf || profile
+    const activeUserId = userId || activeProfile?.id
     let projs: any[] = []
     let allDeliverables: any[] = []
     try {
@@ -104,7 +105,7 @@ export default function AdminDashboard() {
     }
 
     // Filter to keep ONLY projects where this panel member is explicitly assigned by admin
-    const isExaminerRole = profile?.role === 'examiner' || profile?.role === 'examiner_panel'
+    const isExaminerRole = activeProfile?.role === 'examiner' || activeProfile?.role === 'examiner_panel'
     const assignedProjects = isExaminerRole
       ? projs.filter((p: any) => {
           const isAssignedInPanel = p.examiner_panel && Array.isArray(p.examiner_panel) && p.examiner_panel.includes(activeUserId)
@@ -217,7 +218,7 @@ export default function AdminDashboard() {
 
     setSuccessMessage(`Committee review and questions submitted for "${evaluatingProject.title}"!`)
     setTimeout(() => setSuccessMessage(''), 5000)
-    await fetchDashboardData(profile?.id)
+    await fetchDashboardData(profile?.id, profile)
     setEvaluatingProject(null)
     setEvalNotes('')
     setQuestions('')
@@ -233,8 +234,8 @@ export default function AdminDashboard() {
   }
 
   // Core Statistics Calculation
-  const pendingReviews = projects.filter(p => p.status === 'approved' && !p.review_completed).length
-  const underReview = projects.filter(p => p.status === 'pending').length
+  const pendingReviews = projects.filter(p => !p.review_completed).length
+  const underReview = projects.filter(p => (p.review_notes || p.review_questions) && !p.review_completed).length
   const reviewedCount = projects.filter(p => p.review_completed).length
 
   // Calculate Average Grade from instructor-assigned grades if they exist
@@ -242,7 +243,7 @@ export default function AdminDashboard() {
   const gradedProjects = projects.filter(p => p.grade)
   const averageScore = gradedProjects.length > 0 
     ? (gradedProjects.reduce((sum, p) => sum + (scoresMap[p.grade] || 85), 0) / gradedProjects.length).toFixed(1)
-    : '89.5'
+    : 'N/A'
 
   return (
     <div className="p-4 md:p-8 pb-20 max-w-6xl mx-auto space-y-8 text-slate-800 font-sans">
@@ -434,35 +435,43 @@ export default function AdminDashboard() {
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-100 text-xs font-semibold text-slate-700">
-                        {projects.map((proj) => (
-                          <tr key={proj.id} className="hover:bg-slate-50/30 transition-colors">
-                            <td className="py-4 px-2">{proj.student?.full_name || 'Individual Student'}</td>
-                            <td className="py-4 px-2 max-w-xs truncate font-bold text-slate-900">{proj.title}</td>
-                            <td className="py-4 px-2">
-                              {proj.review_completed ? (
-                                <span className="px-2 py-0.5 bg-emerald-500 border border-emerald-600/20 text-white rounded text-[10px] font-extrabold uppercase">
-                                  Reviewed
-                                </span>
-                              ) : (
-                                <span className="px-2 py-0.5 bg-amber-50 text-amber-700 border border-amber-200/50 rounded text-[10px] font-extrabold uppercase tracking-wide">
-                                  Pending Review
-                                </span>
-                              )}
-                            </td>
-                            <td className="py-4 px-2 text-right">
-                              <button
-                                onClick={() => {
-                                  setEvaluatingProject(proj)
-                                  setEvalNotes(proj.review_notes || '')
-                                  setQuestions(proj.review_questions || '')
-                                }}
-                                className="px-3.5 py-1.5 bg-slate-900 hover:bg-slate-800 text-white font-extrabold rounded-xl text-[9px] uppercase tracking-wider transition-all cursor-pointer shadow-sm"
-                              >
-                                {proj.review_completed ? 'Revise Review' : 'Review'}
-                              </button>
+                        {projects.length > 0 ? (
+                          projects.map((proj) => (
+                            <tr key={proj.id} className="hover:bg-slate-50/30 transition-colors">
+                              <td className="py-4 px-2">{proj.student?.full_name || 'Individual Student'}</td>
+                              <td className="py-4 px-2 max-w-xs truncate font-bold text-slate-900">{proj.title}</td>
+                              <td className="py-4 px-2">
+                                {proj.review_completed ? (
+                                  <span className="px-2 py-0.5 bg-emerald-500 border border-emerald-600/20 text-white rounded text-[10px] font-extrabold uppercase">
+                                    Reviewed
+                                  </span>
+                                ) : (
+                                  <span className="px-2 py-0.5 bg-amber-50 text-amber-700 border border-amber-200/50 rounded text-[10px] font-extrabold uppercase tracking-wide">
+                                    Pending Review
+                                  </span>
+                                )}
+                              </td>
+                              <td className="py-4 px-2 text-right">
+                                <button
+                                  onClick={() => {
+                                    setEvaluatingProject(proj)
+                                    setEvalNotes(proj.review_notes || '')
+                                    setQuestions(proj.review_questions || '')
+                                  }}
+                                  className="px-3.5 py-1.5 bg-slate-900 hover:bg-slate-800 text-white font-extrabold rounded-xl text-[9px] uppercase tracking-wider transition-all cursor-pointer shadow-sm"
+                                >
+                                  {proj.review_completed ? 'Revise Review' : 'Review'}
+                                </button>
+                              </td>
+                            </tr>
+                          ))
+                        ) : (
+                          <tr>
+                            <td colSpan={4} className="py-8 text-center text-slate-400 font-bold text-xs uppercase tracking-wider">
+                              No capstone projects assigned to your panel yet. The System Administrator will allocate projects to your panel for evaluation.
                             </td>
                           </tr>
-                        ))}
+                        )}
                       </tbody>
                     </table>
                   </div>
