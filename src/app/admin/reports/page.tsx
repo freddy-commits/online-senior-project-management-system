@@ -126,9 +126,23 @@ export default function AdminReportsPage() {
       })
 
       // ── 3. Milestones / Deliverables Report ────────────────────────────────
-        grade: d.grade || 'N/A',
-        fileAttached: d.file_url ? 'Yes' : 'No',
-      }))
+      const milestonesData = deliverables.map((d: any) => {
+        const proj = d.project || projectsMap[d.project_id]
+        const studentId = proj?.student_id
+        const studentProfile = studentId ? profilesMap[studentId] : null
+        return {
+          milestoneTitle: d.title || 'Untitled Milestone',
+          projectTitle: proj?.title || 'N/A',
+          studentName: studentProfile?.full_name || 'N/A',
+          studentEmail: studentProfile?.email || 'N/A',
+          status: (d.status || 'pending').toUpperCase(),
+          dueDate: d.due_date ? new Date(d.due_date).toLocaleDateString() : 'No Deadline',
+          submittedOn: d.created_at ? new Date(d.created_at).toLocaleDateString() : 'N/A',
+          feedbackGiven: d.feedback ? 'Yes' : 'No',
+          grade: d.grade || 'N/A',
+          fileAttached: d.file_url ? 'Yes' : 'No',
+        }
+      })
 
       // ── 4. Teams Report ────────────────────────────────────────────────────
       const teamsData = teams.map((t: any) => ({
