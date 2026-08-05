@@ -1,13 +1,13 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { createClient } from '@/lib/supabase/client'
 import {
   FileText, Download, BarChart3, Loader2, Users, BookOpen,
   Building2, Layers, CheckCircle2, Clock, AlertCircle,
   TrendingUp, Shield, ChevronDown, ChevronUp, Printer
 } from 'lucide-react'
 import { downloadReportFile } from '@/lib/utils/reportExporter'
+import { fetchAllReportData } from './actions'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface ReportSection {
@@ -26,47 +26,26 @@ export default function AdminReportsPage() {
   const [loading, setLoading] = useState(true)
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(['users']))
   const [sections, setSections] = useState<ReportSection[]>([])
-  const supabase = createClient()
+  const [fetchError, setFetchError] = useState<string | null>(null)
 
   useEffect(() => {
     loadAllData()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   async function loadAllData() {
     setLoading(true)
+    setFetchError(null)
     try {
-      const [
-        profilesRes,
-        projectsRes,
-        deliverablesRes,
-        teamsRes,
-        roleRequestsRes,
-        notificationsRes,
-      ] = await Promise.all([
-        supabase.from('profiles').select('*').order('created_at', { ascending: false }),
-        supabase
-          .from('projects')
-          .select('*, student:student_id(full_name, email, department, student_id), instructor:instructor_id(full_name, email), industry_partner:industry_partner_id(full_name, email)')
-          .order('created_at', { ascending: false }),
-        supabase
-          .from('deliverables')
-          .select('*, project:project_id(title, student_id, student:student_id(full_name, email))')
-          .order('created_at', { ascending: false }),
-        supabase
-          .from('teams')
-          .select('*, leader:leader_id(full_name, email), project:project_id(title, status)')
-          .order('created_at', { ascending: false }),
-        supabase.from('role_requests').select('*, profile:user_id(full_name, email, department)').order('created_at', { ascending: false }),
-        supabase.from('notifications').select('*').order('created_at', { ascending: false }).limit(500),
-      ])
+      // Use server action with service-role admin client — bypasses RLS
+      const result = await fetchAllReportData()
 
-      const profiles = profilesRes.data || []
-      const projects = projectsRes.data || []
-      const deliverables = deliverablesRes.data || []
-      const teams = teamsRes.data || []
-      const roleRequests = roleRequestsRes.data || []
-      const notifications = notificationsRes.data || []
+      if (!result.success || !result.data) {
+        setFetchError(result.error || 'Failed to load report data.')
+        setLoading(false)
+        return
+      }
+
+      const { profiles, projects, deliverables, teams, roleRequests, notifications } = result.data
 
       // ── 1. Users Report ────────────────────────────────────────────────────
       const usersData = profiles.map((u: any) => ({
@@ -86,6 +65,10 @@ export default function AdminReportsPage() {
       const profilesMap: Record<string, any> = {}
       profiles.forEach((pr: any) => { profilesMap[pr.id] = pr })
 
+      // Build a quick lookup: project_id → project (for deliverables enrichment)
+      const projectsMap: Record<string, any> = {}
+      projects.forEach((pr: any) => { projectsMap[pr.id] = pr })
+
       // Helper: extract Target Department from industry project description
       function extractDeptFromDesc(desc: string): string {
         if (!desc) return 'N/A'
@@ -100,22 +83,34 @@ export default function AdminReportsPage() {
           ? 'COMPLETED'
           : (p.status || 'pending').toUpperCase()
 
-        // Resolve supervisor — try join result first, then direct lookup from profiles map
-        const supervisorProfile = p.instructor || (p.instructor_id ? profilesMap[p.instructor_id] : null)
-        const supervisorAssigned = !!(supervisorProfile?.full_name || p.instructor_id)
+        // Resolve supervisor — use join result OR fall back to profilesMap by instructor_id
+        const supervisorProfile = (p.instructor?.full_name ? p.instructor : null)
+          || (p.instructor_id ? profilesMap[p.instructor_id] : null)
+        const supervisorAssigned = !!(supervisorProfile || p.instructor_id)
 
-        // Resolve department — use student profile dept, or extract from description for industry
-        const department = p.student?.department
+        // Resolve student — use join result OR fall back to profilesMap by student_id
+        const studentProfile = (p.student?.full_name ? p.student : null)
+          || (p.student_id ? profilesMap[p.student_id] : null)
+
+        // Resolve partner — use join result OR fall back to profilesMap
+        const partnerProfile = (p.industry_partner?.full_name ? p.industry_partner : null)
+          || (p.industry_partner_id ? profilesMap[p.industry_partner_id] : null)
+
+        // Resolve student registration ID
+        const regStudentId = studentProfile?.student_id || 'N/A'
+
+        // Resolve department
+        const department = studentProfile?.department
           || (p.industry_partner_id ? extractDeptFromDesc(p.description) : 'N/A')
 
         return {
           title: p.title || 'Untitled',
           origin: p.industry_partner_id ? 'Industry Sponsored' : 'Student Proposal',
-          student: p.student?.full_name || p.industry_partner?.full_name || 'N/A',
-          studentEmail: p.student?.email || p.industry_partner?.email || 'N/A',
-          studentId: p.student?.student_id || 'N/A',
+          student: studentProfile?.full_name || partnerProfile?.full_name || 'N/A',
+          studentEmail: studentProfile?.email || partnerProfile?.email || 'N/A',
+          studentId: regStudentId,
           department,
-          supervisorName: supervisorProfile?.full_name || (p.instructor_id ? 'Assigned (ID: ' + p.instructor_id.slice(0,8) + '…)' : 'Not Assigned'),
+          supervisorName: supervisorProfile?.full_name || (p.instructor_id ? 'Assigned' : 'Not Assigned'),
           supervisorEmail: supervisorProfile?.email || 'N/A',
           supervisorAssigned: supervisorAssigned ? 'YES — Assigned' : 'NO — Pending',
           status: resolvedStatus,
@@ -131,15 +126,6 @@ export default function AdminReportsPage() {
       })
 
       // ── 3. Milestones / Deliverables Report ────────────────────────────────
-      const milestonesData = deliverables.map((d: any) => ({
-        milestoneTitle: d.title || 'Untitled Milestone',
-        projectTitle: d.project?.title || 'N/A',
-        studentName: d.project?.student?.full_name || 'N/A',
-        studentEmail: d.project?.student?.email || 'N/A',
-        status: (d.status || 'pending').toUpperCase(),
-        dueDate: d.due_date ? new Date(d.due_date).toLocaleDateString() : 'No Deadline',
-        submittedOn: d.created_at ? new Date(d.created_at).toLocaleDateString() : 'N/A',
-        feedbackGiven: d.feedback ? 'Yes' : 'No',
         grade: d.grade || 'N/A',
         fileAttached: d.file_url ? 'Yes' : 'No',
       }))
@@ -420,6 +406,19 @@ export default function AdminReportsPage() {
       <div className="min-h-[70vh] flex flex-col items-center justify-center gap-3">
         <Loader2 className="w-10 h-10 text-indigo-600 animate-spin" />
         <p className="text-sm font-bold text-slate-500">Loading system report data…</p>
+      </div>
+    )
+  }
+
+  if (fetchError) {
+    return (
+      <div className="min-h-[70vh] flex flex-col items-center justify-center gap-3">
+        <AlertCircle className="w-10 h-10 text-red-500" />
+        <p className="text-sm font-bold text-red-600">Failed to load report data</p>
+        <p className="text-xs text-slate-400">{fetchError}</p>
+        <button onClick={loadAllData} className="mt-2 px-4 py-2 bg-indigo-600 text-white text-xs font-black rounded-xl hover:bg-indigo-700 transition-all cursor-pointer">
+          Retry
+        </button>
       </div>
     )
   }
