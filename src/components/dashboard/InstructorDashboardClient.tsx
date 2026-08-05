@@ -30,6 +30,7 @@ import {
   ToggleLeft,
   ToggleRight
 } from 'lucide-react'
+import { parseDescription } from '@/components/project/ProjectDescription'
 
 type ProjectType = any
 
@@ -659,34 +660,47 @@ export default function InstructorDashboardClient({
                   </div>
                 </div>
 
-                {/* Uploaded Proposal Document Download Card */}
-                {selectedProjectForApproval.proposal_url ? (
-                  <div className="bg-emerald-50/60 border border-emerald-200/70 rounded-2xl p-4 flex items-start gap-3">
-                    <div className="w-9 h-9 rounded-xl bg-emerald-100 border border-emerald-200 flex items-center justify-center shrink-0">
-                      <FileText className="w-4.5 h-4.5 text-emerald-600" />
+                {/* Uploaded Proposal / Attached Brief Document Card */}
+                {(() => {
+                  // First try the proposal_url column (student uploads via milestones page)
+                  const docUrl = selectedProjectForApproval.proposal_url
+                  // Fallback: extract the URL embedded by the industry partner inside the description
+                  const { brief } = parseDescription(selectedProjectForApproval.description || '')
+                  const attachedUrl = docUrl || brief?.url || null
+                  const attachedName = docUrl ? 'Uploaded Proposal Document' : (brief?.name || 'Attached Document')
+
+                  if (attachedUrl) {
+                    return (
+                      <div className="bg-emerald-50/60 border border-emerald-200/70 rounded-2xl p-4 flex items-start gap-3">
+                        <div className="w-9 h-9 rounded-xl bg-emerald-100 border border-emerald-200 flex items-center justify-center shrink-0">
+                          <FileText className="w-4.5 h-4.5 text-emerald-600" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h4 className="text-xs font-black uppercase tracking-[0.15em] text-emerald-700 mb-0.5">Attached Document</h4>
+                          <p className="text-[11px] text-emerald-600 font-semibold mb-2.5 truncate" title={attachedName}>
+                            {attachedName}
+                          </p>
+                          <a
+                            href={attachedUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-2 px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[10px] uppercase tracking-wider rounded-xl transition-all shadow-sm shadow-emerald-600/20 cursor-pointer"
+                          >
+                            <Download className="w-3.5 h-3.5" />
+                            Download / View Document
+                          </a>
+                        </div>
+                      </div>
+                    )
+                  }
+
+                  return (
+                    <div className="p-3 bg-amber-50 border border-amber-200/70 rounded-2xl text-[11px] text-amber-800 font-semibold flex items-center gap-2">
+                      <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
+                      No document file uploaded. Submitter provided title and description only.
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <h4 className="text-xs font-black uppercase tracking-[0.15em] text-emerald-700 mb-0.5">Uploaded Proposal Document</h4>
-                      <p className="text-[11px] text-emerald-600 font-semibold mb-2.5 truncate" title={selectedProjectForApproval.proposal_url}>
-                        Full proposal document attached by student
-                      </p>
-                      <a
-                        href={selectedProjectForApproval.proposal_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-2 px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[10px] uppercase tracking-wider rounded-xl transition-all shadow-sm shadow-emerald-600/20 cursor-pointer"
-                      >
-                        <Download className="w-3.5 h-3.5" />
-                        Download / View Document
-                      </a>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="p-3 bg-amber-50 border border-amber-200/70 rounded-2xl text-[11px] text-amber-800 font-semibold flex items-center gap-2">
-                    <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
-                    No document file uploaded. Student provided title and abstract only.
-                  </div>
-                )}
+                  )
+                })()}
 
                 <div>
                   <label className="block text-xs font-black uppercase tracking-[0.15em] text-slate-400 mb-2">
