@@ -442,6 +442,8 @@ export default function AdminReportsPage() {
   return (
     <div className="p-6 lg:p-10 max-w-6xl mx-auto space-y-8 font-sans text-slate-800">
 
+      <div className="no-print space-y-8">
+
       {/* ── Page Header ──────────────────────────────────────────────────────── */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 pb-6 border-b border-slate-100">
         <div className="flex items-center gap-4">
@@ -629,13 +631,14 @@ export default function AdminReportsPage() {
           )
         })}
       </div>
+      </div>
 
       {/* ── Print-only Layout ─────────────────────────────────────────────────── */}
       <div className="hidden print:block mt-8 font-sans print-report-container">
         <style dangerouslySetInnerHTML={{ __html: `
           @media print {
-            /* Hide main screen layout wrappers */
-            body > div:not(.print-report-container), nav, header, aside, sidebar, button, .no-print {
+            /* Hide screen-only layouts */
+            .no-print, nav, header, aside, sidebar, button {
               display: none !important;
             }
             
