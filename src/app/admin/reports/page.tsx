@@ -47,7 +47,7 @@ export default function AdminReportsPage() {
         supabase.from('profiles').select('*').order('created_at', { ascending: false }),
         supabase
           .from('projects')
-          .select('*, student:student_id(full_name, email, department, student_id), supervisor:instructor_id(full_name, email), industry_partner:industry_partner_id(full_name, email)')
+          .select('*, student:student_id(full_name, email, department, student_id), instructor:instructor_id(full_name, email), industry_partner:industry_partner_id(full_name, email)')
           .order('created_at', { ascending: false }),
         supabase
           .from('deliverables')
@@ -82,22 +82,41 @@ export default function AdminReportsPage() {
 
       const roleCount = (role: string) => profiles.filter((p: any) => p.role === role).length
 
+      // Build a quick lookup: profile_id → profile (for reliable supervisor name resolution)
+      const profilesMap: Record<string, any> = {}
+      profiles.forEach((pr: any) => { profilesMap[pr.id] = pr })
+
+      // Helper: extract Target Department from industry project description
+      function extractDeptFromDesc(desc: string): string {
+        if (!desc) return 'N/A'
+        const match = desc.match(/Target Department:\s*([^|\n]+)/)
+        return match?.[1]?.trim() || 'N/A'
+      }
+
       // ── 2. Projects Report ─────────────────────────────────────────────────
       const projectsData = projects.map((p: any) => {
         const isCompleted = p.status === 'completed' || !!p.grade || !!p.grade_published
         const resolvedStatus = isCompleted
           ? 'COMPLETED'
           : (p.status || 'pending').toUpperCase()
-        const supervisorAssigned = !!(p.supervisor?.full_name || p.instructor_id)
+
+        // Resolve supervisor — try join result first, then direct lookup from profiles map
+        const supervisorProfile = p.instructor || (p.instructor_id ? profilesMap[p.instructor_id] : null)
+        const supervisorAssigned = !!(supervisorProfile?.full_name || p.instructor_id)
+
+        // Resolve department — use student profile dept, or extract from description for industry
+        const department = p.student?.department
+          || (p.industry_partner_id ? extractDeptFromDesc(p.description) : 'N/A')
+
         return {
           title: p.title || 'Untitled',
           origin: p.industry_partner_id ? 'Industry Sponsored' : 'Student Proposal',
           student: p.student?.full_name || p.industry_partner?.full_name || 'N/A',
           studentEmail: p.student?.email || p.industry_partner?.email || 'N/A',
           studentId: p.student?.student_id || 'N/A',
-          department: p.student?.department || 'N/A',
-          supervisorName: p.supervisor?.full_name || 'Not Assigned',
-          supervisorEmail: p.supervisor?.email || 'N/A',
+          department,
+          supervisorName: supervisorProfile?.full_name || (p.instructor_id ? 'Assigned (ID: ' + p.instructor_id.slice(0,8) + '…)' : 'Not Assigned'),
+          supervisorEmail: supervisorProfile?.email || 'N/A',
           supervisorAssigned: supervisorAssigned ? 'YES — Assigned' : 'NO — Pending',
           status: resolvedStatus,
           grade: p.grade || 'N/A',
