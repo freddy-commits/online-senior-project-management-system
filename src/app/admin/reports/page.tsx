@@ -47,7 +47,7 @@ export default function AdminReportsPage() {
         supabase.from('profiles').select('*').order('created_at', { ascending: false }),
         supabase
           .from('projects')
-          .select('*, student:student_id(full_name, email, department), instructor:instructor_id(full_name, email), industry_partner:industry_partner_id(full_name, email)')
+          .select('*, student:student_id(full_name, email, department, student_id), supervisor:instructor_id(full_name, email), industry_partner:industry_partner_id(full_name, email)')
           .order('created_at', { ascending: false }),
         supabase
           .from('deliverables')
@@ -83,20 +83,33 @@ export default function AdminReportsPage() {
       const roleCount = (role: string) => profiles.filter((p: any) => p.role === role).length
 
       // ── 2. Projects Report ─────────────────────────────────────────────────
-      const projectsData = projects.map((p: any) => ({
-        title: p.title || 'Untitled',
-        origin: p.industry_partner_id ? 'Industry Sponsored' : 'Student Proposal',
-        student: p.student?.full_name || p.industry_partner?.full_name || 'N/A',
-        studentEmail: p.student?.email || p.industry_partner?.email || 'N/A',
-        department: p.student?.department || 'N/A',
-        advisor: p.instructor?.full_name || 'Unassigned',
-        status: (p.status || 'pending').toUpperCase(),
-        grade: p.grade || 'N/A',
-        defenseDate: p.presentation_date ? new Date(p.presentation_date).toLocaleDateString() : 'Unscheduled',
-        reviewStatus: p.review_completed ? 'Vetting Complete' : 'Pending Vetting',
-        reviewNotes: p.review_notes || 'None',
-        submittedOn: p.created_at ? new Date(p.created_at).toLocaleDateString() : 'N/A',
-      }))
+      const projectsData = projects.map((p: any) => {
+        const isCompleted = p.status === 'completed' || !!p.grade || !!p.grade_published
+        const resolvedStatus = isCompleted
+          ? 'COMPLETED'
+          : (p.status || 'pending').toUpperCase()
+        const supervisorAssigned = !!(p.supervisor?.full_name || p.instructor_id)
+        return {
+          title: p.title || 'Untitled',
+          origin: p.industry_partner_id ? 'Industry Sponsored' : 'Student Proposal',
+          student: p.student?.full_name || p.industry_partner?.full_name || 'N/A',
+          studentEmail: p.student?.email || p.industry_partner?.email || 'N/A',
+          studentId: p.student?.student_id || 'N/A',
+          department: p.student?.department || 'N/A',
+          supervisorName: p.supervisor?.full_name || 'Not Assigned',
+          supervisorEmail: p.supervisor?.email || 'N/A',
+          supervisorAssigned: supervisorAssigned ? 'YES — Assigned' : 'NO — Pending',
+          status: resolvedStatus,
+          grade: p.grade || 'N/A',
+          gradePublished: p.grade_published ? 'Published' : 'Not Published',
+          isFunded: p.is_funded ? `YES — KES ${Number(p.funding_amount || 0).toLocaleString()}` : 'No',
+          isRecommended: p.is_recommended ? 'YES' : 'No',
+          defenseDate: p.presentation_date ? new Date(p.presentation_date).toLocaleDateString() : 'Unscheduled',
+          reviewStatus: p.review_completed ? 'Vetting Complete' : 'Pending Vetting',
+          reviewNotes: p.review_notes || 'None',
+          submittedOn: p.created_at ? new Date(p.created_at).toLocaleDateString() : 'N/A',
+        }
+      })
 
       // ── 3. Milestones / Deliverables Report ────────────────────────────────
       const milestonesData = deliverables.map((d: any) => ({
@@ -214,11 +227,17 @@ export default function AdminReportsPage() {
             { header: 'Origin', key: 'origin' },
             { header: 'Student / Partner', key: 'student' },
             { header: 'Email', key: 'studentEmail' },
+            { header: 'Student ID', key: 'studentId' },
             { header: 'Department', key: 'department' },
-            { header: 'Advisor / Supervisor', key: 'advisor' },
-            { header: 'Proposal Status', key: 'status' },
-            { header: 'Published Grade', key: 'grade' },
-            { header: 'Defense Date', key: 'defenseDate' },
+            { header: 'Supervisor / Advisor', key: 'supervisorName' },
+            { header: 'Supervisor Email', key: 'supervisorEmail' },
+            { header: 'Supervisor Assigned', key: 'supervisorAssigned' },
+            { header: 'Project Status', key: 'status' },
+            { header: 'Grade', key: 'grade' },
+            { header: 'Grade Published', key: 'gradePublished' },
+            { header: 'Funded', key: 'isFunded' },
+            { header: 'Recommended', key: 'isRecommended' },
+            { header: 'Defense / Presentation Date', key: 'defenseDate' },
             { header: 'Vetting Status', key: 'reviewStatus' },
             { header: 'Vetting Notes', key: 'reviewNotes' },
             { header: 'Submitted On', key: 'submittedOn' },
