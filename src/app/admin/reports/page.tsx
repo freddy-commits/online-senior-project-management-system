@@ -138,9 +138,9 @@ export default function AdminReportsPage() {
           status: (d.status || 'pending').toUpperCase(),
           dueDate: d.due_date ? new Date(d.due_date).toLocaleDateString() : 'No Deadline',
           submittedOn: d.created_at ? new Date(d.created_at).toLocaleDateString() : 'N/A',
-          feedbackGiven: d.feedback ? 'Yes' : 'No',
+          feedbackGiven: d.recommendation ? 'Yes' : 'No',
           grade: d.grade || 'N/A',
-          fileAttached: d.file_url ? 'Yes' : 'No',
+          fileAttached: d.submission_url ? 'Yes' : 'No',
         }
       })
 
@@ -272,10 +272,10 @@ export default function AdminReportsPage() {
           borderColor: 'border-purple-200',
           stats: [
             { label: 'Total Milestones', value: deliverables.length, color: 'text-slate-900' },
-            { label: 'Submitted', value: deliverables.filter((d: any) => d.status === 'submitted').length, color: 'text-blue-600' },
+            { label: 'Submitted / Graded', value: deliverables.filter((d: any) => ['submitted', 'approved', 'graded', 'completed'].includes(d.status)).length, color: 'text-blue-600' },
             { label: 'Approved', value: deliverables.filter((d: any) => d.status === 'approved').length, color: 'text-emerald-600' },
-            { label: 'Pending', value: deliverables.filter((d: any) => d.status === 'pending' || !d.status).length, color: 'text-amber-600' },
-            { label: 'With File', value: deliverables.filter((d: any) => d.file_url).length, color: 'text-purple-600' },
+            { label: 'Pending / Todo', value: deliverables.filter((d: any) => !d.status || ['todo', 'pending', 'in_progress'].includes(d.status)).length, color: 'text-amber-600' },
+            { label: 'With File', value: deliverables.filter((d: any) => d.submission_url).length, color: 'text-purple-600' },
           ],
           columns: [
             { header: 'Milestone Title', key: 'milestoneTitle' },
@@ -631,13 +631,34 @@ export default function AdminReportsPage() {
       </div>
 
       {/* ── Print-only Layout ─────────────────────────────────────────────────── */}
-      <div className="hidden print:block mt-8 font-sans">
+      <div className="hidden print:block mt-8 font-sans print-report-container">
         <style dangerouslySetInnerHTML={{ __html: `
           @media print {
-            body * { visibility: hidden; }
-            .print\\:block, .print\\:block * { visibility: visible; }
-            .print\\:block { position: absolute; left: 0; top: 0; width: 100%; }
-            nav, header, button, aside, .no-print { display: none !important; }
+            /* Hide main screen layout wrappers */
+            body > div:not(.print-report-container), nav, header, aside, sidebar, button, .no-print {
+              display: none !important;
+            }
+            
+            /* Remove absolute positioning and overflow locks from parents */
+            html, body, main, #__next, .h-screen, .max-h-screen, .overflow-hidden, .overflow-y-auto {
+              height: auto !important;
+              max-height: none !important;
+              overflow: visible !important;
+              position: static !important;
+              display: block !important;
+            }
+
+            .print-report-container {
+              display: block !important;
+              position: relative !important;
+              width: 100% !important;
+              height: auto !important;
+              overflow: visible !important;
+            }
+            
+            tr {
+              page-break-inside: avoid !important;
+            }
           }
         `}} />
         <div className="border-b-2 border-slate-900 pb-4 mb-6">
