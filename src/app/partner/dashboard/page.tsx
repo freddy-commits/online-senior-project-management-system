@@ -281,18 +281,6 @@ export default function PartnerDashboardPage() {
         <div className="flex gap-3 items-center w-full sm:w-auto flex-wrap">
           {activeTab === 'my-problems' && (
             <>
-              <button
-                onClick={() => handleDownloadPartnerReport('excel')}
-                className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black uppercase tracking-wider rounded-xl transition-all cursor-pointer shadow-sm flex items-center gap-1.5"
-              >
-                <Download className="w-3.5 h-3.5" /> Excel
-              </button>
-              <button
-                onClick={() => handleDownloadPartnerReport('document')}
-                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-black uppercase tracking-wider rounded-xl transition-all cursor-pointer shadow-sm flex items-center gap-1.5"
-              >
-                <Download className="w-3.5 h-3.5" /> Doc
-              </button>
               <div className="relative w-full sm:w-48">
                 <input 
                   type="text"
